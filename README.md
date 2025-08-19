@@ -1,105 +1,105 @@
-Absolutely! I can convert the guide into a **ready-to-use `README.md`** format for your repo. Here’s a clean version you can paste directly into your repo:
+<div align="center">
+  <img src="https://framerusercontent.com/images/tQEEeKRa0oOBXHoksVNKvgBJZc.png" alt="Helagovi.lk Logo" width="200"/>
+</div>
 
-````markdown
-# 🛠 Helagovi.lk Git Workflow Guide
-
-**Repo:** [https://github.com/leshakamadara/helagovi.lk](https://github.com/leshakamadara/helagovi.lk)  
-**Team size:** 4  
-**VSCode users** – all commands run in VSCode terminal.  
+# 🛠️ Helagovi.lk Git Workflow
 
 ---
 
-## Step A: Clone the repo
+## 📥 Step A: Clone the Repository
+
 ```bash
 git clone https://github.com/leshakamadara/helagovi.lk.git
 cd helagovi.lk
-````
+```
 
----
 
-## Step B: Switch to `dev` branch and pull latest changes
+## 🔄 Step B: Switch to `dev` Branch and Pull Latest Changes
 
 ```bash
 git checkout dev
 git pull origin dev
 ```
 
-> 💡 `dev` is the integration branch for all features. Always start from here.
+> 💡 **Note:** `dev` is the integration branch for all features. Always start from here.
 
----
 
-## Step C: Create your feature branch
+
+## 🌿 Step C: Create Your Feature Branch
 
 ```bash
 git checkout -b feature/order-management
 ```
 
-> Replace `order-management` with your task.
-> Convention: `feature/<your-task-name>`
+> **Replace** `order-management` with your task name.  
+> **Convention:** `feature/<your-task-name>`
 
----
 
-## Step D: Work locally
 
-1. Install dependencies **if needed**:
+## 💻 Step D: Work Locally
 
-   ```bash
-   # Backend
-   cd server
-   npm install
-   cd ..
+### 1. Install Dependencies (if needed)
 
-   # Frontend
-   cd client
-   npm install
-   cd ..
-   ```
-2. Make changes in **client/** or **server/** folders.
-3. Test your feature locally.
+```bash
+# Backend
+cd server
+npm install
+cd ..
 
----
+# Frontend  
+cd client
+npm install
+cd ..
+```
 
-## Step E: Stage & commit changes
+### 2. Development Process
+- Make changes in **frontend/** or **backend/** folders
+- Test your feature locally
+- Ensure everything works as expected
+
+
+
+## 📝 Step E: Stage & Commit Changes
 
 ```bash
 git add .
 git commit -m "Add order management feature"
 ```
 
-> Keep commit messages short and descriptive.
+> ✨ **Tip:** Keep commit messages short and descriptive.
 
----
 
-## Step F: Push feature branch to GitHub
+
+## 🚀 Step F: Push Feature Branch to GitHub
 
 ```bash
 git push -u origin feature/order-management
 ```
 
----
 
-## Step G: Create Pull Request (PR)
 
-1. Go to your repo on GitHub.
-2. Click **Compare & pull request** for your branch.
-3. Ensure:
+## 🔍 Step G: Create Pull Request (PR)
 
-   * **Base branch:** `dev`
-   * **Compare branch:** your feature branch (`feature/order-management`)
-4. Add title & description of your feature.
-5. Request review from at least **one team member**.
-6. Click **Create Pull Request** ✅
+### Process:
+1. Go to your repository on GitHub
+2. Click **"Compare & pull request"** for your branch
+3. **Ensure the following settings:**
+   - **Base branch:** `dev`
+   - **Compare branch:** your feature branch (`feature/order-management`)
+4. Add a clear title & description of your feature
+5. Request review from at least **one team member**
+6. Click **"Create Pull Request"** ✅
 
----
 
-## Step H: Merge after approval
 
-* Once PR is approved, merge into **dev**.
-* Optionally, delete the feature branch after merge.
+## ✅ Step H: Merge After Approval
 
----
+- Once PR is **approved**, merge into `dev` branch
+- **Optionally:** Delete the feature branch after successful merge
 
-## Step I: Keep your branch updated
+
+
+## 🔄 Step I: Keep Your Branch Updated
 
 ```bash
 git checkout dev
@@ -108,31 +108,40 @@ git checkout feature/order-management
 git rebase dev   # or git merge dev
 ```
 
-> Regularly update your branch to avoid conflicts.
+> ⚠️ **Important:** Regularly update your branch to avoid merge conflicts.
+
+
+
+## 📊 Quick Reference Summary
+
+| Branch Type     | Purpose                                                   |
+|----------------|-----------------------------------------------------------|
+| `dev`          | Integration branch for all features                       |
+| `feature/*`    | Individual feature development branches                   |
+| Pull Request   | Merge path: Feature → Dev                                |
+| `main`         | Stable production branch (merge from dev after testing)  |
+
+
+
+## 🏷️ Example Feature Branch Names
+
+- `feature/order-management`
+- `feature/product-listing` 
+- `feature/user-management`
+- `feature/payment-logistics`
+
+
+
+## 🎯 Quick Command Reference
+
+| Action | Command |
+|--------|---------|
+| Clone repo | `git clone <repo-url>` |
+| Switch branch | `git checkout <branch-name>` |
+| Create new branch | `git checkout -b <new-branch>` |
+| Stage changes | `git add .` |
+| Commit | `git commit -m "message"` |
+| Push | `git push origin <branch>` |
+| Update branch | `git pull origin <branch>` |
 
 ---
-
-## ✅ Summary for team
-
-| Branch type  | Purpose                                                 |
-| ------------ | ------------------------------------------------------- |
-| `dev`        | Integration branch for all features                     |
-| `feature/*`  | Each member works here                                  |
-| Pull Request | Feature → Dev                                           |
-| `main`       | Stable production branch (merge from dev after testing) |
-
-**Example Feature Branch Names:**
-
-* `feature/order-management`
-* `feature/product-listing`
-* `feature/user-management`
-* `feature/payment-logistics`
-
-```
-
----
-
-If you want, I can **also add a small ASCII diagram or flowchart** showing `feature/* → dev → main` so it’s visually clearer for your team.  
-
-Do you want me to add that?
-```
