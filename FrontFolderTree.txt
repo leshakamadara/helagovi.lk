@@ -1,0 +1,51 @@
+frontend/
+└── src/
+    ├── assets/                  # Images, fonts, CSS, icons
+    │   ├── images/
+    │   └── styles/
+    │       └── index.css        # Global CSS
+    │
+    ├── components/              # Reusable UI components
+    │   ├── Navbar.jsx
+    │   ├── Footer.jsx
+    │   ├── Button.jsx
+    │   └── Card.jsx
+    │
+    ├── context/                 # Global state (Auth, Cart, etc.)
+    │   ├── AuthContext.jsx
+    │   └── CartContext.jsx
+    │
+    ├── lib/                     # Shared utilities/helpers/constants
+    │   ├── api.js               # Centralized API requests
+    │   ├── formatters.js        # Format dates, prices, weights
+    │   ├── validators.js        # Form validations
+    │   └── constants.js         # Shared constants
+    │
+    ├── pages/                   # Feature-based pages
+    │   ├── users/               # User Management
+    │   │   ├── LoginPage.jsx
+    │   │   ├── RegisterPage.jsx
+    │   │   └── ProfilePage.jsx
+    │   │
+    │   ├── products/            # Product Listing
+    │   │   ├── ProductListPage.jsx
+    │   │   └── ProductDetailPage.jsx
+    │   │
+    │   ├── orders/              # Order Management
+    │   │   └── OrderHistoryPage.jsx
+    │   │
+    │   ├── payments/            # Payment
+    │   │   └── CheckoutPage.jsx
+    │   │
+    │   └── support/             # Support System
+    │       └── SupportPage.jsx
+    │
+    ├── services/                # API calls per feature
+    │   ├── userService.js
+    │   ├── productService.js
+    │   ├── orderService.js
+    │   ├── paymentService.js
+    │   └── supportService.js
+    │
+    ├── App.jsx                  # Main Router + global layout
+    └── main.jsx                 # React entry point (createRoot + providers)

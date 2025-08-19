@@ -1,0 +1,64 @@
+backend/
+└── src/
+    ├── config/                   # DB & environment configs
+    │   └── db.js
+    │
+    ├── middleware/               # Shared middlewares
+    │   ├── authMiddleware.js
+    │   ├── errorMiddleware.js
+    │   └── rateLimiter.js
+    │
+    ├── lib/                      # Shared utilities/functions
+    │   ├── generateToken.js
+    │   ├── validators.js
+    │   └── constants.js
+    │
+    ├── models/                   # Models grouped by feature
+    │   ├── users/
+    │   │   └── userModel.js
+    │   ├── products/
+    │   │   └── productModel.js
+    │   ├── orders/
+    │   │   └── orderModel.js
+    │   ├── payments/
+    │   │   └── paymentModel.js
+    │   └── support/
+    │       └── supportModel.js
+    │
+    ├── controllers/              # Controllers grouped by feature
+    │   ├── users/
+    │   │   └── userController.js
+    │   ├── products/
+    │   │   └── productController.js
+    │   ├── orders/
+    │   │   └── orderController.js
+    │   ├── payments/
+    │   │   └── paymentController.js
+    │   └── support/
+    │       └── supportController.js
+    │
+    ├── routes/                   # Routes grouped by feature
+    │   ├── users/
+    │   │   └── userRoutes.js
+    │   ├── products/
+    │   │   └── productRoutes.js
+    │   ├── orders/
+    │   │   └── orderRoutes.js
+    │   ├── payments/
+    │   │   └── paymentRoutes.js
+    │   └── support/
+    │       └── supportRoutes.js
+    │
+    ├── services/                 # Services grouped by feature (business logic)
+    │   ├── users/
+    │   │   └── userService.js
+    │   ├── products/
+    │   │   └── productService.js
+    │   ├── orders/
+    │   │   └── orderService.js
+    │   ├── payments/
+    │   │   └── paymentService.js
+    │   └── support/
+    │       └── supportService.js
+    │
+    └── server.js                 # Entry point of backend
