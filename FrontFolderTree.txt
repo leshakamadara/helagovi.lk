@@ -49,3 +49,5 @@ frontend/
     │
     ├── App.jsx                  # Main Router + global layout
     └── main.jsx                 # React entry point (createRoot + providers)
+
+    new
