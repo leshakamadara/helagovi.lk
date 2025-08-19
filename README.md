@@ -6,7 +6,7 @@
 
 ---
 
-## 📥 Step A: Clone the Repository
+##  Step A: Clone the Repository
 
 ```bash
 git clone https://github.com/leshakamadara/helagovi.lk.git
@@ -42,12 +42,12 @@ git checkout -b feature/order-management
 
 ```bash
 # Backend
-cd server
+cd backend
 npm install
 cd ..
 
 # Frontend  
-cd client
+cd frontend
 npm install
 cd ..
 ```
