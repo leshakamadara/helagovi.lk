@@ -76,6 +76,21 @@ npm install
 cd ..
 ```
 
+### 2. Run both backend and frontend (or open new terminal for both folders)
+
+```bash
+cd backend
+npm run dev
+cd ..
+
+```
+
+```bash
+cd frontend
+npm run dev
+cd ..
+```
+
 > Each developer installs both **frontend and backend dependencies** to work locally.
 
 ### 2. Development Process
