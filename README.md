@@ -176,5 +176,3 @@ git rebase dev   # or git merge dev
 2. **Create feature branch locally** → work → push → PR → merge to dev.
 3. **Dependencies:** Install **both frontend and backend** before starting.
 4. **Never commit directly to main** — always work on feature branch first.
-
----
