@@ -36,6 +36,13 @@ git checkout -b feature/order-management
 > **Replace** `order-management` with your task name.
 > **Convention:** `feature/<your-task-name>`
 
+## Example Feature Branch Names
+
+* `feature/order-management`
+* `feature/product-listing`
+* `feature/user-management`
+* `feature/payment`
+
 * **Local branch created first**
 * **Push to GitHub** after you start committing changes
 
@@ -144,15 +151,6 @@ git rebase dev   # or git merge dev
 | `feature/*`  | Individual feature development branches (local first, then pushed) |
 | Pull Request | Merge path: Feature → Dev                                          |
 | `main`       | Stable production branch (merge from dev after testing)            |
-
----
-
-## 🏷️ Example Feature Branch Names
-
-* `feature/order-management`
-* `feature/product-listing`
-* `feature/user-management`
-* `feature/payment`
 
 ---
 
