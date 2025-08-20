@@ -1,16 +1,21 @@
 import React from "react";
-import { Route, Routes } from "react-router";
+import { Route, Routes } from "react-router-dom";
 
 // Test page
-const TestPage = () => <div className="p-10 text-center">Frontend is working!</div>;
+const HomePage = () => (
+  <div className="p-10 text-center text-white">
+    🟢 Frontend is working!
+  </div>
+);
 
 const App = () => {
   return (
-    <div className="relative h-full w-full">
-      <div className="absolute inset-0 -z-10 h-full w-full items-center px-5 py-24 [background:radial-gradient(125%_125%_at_50%_10%,#000_60%,#00FF9D40_100%)]" />
+    <div className="relative h-screen w-screen">
+      {/* Background gradient */}
+      <div className="absolute inset-0 -z-10 h-full w-full [background:radial-gradient(125%_125%_at_50%_10%,#000_60%,#00FF9D40_100%)]" />
 
       <Routes>
-        <Route path="/" element={<TestPage />} />
+        <Route path="/" element={<HomePage />} />
       </Routes>
     </div>
   );
