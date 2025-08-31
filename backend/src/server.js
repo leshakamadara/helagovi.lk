@@ -12,6 +12,7 @@ import productRoutes from "./routes/productRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import supportRoutes from "./routes/supportRoutes.js";
+import categoryRoutes from "./routes/categoryRoutes.js";
 
 dotenv.config();
 
@@ -36,6 +37,7 @@ app.get("/health", (req, res) => {
 // Routes
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
+app.use('/api/categories', categoryRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/support", supportRoutes);
@@ -54,6 +56,9 @@ app.use("*", (req, res) => {
 
 // Error handling middleware
 app.use(errorHandler);
+
+
+
 
 // Connect DB and start server
 connectDB().then(() => {
