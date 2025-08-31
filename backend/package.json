@@ -7,7 +7,9 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "lint": "eslint . --fix",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+     "seed:categories": "node src/lib/seedCategories.js"
+    
   },
   "keywords": [
     "agriculture",

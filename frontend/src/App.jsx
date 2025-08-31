@@ -1,12 +1,10 @@
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 
-// Test page
-const HomePage = () => (
-  <div className="p-10 text-center text-white">
-    🟢 Frontend is working!
-  </div>
-);
+import ProductCreationForm from "./pages/products/createProduct";
+
+import ProductListing from "./pages/products/ProductListing";
+
 
 const App = () => {
   return (
@@ -15,7 +13,14 @@ const App = () => {
       <div className="absolute inset-0 -z-10 h-full w-full [background:radial-gradient(125%_125%_at_50%_10%,#000_60%,#00FF9D40_100%)]" />
 
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        //HomePage
+
+        //Create Product
+        <Route path="/create-product" element={<ProductCreationForm />} />
+
+        //Product List
+        <Route path="/marketplace" element={<ProductListing />} />
+
       </Routes>
     </div>
   );
