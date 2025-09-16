@@ -23,7 +23,6 @@ const categorySchema = new Schema({
   slug: {
     type: String,
     unique: true,
-    index: true,
     lowercase: true,
     validate: {
       validator: function(v) {

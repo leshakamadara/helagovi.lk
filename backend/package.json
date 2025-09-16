@@ -8,8 +8,7 @@
     "start": "node src/server.js",
     "lint": "eslint . --fix",
     "format": "prettier --write .",
-     "seed:categories": "node src/lib/seedCategories.js"
-    
+    "seed:categories": "node src/lib/seedCategories.js"
   },
   "keywords": [
     "agriculture",
@@ -30,7 +29,9 @@
     "express": "^4.18.2",
     "express-validator": "^7.2.1",
     "mongoose": "^8.14.3",
+    "node-cron": "^4.2.1",
     "slugify": "^1.6.6",
+    "socket.io": "^4.8.1",
     "swagger-autogen": "^2.23.7",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"

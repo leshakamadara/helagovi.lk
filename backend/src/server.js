@@ -1,8 +1,11 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import http from 'http';
 import { connectDB } from "./config/db.js";
 import errorHandler from "./middleware/errorHandler.js";
+import initializeSocket from "./services/socket.js";
+import { startEscalationWorkflow } from './services/ticketEscalationService.js';
 
 // import ratelimiter from "./middleware/rateLimiter.js"; // optional
 
@@ -13,11 +16,19 @@ import orderRoutes from "./routes/orderRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import supportRoutes from "./routes/supportRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
+import ticketRoutes from './routes/ticketRoutes.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5001;
+const server = http.createServer(app);
+
+// Initialize Socket.IO
+const io = initializeSocket(server);
+
+// Start server
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // Middleware
 app.use(cors({ origin: "http://localhost:5173" }));
@@ -41,6 +52,7 @@ app.use('/api/categories', categoryRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/support", supportRoutes);
+app.use('/api/tickets', ticketRoutes);
 
 // Test endpoint
 app.get("/", (req, res) => res.send("Backend is working!"));
@@ -62,7 +74,9 @@ app.use(errorHandler);
 
 // Connect DB and start server
 connectDB().then(() => {
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  // Start the escalation
+  startEscalationWorkflow();
+
 });
 
 
