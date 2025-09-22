@@ -5,6 +5,7 @@ import { connectDB } from "./config/db.js";
 // import ratelimiter from "./middleware/rateLimiter.js"; // optional
 
 // Import route placeholders
+import authRoutes from "./routes/auth.js";
 import userRoutes from "./routes/userRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
@@ -14,7 +15,7 @@ import supportRoutes from "./routes/supportRoutes.js";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5002;
 
 // Middleware
 app.use(cors({ origin: "http://localhost:5173" }));
@@ -22,6 +23,7 @@ app.use(express.json());
 // app.use(ratelimiter); // optional
 
 // Routes
+app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
