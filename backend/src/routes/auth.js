@@ -6,7 +6,8 @@ import {
   verifyEmail,
   forgotPassword,
   resetPassword,
-  getMe
+  getMe,
+  resendVerification
 } from '../controllers/auth.js';
 import { protect } from '../middleware/auth.js';
 
@@ -54,5 +55,6 @@ router.get('/verify-email', verifyEmail);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 router.get('/me', protect, getMe);
+router.post('/resend-verification', protect, resendVerification);
 
 export default router;

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { Button } from '../../components/ui/button';
 
 const EditProduct = () => {
   const { id } = useParams(); // product ID from URL
@@ -171,21 +172,22 @@ const EditProduct = () => {
           </select>
         </div>
         
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:bg-gray-400"
-        >
-          {loading ? 'Saving...' : 'Save Changes'}
-        </button>
-        
-        <button
-          type="button"
-          onClick={() => navigate("/farmer-dashboard")}
-          className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 ml-2"
-        >
-          Cancel
-        </button>
+        <div className="flex space-x-2">
+          <Button
+            type="submit"
+            disabled={loading}
+          >
+            {loading ? 'Saving...' : 'Save Changes'}
+          </Button>
+          
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate("/farmer-dashboard")}
+          >
+            Cancel
+          </Button>
+        </div>
       </form>
     </div>
   );

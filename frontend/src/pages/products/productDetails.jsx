@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { formatDate, getStatusColor, getFreshnessColor } from '../../lib/utils';
+import { Button } from '../../components/ui/button';
 
 import { 
   MapPin, 
@@ -13,16 +16,25 @@ import {
   ArrowLeft,
   Heart,
   Share2,
-  Clock
+  Clock,
+  ShoppingCart,
+  Plus,
+  Minus
 } from 'lucide-react';
 
-const ProductDetails = ({ productId = "507f1f77bcf86cd799439011" }) => {
+const ProductDetails = () => {
+  const [searchParams] = useSearchParams();
+  const productId = searchParams.get('id') || "507f1f77bcf86cd799439011";
+  const { user } = useAuth();
+  
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [purchasing, setPurchasing] = useState(false);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
 
   // API integration function
   const apiCall = async (url, options = {}) => {
@@ -52,10 +64,20 @@ const ProductDetails = ({ productId = "507f1f77bcf86cd799439011" }) => {
   const fetchProduct = async () => {
     try {
       setLoading(true);
-      // Replace this with actual API call
-      // const response = await apiCall(`/api/products/${productId}`);
       
-      // Mock product data
+      // Try to fetch from API first
+      try {
+        const response = await fetch(`/api/products/${productId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setProduct(data.data);
+          return;
+        }
+      } catch (apiError) {
+        console.log('API not available, using mock data');
+      }
+      
+      // Mock product data if API fails
       const mockProduct = {
         _id: productId,
         title: "Fresh Organic Tomatoes",
@@ -78,7 +100,8 @@ const ProductDetails = ({ productId = "507f1f77bcf86cd799439011" }) => {
         status: "active",
         farmer: {
           _id: "farmer1",
-          name: "Sunil Perera",
+          firstName: "Sunil",
+          lastName: "Perera",
           email: "sunil@example.com",
           phone: "+94 77 123 4567"
         },
@@ -95,29 +118,67 @@ const ProductDetails = ({ productId = "507f1f77bcf86cd799439011" }) => {
     }
   };
 
-  const handlePurchase = async () => {
+  const handleAddToCart = async () => {
+    if (!user) {
+      alert('Please log in to add items to cart');
+      return;
+    }
+    
+    if (user.role !== 'buyer') {
+      alert('Only buyers can add items to cart');
+      return;
+    }
+    
     try {
-      setPurchasing(true);
+      setAddingToCart(true);
       
-      // API call to update quantity
-      // await apiCall(`/api/products/${productId}/quantity`, {
-      //   method: 'PATCH',
-      //   body: JSON.stringify({ quantityUsed: quantity })
+      // TODO: Implement cart API
+      // await apiCall('/api/cart/add', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Authorization': `Bearer ${localStorage.getItem('token')}`
+      //   },
+      //   body: JSON.stringify({
+      //     productId: product._id,
+      //     quantity: quantity
+      //   })
       // });
       
       // Mock success
-      setProduct(prev => ({
-        ...prev,
-        availableQuantity: prev.availableQuantity - quantity,
-        soldPercentage: Math.round(((prev.initialQuantity - (prev.availableQuantity - quantity)) / prev.initialQuantity) * 100)
-      }));
-      
+      alert('Added to cart successfully!');
       setQuantity(1);
-      alert('Purchase successful!');
     } catch (err) {
-      alert(err.message || 'Purchase failed');
+      alert(err.message || 'Failed to add to cart');
     } finally {
-      setPurchasing(false);
+      setAddingToCart(false);
+    }
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!user) {
+      alert('Please log in to add favorites');
+      return;
+    }
+    
+    if (user.role !== 'buyer') {
+      alert('Only buyers can add favorites');
+      return;
+    }
+    
+    try {
+      // TODO: Implement favorites API
+      // const method = isFavorite ? 'DELETE' : 'POST';
+      // await apiCall(`/api/favorites/${product._id}`, {
+      //   method,
+      //   headers: {
+      //     'Authorization': `Bearer ${localStorage.getItem('token')}`
+      //   }
+      // });
+      
+      setIsFavorite(!isFavorite);
+      alert(isFavorite ? 'Removed from favorites' : 'Added to favorites');
+    } catch (err) {
+      alert(err.message || 'Failed to update favorites');
     }
   };
 
@@ -227,12 +288,17 @@ const ProductDetails = ({ productId = "507f1f77bcf86cd799439011" }) => {
                 <div className="flex items-start justify-between mb-2">
                   <h1 className="text-3xl font-bold text-gray-900">{product.title}</h1>
                   <div className="flex space-x-2">
-                    <button className="p-2 rounded-full hover:bg-gray-100 transition-colors">
-                      <Heart className="h-5 w-5 text-gray-600" />
+                    <button 
+                      onClick={handleToggleFavorite}
+                      className={`p-2 rounded-full transition-colors ${
+                        isFavorite ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'hover:bg-gray-100 text-gray-600'
+                      }`}
+                    >
+                      <Heart className={`h-5 w-5 ${isFavorite ? 'fill-current' : ''}`} />
                     </button>
-                    <button className="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    <Button variant="ghost" size="sm" className="p-2 rounded-full">
                       <Share2 className="h-5 w-5 text-gray-600" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
                 
@@ -293,21 +359,39 @@ const ProductDetails = ({ productId = "507f1f77bcf86cd799439011" }) => {
                 </div>
 
                 {/* Purchase Section */}
-                {product.status === 'active' && product.availableQuantity > 0 && (
+                {product.status === 'active' && product.availableQuantity > 0 && user && user.role === 'buyer' && (
                   <div className="space-y-4">
                     <div className="flex items-center space-x-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Quantity ({product.unit})
                         </label>
-                        <input
-                          type="number"
-                          min="1"
-                          max={product.availableQuantity}
-                          value={quantity}
-                          onChange={(e) => setQuantity(Math.max(1, Math.min(product.availableQuantity, Number(e.target.value))))}
-                          className="w-24 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        />
+                        <div className="flex items-center border border-gray-300 rounded-md">
+                          <button
+                            type="button"
+                            onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                            className="p-2 hover:bg-gray-100 transition-colors"
+                            disabled={quantity <= 1}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </button>
+                          <input
+                            type="number"
+                            min="1"
+                            max={product.availableQuantity}
+                            value={quantity}
+                            onChange={(e) => setQuantity(Math.max(1, Math.min(product.availableQuantity, Number(e.target.value))))}
+                            className="w-16 border-0 text-center focus:outline-none focus:ring-0"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setQuantity(Math.min(product.availableQuantity, quantity + 1))}
+                            className="p-2 hover:bg-gray-100 transition-colors"
+                            disabled={quantity >= product.availableQuantity}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
                       <div className="flex-1">
                         <div className="text-sm text-gray-600">Total Price</div>
@@ -317,13 +401,45 @@ const ProductDetails = ({ productId = "507f1f77bcf86cd799439011" }) => {
                       </div>
                     </div>
                     
-                    <button
-                      onClick={handlePurchase}
-                      disabled={purchasing}
-                      className="w-full bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
-                    >
-                      {purchasing ? 'Processing...' : 'Purchase Now'}
-                    </button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <button
+                        onClick={handleAddToCart}
+                        disabled={addingToCart}
+                        className="bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium flex items-center justify-center"
+                      >
+                        <ShoppingCart className="h-5 w-5 mr-2" />
+                        {addingToCart ? 'Adding...' : 'Add to Cart'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleAddToCart();
+                          // Redirect to cart page after adding
+                          setTimeout(() => {
+                            window.location.href = '/cart';
+                          }, 1000);
+                        }}
+                        disabled={addingToCart}
+                        className="bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
+                      >
+                        Buy Now
+                      </button>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Show message for non-buyers */}
+                {user && user.role !== 'buyer' && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <p className="text-yellow-800">Only registered buyers can purchase products.</p>
+                  </div>
+                )}
+                
+                {/* Show login message for non-authenticated users */}
+                {!user && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-blue-800">
+                      Please <a href="/login" className="underline font-medium">log in</a> as a buyer to purchase this product.
+                    </p>
                   </div>
                 )}
               </div>
@@ -360,7 +476,7 @@ const ProductDetails = ({ productId = "507f1f77bcf86cd799439011" }) => {
                 <User className="h-8 w-8 text-white" />
               </div>
               <div className="flex-1">
-                <h4 className="text-lg font-medium text-gray-900">{product.farmer.name}</h4>
+                <h4 className="text-lg font-medium text-gray-900">{product.farmer.firstName} {product.farmer.lastName}</h4>
                 <div className="mt-2 space-y-1">
                   <div className="flex items-center text-sm text-gray-600">
                     <Phone className="h-4 w-4 mr-2" />
@@ -377,12 +493,12 @@ const ProductDetails = ({ productId = "507f1f77bcf86cd799439011" }) => {
                 </div>
               </div>
               <div className="space-y-2">
-                <button className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                <Button className="w-full">
                   Contact Farmer
-                </button>
-                <button className="w-full border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+                </Button>
+                <Button variant="outline" className="w-full">
                   View Profile
-                </button>
+                </Button>
               </div>
             </div>
           </div>

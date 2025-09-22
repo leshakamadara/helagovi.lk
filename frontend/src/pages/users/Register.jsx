@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { useAuth } from '../../context/AuthContext'
 import { Eye, EyeOff, User, Mail, Phone, Lock } from 'lucide-react'
+import { Button } from '../../components/ui/button'
 
 const Register = () => {
   const [showPassword, setShowPassword] = useState(false)
@@ -49,18 +50,15 @@ const Register = () => {
             </label>
             <div className="grid grid-cols-3 gap-3">
               {['farmer', 'buyer', 'admin'].map((role) => (
-                <button
+                <Button
                   key={role}
                   type="button"
-                  className={`py-2 px-3 border rounded-md text-sm font-medium ${
-                    selectedRole === role
-                      ? 'border-primary-500 bg-primary-50 text-primary-700'
-                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
+                  variant={selectedRole === role ? 'default' : 'outline'}
+                  size="sm"
                   onClick={() => setSelectedRole(role)}
                 >
                   {role.charAt(0).toUpperCase() + role.slice(1)}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -173,13 +171,15 @@ const Register = () => {
                 className="pl-10 pr-10 py-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 placeholder="••••••"
               />
-              <button
+              <Button
                 type="button"
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                variant="ghost"
+                size="sm"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 h-5 w-5 p-0"
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              </button>
+              </Button>
             </div>
             {errors.password && (
               <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
@@ -210,13 +210,13 @@ const Register = () => {
           </div>
 
           <div>
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full"
             >
               {loading ? 'Creating account...' : 'Create Account'}
-            </button>
+            </Button>
           </div>
 
           <div className="text-center">
