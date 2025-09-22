@@ -10,6 +10,8 @@ import productRoutes from "./routes/productRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import supportRoutes from "./routes/supportRoutes.js";
+import payhere from "./routes/payhere.js";
+import payment from "./routes/payment.js";
 
 dotenv.config();
 
@@ -27,6 +29,8 @@ app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/support", supportRoutes);
+app.use("/api/payy",payhere);
+app.use("/api/pay",payment);
 
 // Test endpoint
 app.get("/", (req, res) => res.send("Backend is working!"));
