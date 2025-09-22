@@ -7,9 +7,17 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "lint": "eslint . --fix",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "seed:categories": "node src/lib/seedCategories.js"
   },
-  "keywords": [],
+  "keywords": [
+    "agriculture",
+    "marketplace",
+    "nodejs",
+    "express",
+    "mongodb",
+    "mock-auth"
+  ],
   "author": "",
   "license": "ISC",
   "description": "",
@@ -19,7 +27,11 @@
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^4.18.2",
+    "express-validator": "^7.2.1",
     "mongoose": "^8.14.3",
+    "node-cron": "^4.2.1",
+    "slugify": "^1.6.6",
+    "socket.io": "^4.8.1",
     "swagger-autogen": "^2.23.7",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"
