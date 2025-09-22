@@ -1,5 +1,6 @@
 import express from 'express';
-import { body, param, query } from 'express-validator';
+import mongoose from 'mongoose';
+import { body, param, query, validationResult } from 'express-validator';
 import {
   createProduct,
   getAllProducts,
@@ -10,45 +11,10 @@ import {
   getMyProducts,
   updateQuantity
 } from '../controllers/productController.js';
+import { protect, authorize } from '../middleware/auth.js';
+import Product from '../models/Product.js';
 
 const router = express.Router();
-
-// Authentication middleware placeholder
-const auth = (req, res, next) => {
-  // Placeholder for authentication middleware
-  // In a real app, this would verify JWT token and attach user to req
-  
-  // Mock authenticated user for development
-  req.user = {
-    id: '507f1f77bcf86cd799439011', // Mock ObjectId
-    email: 'farmer@example.com',
-    name: 'John Farmer',
-    role: 'farmer'
-  };
-  
-  next();
-};
-
-// Role-based authorization middleware
-const authorize = (...roles) => {
-  return (req, res, next) => {
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Access denied. No authentication token provided.'
-      });
-    }
-
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Insufficient permissions.'
-      });
-    }
-
-    next();
-  };
-};
 
 // Validation rules
 const createProductValidation = [
@@ -364,7 +330,7 @@ router.get('/:id', idValidation, getProductById);
 // Protected routes (authentication required)
 // POST /api/products - Create new product
 router.post('/', 
-  auth, 
+  protect, 
   authorize('farmer', 'admin'), 
   createProductValidation, 
   createProduct
@@ -372,7 +338,7 @@ router.post('/',
 
 // PUT /api/products/:id - Update product
 router.put('/:id', 
-  auth, 
+  protect, 
   authorize('farmer', 'admin'), 
   idValidation,
   updateProductValidation, 
@@ -381,7 +347,7 @@ router.put('/:id',
 
 // DELETE /api/products/:id - Delete product
 router.delete('/:id', 
-  auth, 
+  protect, 
   authorize('farmer', 'admin'), 
   idValidation,
   deleteProduct
@@ -389,7 +355,7 @@ router.delete('/:id',
 
 // PATCH /api/products/:id/status - Update product status
 router.patch('/:id/status', 
-  auth, 
+  protect, 
   authorize('farmer', 'admin'), 
   idValidation,
   statusValidation, 
@@ -398,7 +364,7 @@ router.patch('/:id/status',
 
 // PATCH /api/products/:id/quantity - Update product quantity (for sales)
 router.patch('/:id/quantity', 
-  auth, 
+  protect, 
   authorize('farmer', 'admin', 'buyer'), 
   idValidation,
   quantityValidation, 
@@ -407,7 +373,7 @@ router.patch('/:id/quantity',
 
 // GET /api/products/my/products - Get current user's products
 router.get('/my/products', 
-  auth, 
+  protect, 
   authorize('farmer', 'admin'), 
   queryValidation, 
   getMyProducts
@@ -464,12 +430,12 @@ router.get('/search/fresh', queryValidation, (req, res, next) => {
 
 // Statistics routes (for dashboards)
 // GET /api/products/stats/overview - Get product statistics overview
-router.get('/stats/overview', auth, authorize('farmer', 'admin'), async (req, res) => {
+router.get('/stats/overview', protect, authorize('farmer', 'admin'), async (req, res) => {
   try {
     const userId = req.user.id;
     const isAdmin = req.user.role === 'admin';
     
-    const matchStage = isAdmin ? {} : { farmer: mongoose.Types.ObjectId(userId) };
+    const matchStage = isAdmin ? {} : { farmer: new mongoose.Types.ObjectId(userId) };
     
     const stats = await Product.aggregate([
       { $match: matchStage },
@@ -499,47 +465,19 @@ router.get('/stats/overview', auth, authorize('farmer', 'admin'), async (req, re
       }
     ]);
     
-    const categoryStats = await Product.aggregate([
-      { $match: matchStage },
-      { 
-        $lookup: {
-          from: 'categories',
-          localField: 'category',
-          foreignField: '_id',
-          as: 'categoryInfo'
-        }
-      },
-      { $unwind: '$categoryInfo' },
-      {
-        $group: {
-          _id: '$category',
-          categoryName: { $first: '$categoryInfo.name.en' },
-          count: { $sum: 1 },
-          totalRevenue: { 
-            $sum: { 
-              $multiply: ['$price', { $subtract: ['$initialQuantity', '$availableQuantity'] }] 
-            } 
-          }
-        }
-      },
-      { $sort: { count: -1 } },
-      { $limit: 10 }
-    ]);
+    const overview = stats[0] || {
+      totalProducts: 0,
+      activeProducts: 0,
+      soldProducts: 0,
+      totalRevenue: 0,
+      averagePrice: 0,
+      totalQuantityListed: 0,
+      totalQuantitySold: 0
+    };
     
     res.json({
       success: true,
-      data: {
-        overview: stats[0] || {
-          totalProducts: 0,
-          activeProducts: 0,
-          soldProducts: 0,
-          totalRevenue: 0,
-          averagePrice: 0,
-          totalQuantityListed: 0,
-          totalQuantitySold: 0
-        },
-        categoryBreakdown: categoryStats
-      }
+      data: overview
     });
     
   } catch (error) {
@@ -591,7 +529,7 @@ router.get('/utils/units', (req, res) => {
 // Bulk operations routes
 // POST /api/products/bulk/status - Update multiple products status
 router.patch('/bulk/status', 
-  auth, 
+  protect, 
   authorize('farmer', 'admin'),
   [
     body('productIds').isArray({ min: 1 }).withMessage('Product IDs array required'),
@@ -643,7 +581,7 @@ router.patch('/bulk/status',
 
 // DELETE /api/products/bulk/delete - Delete multiple products
 router.delete('/bulk/delete', 
-  auth, 
+  protect, 
   authorize('farmer', 'admin'),
   [
     body('productIds').isArray({ min: 1 }).withMessage('Product IDs array required'),

@@ -1,10 +1,14 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useAuth } from '../../context/AuthContext'
-import { User, Mail, Phone, Camera, Trash2, Save } from 'lucide-react'
+import { User, Mail, Phone, Camera, Trash2, Save, Shield, CheckCircle, AlertCircle } from 'lucide-react'
+import { api } from '../../lib/axios'
+import toast from 'react-hot-toast'
+import { Button } from '../../components/ui/button'
 
 const Profile = () => {
   const [editMode, setEditMode] = useState(false)
+  const [resendingVerification, setResendingVerification] = useState(false)
   const { user, updateProfile, uploadProfilePicture, removeProfilePicture, deactivateAccount, deleteAccount } = useAuth()
 
   const {
@@ -59,6 +63,19 @@ const Profile = () => {
     }
   }
 
+  const handleResendVerification = async () => {
+    try {
+      setResendingVerification(true);
+      const response = await api.post('/auth/resend-verification');
+      toast.success(response.data.message || 'Verification email sent successfully!');
+    } catch (error) {
+      console.error('Failed to resend verification:', error);
+      toast.error(error.response?.data?.message || 'Failed to send verification email');
+    } finally {
+      setResendingVerification(false);
+    }
+  }
+
   if (!user) {
     return <div>Loading...</div>
   }
@@ -97,12 +114,14 @@ const Profile = () => {
                     />
                   </label>
                   {user.profilePicture && (
-                    <button
+                    <Button
                       onClick={handleRemoveImage}
-                      className="absolute top-0 right-0 bg-red-500 rounded-full p-2 cursor-pointer shadow-md"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-0 right-0 rounded-full p-2 h-8 w-8"
                     >
-                      <Trash2 className="h-4 w-4 text-white" />
-                    </button>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   )}
                 </>
               )}
@@ -189,29 +208,27 @@ const Profile = () => {
             <div className="flex justify-end space-x-4 pt-6">
               {editMode ? (
                 <>
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
                     onClick={handleCancel}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
-                    className="px-4 py-2 bg-primary-600 text-white rounded-md text-sm font-medium hover:bg-primary-700 flex items-center"
                   >
                     <Save className="h-4 w-4 mr-2" />
                     Save Changes
-                  </button>
+                  </Button>
                 </>
               ) : (
-                <button
+                <Button
                   type="button"
                   onClick={handleEdit}
-                  className="px-4 py-2 bg-primary-600 text-white rounded-md text-sm font-medium hover:bg-primary-700"
                 >
                   Edit Profile
-                </button>
+                </Button>
               )}
             </div>
           </form>
@@ -219,19 +236,56 @@ const Profile = () => {
           {/* Account Actions */}
           <div className="mt-8 pt-8 border-t border-gray-200">
             <h2 className="text-lg font-medium text-gray-900 mb-4">Account Actions</h2>
+            
+            {/* Email Verification Section */}
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-gray-700 mb-3">Email Verification</h3>
+              {user.isVerified ? (
+                <div className="flex items-center p-3 bg-green-50 border border-green-200 rounded-md">
+                  <CheckCircle className="h-5 w-5 text-green-400 mr-3" />
+                  <div>
+                    <p className="text-sm font-medium text-green-800">Email Verified</p>
+                    <p className="text-sm text-green-700">Your email address has been verified</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-start p-3 bg-amber-50 border border-amber-200 rounded-md">
+                    <AlertCircle className="h-5 w-5 text-amber-400 mr-3 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-amber-800">Email Not Verified</p>
+                      <p className="text-sm text-amber-700 mt-1">
+                        Please verify your email address to access all features and create products.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={handleResendVerification}
+                    disabled={resendingVerification}
+                    variant="secondary"
+                  >
+                    <Mail className="h-4 w-4 mr-2" />
+                    {resendingVerification ? 'Sending...' : 'Resend Verification Email'}
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Existing Account Actions */}
             <div className="space-y-4">
-              <button
+              <Button
                 onClick={handleDeactivate}
-                className="px-4 py-2 bg-yellow-600 text-white rounded-md text-sm font-medium hover:bg-yellow-700"
+                variant="secondary"
               >
                 Deactivate Account
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 ml-4"
+                variant="destructive"
+                className="ml-4"
               >
                 Delete Account
-              </button>
+              </Button>
             </div>
           </div>
         </div>

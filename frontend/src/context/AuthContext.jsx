@@ -1,5 +1,5 @@
 import { createContext, useContext, useReducer, useEffect } from 'react'
-import axios from 'axios'
+import api from '../lib/axios'
 import toast from 'react-hot-toast'
 
 const AuthContext = createContext()
@@ -33,7 +33,7 @@ const initialState = {
   user: null,
   token: localStorage.getItem('token'),
   isAuthenticated: false,
-  loading: false,
+  loading: true, // Start with loading true to check authentication on app init
   error: null
 }
 
@@ -43,10 +43,10 @@ export const AuthProvider = ({ children }) => {
   // Set axios defaults
   useEffect(() => {
     if (state.token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${state.token}`
+      api.defaults.headers.common['Authorization'] = `Bearer ${state.token}`
       localStorage.setItem('token', state.token)
     } else {
-      delete axios.defaults.headers.common['Authorization']
+      delete api.defaults.headers.common['Authorization']
       localStorage.removeItem('token')
     }
   }, [state.token])
@@ -57,12 +57,16 @@ export const AuthProvider = ({ children }) => {
     if (token) {
       // Verify token and get user info
       getUserInfo()
+    } else {
+      // No token, set loading to false
+      dispatch({ type: 'LOGIN_FAILURE', payload: null })
     }
   }, [])
 
   const getUserInfo = async () => {
+    dispatch({ type: 'LOGIN_START' })
     try {
-      const response = await axios.get('/api/auth/me')
+      const response = await api.get('/auth/me')
       dispatch({
         type: 'LOGIN_SUCCESS',
         payload: {
@@ -79,7 +83,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     dispatch({ type: 'LOGIN_START' })
     try {
-      const response = await axios.post('/api/auth/login', { email, password })
+      const response = await api.post('/auth/login', { email, password })
       dispatch({
         type: 'LOGIN_SUCCESS',
         payload: response.data.data
@@ -96,7 +100,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      const response = await axios.post('/api/auth/register', userData)
+      const response = await api.post('/auth/register', userData)
       toast.success('Registration successful! Please check your email for verification.')
       return { success: true }
     } catch (error) {
@@ -113,7 +117,7 @@ export const AuthProvider = ({ children }) => {
 
   const updateProfile = async (userData) => {
     try {
-      const response = await axios.put('/api/profile', userData)
+      const response = await api.put('/profile', userData)
       dispatch({ type: 'UPDATE_USER', payload: response.data.data.user })
       toast.success('Profile updated successfully!')
       return { success: true }
@@ -129,7 +133,7 @@ export const AuthProvider = ({ children }) => {
       const formData = new FormData()
       formData.append('profilePicture', file)
       
-      const response = await axios.post('/api/profile/upload-picture', formData, {
+      const response = await api.post('/profile/upload-picture', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -147,7 +151,7 @@ export const AuthProvider = ({ children }) => {
 
   const removeProfilePicture = async () => {
     try {
-      const response = await axios.delete('/api/profile/remove-picture')
+      const response = await api.delete('/profile/remove-picture')
       dispatch({ type: 'UPDATE_USER', payload: response.data.data.user })
       toast.success('Profile picture removed successfully!')
       return { success: true }
@@ -160,7 +164,7 @@ export const AuthProvider = ({ children }) => {
 
   const deactivateAccount = async () => {
     try {
-      await axios.put('/api/profile/deactivate')
+      await api.put('/profile/deactivate')
       logout()
       toast.success('Account deactivated successfully')
       return { success: true }
@@ -173,7 +177,7 @@ export const AuthProvider = ({ children }) => {
 
   const deleteAccount = async () => {
     try {
-      await axios.delete('/api/profile')
+      await api.delete('/profile')
       logout()
       toast.success('Account deleted successfully')
       return { success: true }
@@ -186,7 +190,7 @@ export const AuthProvider = ({ children }) => {
 
   const forgotPassword = async (email) => {
     try {
-      await axios.post('/api/auth/forgot-password', { email })
+      await api.post('/auth/forgot-password', { email })
       toast.success('Password reset instructions sent to your email')
       return { success: true }
     } catch (error) {
@@ -198,7 +202,7 @@ export const AuthProvider = ({ children }) => {
 
   const resetPassword = async (token, password) => {
     try {
-      await axios.post('/api/auth/reset-password', { token, password })
+      await api.post('/auth/reset-password', { token, password })
       toast.success('Password reset successfully')
       return { success: true }
     } catch (error) {

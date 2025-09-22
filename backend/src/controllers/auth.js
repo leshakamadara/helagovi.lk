@@ -269,6 +269,59 @@ export const resetPassword = async (req, res, next) => {
   }
 };
 
+// @desc    Resend verification email
+// @route   POST /api/auth/resend-verification
+// @access  Private
+export const resendVerification = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is already verified'
+      });
+    }
+
+    // Generate new verification token
+    const verificationToken = generateRandomToken();
+    user.verificationToken = verificationToken;
+    user.verificationExpires = Date.now() + 3600000; // 1 hour
+    await user.save();
+
+    // Send verification email
+    try {
+      await sendVerificationEmail(user.email, verificationToken, user.firstName);
+      
+      res.status(200).json({
+        success: true,
+        message: 'Verification email sent successfully'
+      });
+    } catch (emailError) {
+      console.error('Email sending failed:', emailError);
+      
+      res.status(200).json({
+        success: true,
+        message: 'Verification email sent (email service may be unavailable)'
+      });
+    }
+
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
 // @desc    Get current user
 // @route   GET /api/auth/me
 // @access  Private

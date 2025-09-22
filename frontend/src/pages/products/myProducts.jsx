@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   Leaf, 
   Search,
@@ -8,6 +9,7 @@ import {
   Edit,
   Trash2,
 } from 'lucide-react';
+import { Button } from '../../components/ui/button';
 
 const MyProducts = () => {
   const [products, setProducts] = useState([]);
@@ -101,9 +103,9 @@ const MyProducts = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">My Products</h1>
-          <button className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 flex items-center">
+          <Link to="/create-product" className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 flex items-center">
             <Plus className="h-5 w-5 mr-2" />Add Product
-          </button>
+          </Link>
         </div>
 
         {/* Filters */}
@@ -164,12 +166,14 @@ const MyProducts = () => {
                   </div>
                 </div>
                 <div className="flex space-x-2">
-                  <button className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 flex items-center justify-center">
-                    <Edit className="h-4 w-4 mr-1" />Edit
-                  </button>
-                  <button onClick={() => handleDelete(product._id)} className="flex-1 bg-red-600 text-white py-2 px-3 rounded-lg hover:bg-red-700 flex items-center justify-center">
+                  <Button asChild className="flex-1">
+                    <Link to={`/edit-product?id=${product._id}`}>
+                      <Edit className="h-4 w-4 mr-1" />Edit
+                    </Link>
+                  </Button>
+                  <Button onClick={() => handleDelete(product._id)} variant="destructive" className="flex-1">
                     <Trash2 className="h-4 w-4 mr-1" />Delete
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>

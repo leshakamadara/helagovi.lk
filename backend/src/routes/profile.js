@@ -1,6 +1,6 @@
-const express = require('express');
-const { body } = require('express-validator');
-const {
+import express from 'express';
+import { body } from 'express-validator';
+import {
   getProfile,
   updateProfile,
   uploadProfilePicture,
@@ -8,8 +8,8 @@ const {
   deactivateAccount,
   deleteAccount,
   upload
-} = require('../controllers/profile');
-const { protect } = require('../middleware/auth');
+} from '../controllers/profile.js';
+import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -39,4 +39,4 @@ router.delete('/remove-picture', protect, removeProfilePicture);
 router.put('/deactivate', protect, deactivateAccount);
 router.delete('/', protect, deleteAccount);
 
-module.exports = router;
+export default router;

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, X, Calendar, MapPin, Package, DollarSign, FileText, Tag, Loader2, CheckCircle, AlertCircle, Leaf } from 'lucide-react';
+import { Button } from '../../components/ui/button';
 
 // Replace this with your actual lib/axios.js import
 import api from '../../lib/axios';
@@ -12,9 +13,13 @@ const ProductCreationForm = () => {
     unit: '',
     district: '',
     city: '',
+    coordinates: { type: 'Point', coordinates: [80.0, 7.0] }, // Default coordinates for Sri Lanka
     category: '',
+    qualityScore: 3,
+    isOrganic: false,
     harvestDate: '',
     initialQuantity: '',
+    availableQuantity: '',
     images: []
   });
 
@@ -34,7 +39,7 @@ const ProductCreationForm = () => {
   ];
 
   const units = [
-    'kg', 'g', 'lb', 'ton', 'piece', 'dozen', 'bundle', 'bag', 'box', 'crate'
+    'kg', 'g', 'lb', 'piece', 'bunch', 'box', 'crate', 'bag'
   ];
 
   // Fetch categories from API
@@ -70,8 +75,26 @@ const ProductCreationForm = () => {
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    
+    if (name === 'isOrganic') {
+      setFormData(prev => ({ ...prev, [name]: checked }));
+    } else if (name === 'qualityScore') {
+      setFormData(prev => ({ ...prev, [name]: parseInt(value) }));
+    } else if (name === 'availableQuantity' || name === 'initialQuantity') {
+      const quantity = parseFloat(value) || 0;
+      if (name === 'initialQuantity') {
+        setFormData(prev => ({ 
+          ...prev, 
+          [name]: quantity,
+          availableQuantity: quantity // Set available quantity to match initial quantity
+        }));
+      } else {
+        setFormData(prev => ({ ...prev, [name]: quantity }));
+      }
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
     
     // Clear error when user starts typing
     if (errors[name]) {
@@ -86,8 +109,13 @@ const ProductCreationForm = () => {
       return;
     }
 
-    const newImages = files.map(file => ({
-      file,
+    // For demo purposes, we'll use placeholder URLs
+    // In a real app, you'd upload these files to a cloud storage service like AWS S3, Cloudinary, etc.
+    const newImages = files.map((file, index) => ({
+      url: `https://images.unsplash.com/photo-1546470427-227e8e7dfde8?w=400&h=300&fit=crop&t=${Date.now()}_${index}`,
+      alt: `${formData.title || 'Product'} - Image ${formData.images.length + index + 1}`,
+      isPrimary: formData.images.length === 0 && index === 0,
+      file: file, // Keep file for preview
       preview: URL.createObjectURL(file),
       id: Math.random().toString(36).substr(2, 9)
     }));
@@ -123,6 +151,12 @@ const ProductCreationForm = () => {
     if (!formData.initialQuantity || formData.initialQuantity <= 0) {
       newErrors.initialQuantity = 'Valid quantity is required';
     }
+    if (!formData.availableQuantity || formData.availableQuantity <= 0) {
+      newErrors.availableQuantity = 'Valid available quantity is required';
+    }
+    if (formData.availableQuantity > formData.initialQuantity) {
+      newErrors.availableQuantity = 'Available quantity cannot exceed initial quantity';
+    }
 
     // Check if harvest date is in future
     const today = new Date().toISOString().split('T')[0];
@@ -148,31 +182,30 @@ const ProductCreationForm = () => {
     setSubmitStatus(null);
 
     try {
-      // Prepare form data for API
-      const productData = new FormData();
-      
-      // Add all form fields to FormData
-      productData.append('title', formData.title);
-      productData.append('description', formData.description);
-      productData.append('price', formData.price);
-      productData.append('unit', formData.unit);
-      productData.append('district', formData.district);
-      productData.append('city', formData.city);
-      productData.append('category', formData.category);
-      productData.append('harvestDate', formData.harvestDate);
-      productData.append('initialQuantity', formData.initialQuantity);
-      
-      // Add images
-      formData.images.forEach((img) => {
-        productData.append('images', img.file);
-      });
+      // Prepare product data for API (JSON, not FormData)
+      const productData = {
+        title: formData.title,
+        description: formData.description,
+        price: parseFloat(formData.price),
+        unit: formData.unit,
+        district: formData.district,
+        city: formData.city,
+        coordinates: formData.coordinates,
+        category: formData.category,
+        qualityScore: parseInt(formData.qualityScore),
+        isOrganic: formData.isOrganic,
+        harvestDate: formData.harvestDate,
+        initialQuantity: parseFloat(formData.initialQuantity),
+        availableQuantity: parseFloat(formData.availableQuantity),
+        images: formData.images.map(img => ({
+          url: img.url,
+          alt: img.alt,
+          isPrimary: img.isPrimary
+        }))
+      };
 
       // API call to create product
-      const response = await api.post('/products', productData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await api.post('/products', productData);
       
       setSubmitStatus({ 
         type: 'success', 
@@ -183,7 +216,9 @@ const ProductCreationForm = () => {
       setTimeout(() => {
         setFormData({
           title: '', description: '', price: '', unit: '', district: '',
-          city: '', category: '', harvestDate: '', initialQuantity: '', images: []
+          city: '', coordinates: { type: 'Point', coordinates: [80.0, 7.0] }, 
+          category: '', qualityScore: 3, isOrganic: false,
+          harvestDate: '', initialQuantity: '', availableQuantity: '', images: []
         });
         setSubmitStatus(null);
       }, 3000);
@@ -197,7 +232,10 @@ const ProductCreationForm = () => {
         errorMessage = error.response.data.message;
       } else if (error.response?.data?.errors) {
         // Handle validation errors
-        const validationErrors = error.response.data.errors;
+        const validationErrors = error.response.data.errors.reduce((acc, err) => {
+          acc[err.path] = err.msg;
+          return acc;
+        }, {});
         setErrors(validationErrors);
         errorMessage = 'Please fix the validation errors and try again.';
       } else if (error.response?.status === 401) {
@@ -435,7 +473,7 @@ const ProductCreationForm = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Available Quantity *
+                    Total Quantity *
                   </label>
                   <input
                     type="number"
@@ -451,6 +489,62 @@ const ProductCreationForm = () => {
                   />
                   {errors.initialQuantity && <p className="text-red-500 text-sm mt-1">{errors.initialQuantity}</p>}
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Available Quantity *
+                  </label>
+                  <input
+                    type="number"
+                    name="availableQuantity"
+                    value={formData.availableQuantity}
+                    onChange={handleInputChange}
+                    min="0"
+                    max={formData.initialQuantity || 999999}
+                    step="0.01"
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                      errors.availableQuantity ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="0"
+                  />
+                  {errors.availableQuantity && <p className="text-red-500 text-sm mt-1">{errors.availableQuantity}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Quality Score (1-5) *
+                  </label>
+                  <select
+                    name="qualityScore"
+                    value={formData.qualityScore}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value={1}>1 - Basic</option>
+                    <option value={2}>2 - Fair</option>
+                    <option value={3}>3 - Good</option>
+                    <option value={4}>4 - Very Good</option>
+                    <option value={5}>5 - Excellent</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    name="isOrganic"
+                    checked={formData.isOrganic}
+                    onChange={handleInputChange}
+                    className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                  />
+                  <div className="flex items-center gap-1">
+                    <Leaf size={16} className="text-green-600" />
+                    <span className="text-sm font-medium text-gray-700">This is an organic product</span>
+                  </div>
+                </label>
               </div>
             </div>
 
@@ -493,13 +587,15 @@ const ProductCreationForm = () => {
                           alt="Product"
                           className="w-full h-24 object-cover rounded-lg border"
                         />
-                        <button
+                        <Button
                           type="button"
+                          variant="destructive"
+                          size="sm"
                           onClick={() => removeImage(image.id)}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                          className="absolute -top-2 -right-2 rounded-full p-1 h-6 w-6"
                         >
                           <X className="h-3 w-3" />
-                        </button>
+                        </Button>
                       </div>
                     ))}
                   </div>
@@ -510,24 +606,24 @@ const ProductCreationForm = () => {
 
             {/* Submit Button */}
             <div className="pt-6 border-t">
-              <button
+              <Button
                 type="button"
                 onClick={handleSubmit}
                 disabled={loading}
-                className="w-full bg-green-600 text-white py-3 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                className="w-full"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
                     Creating Product...
                   </>
                 ) : (
                   <>
-                    <Package className="h-5 w-5" />
+                    <Package className="h-5 w-5 mr-2" />
                     List Product
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

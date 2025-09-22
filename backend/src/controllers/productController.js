@@ -102,6 +102,15 @@ export const createProduct = async (req, res) => {
       });
     }
 
+    // Check if user's email is verified
+    if (!req.user.isVerified) {
+      return res.status(403).json({
+        success: false,
+        message: 'Email verification required. Please verify your email address before creating products.',
+        code: 'EMAIL_VERIFICATION_REQUIRED'
+      });
+    }
+
     // Verify category exists
     const categoryExists = await Category.findById(req.body.category);
     if (!categoryExists) {
