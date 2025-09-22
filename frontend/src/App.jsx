@@ -3,11 +3,12 @@ import { Route, Routes } from "react-router-dom";
 
 import ProductCreationForm from "./pages/products/createProduct";
 import ProductDetails from "./pages/products/productDetails";
-import ProductListing from "../src/pages/products/productListing";
+import ProductListing from "./pages/products/productListing";
 import MyProducts from "./pages/products/myProducts";
 import FarmerDashboard from "./pages/products/farmerDashboard";
 import EditProduct from "./pages/products/editProduct";
 
+import MainLayout from "./layouts/MainLayout";
 
 const App = () => {
   return (
@@ -16,22 +17,60 @@ const App = () => {
       <div className="absolute inset-0 -z-10 h-full w-full [background:radial-gradient(125%_125%_at_50%_10%,#000_60%,#00FF9D40_100%)]" />
 
       <Routes>
-        //HomePage
+        {/* Marketplace and Product Pages inside Main Layout */}
+        <Route
+          path="/marketplace"
+          element={
+            <MainLayout>
+              <ProductListing />
+            </MainLayout>
+          }
+        />
 
-        //Create Product
-        <Route path="/create-product" element={<ProductCreationForm />} />
+        <Route
+          path="/create-product"
+          element={
+            <MainLayout>
+              <ProductCreationForm />
+            </MainLayout>
+          }
+        />
 
-        //Product List 
-        <Route path="/marketplace" element={<ProductListing />} />
+        <Route
+          path="/product-details"
+          element={
+            <MainLayout>
+              <ProductDetails />
+            </MainLayout>
+          }
+        />
 
-        <Route path="/product-details" element={<ProductDetails />} />
+        <Route
+          path="/my-products"
+          element={
+            <MainLayout>
+              <MyProducts />
+            </MainLayout>
+          }
+        />
 
-        <Route path="/my-products" element={<MyProducts />} />
+        <Route
+          path="/farmer-dashboard"
+          element={
+            <MainLayout>
+              <FarmerDashboard />
+            </MainLayout>
+          }
+        />
 
-        <Route path="/farmer-dashboard" element={<FarmerDashboard />} />
-        <Route path="/edit-product" element={<EditProduct />} />
-    
-
+        <Route
+          path="/edit-product"
+          element={
+            <MainLayout>
+              <EditProduct />
+            </MainLayout>
+          }
+        />
       </Routes>
     </div>
   );
