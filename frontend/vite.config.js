@@ -9,4 +9,12 @@ export default defineConfig({
       "@": path.resolve(__dirname, "src"), // allows @ to point to /src
     },
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5002',
+        changeOrigin: true,
+      },
+    },
+  },
 })

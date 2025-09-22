@@ -7,6 +7,7 @@ import errorHandler from "./middleware/errorHandler.js";
 // import ratelimiter from "./middleware/rateLimiter.js"; // optional
 
 // Import route placeholders
+import authRoutes from "./routes/auth.js";
 import userRoutes from "./routes/userRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
@@ -16,7 +17,7 @@ import categoryRoutes from "./routes/categoryRoutes.js";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5002;
 
 // Middleware
 app.use(cors({ origin: "http://localhost:5173" }));
@@ -34,6 +35,7 @@ app.get("/health", (req, res) => {
 });
 
 // Routes
+app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
 app.use('/api/categories', categoryRoutes);
