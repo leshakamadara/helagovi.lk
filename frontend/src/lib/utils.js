@@ -1,4 +1,6 @@
 // utils.js
+import { clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
 
 // Format a date into "January 15, 2024"
 export const formatDate = (date) => {
@@ -32,4 +34,8 @@ export const getFreshnessColor = (days) => {
   if (days <= 3) return 'text-green-600';
   if (days <= 7) return 'text-yellow-600';
   return 'text-red-600';
+};
+
+export function cn(...inputs) {
+  return twMerge(clsx(inputs))
 };
