@@ -1,24 +1,27 @@
-import React from "react";
-import { Route, Routes } from "react-router-dom";
+import React from 'react'
+import { Route, Routes } from 'react-router-dom'
+import BillingHistory from './pages/payments/billingHistory'
+import ProcessingPage from './pages/payments/ProcessingPage'
+import SuccessPage from './pages/payments/SuccessPage'
 
-// Test page
-const HomePage = () => (
-  <div className="p-10 text-center text-white">
-    🟢 Frontend is working!
-  </div>
-);
 
 const App = () => {
   return (
-    <div className="relative h-screen w-screen">
-      {/* Background gradient */}
-      <div className="absolute inset-0 -z-10 h-full w-full [background:radial-gradient(125%_125%_at_50%_10%,#000_60%,#00FF9D40_100%)]" />
+    <div>
+    <Routes>
+   
+      <Route path="/" element={<BillingHistory />} />
+      <Route path="/processing" element={<ProcessingPage />} />
+      <Route path="/success" element={<SuccessPage />} />
 
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-      </Routes>
+
+    </Routes>  
+    
+
+
+
     </div>
-  );
-};
+  )
+}
 
-export default App;
+export default App
