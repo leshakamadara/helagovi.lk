@@ -17,7 +17,7 @@ const CardForm = ({ onTokenSaved }) => {
     setMessage("");
 
     try {
-      const res = await axios.post("/api/tokenize-card", {
+      const res = await axios.post("http://localhost:5001/api/pay/tokenize-card", {
         card_number: cardNumber,
         cvv,
         expiry_month: expiryMonth,

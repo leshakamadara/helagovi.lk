@@ -1,11 +1,9 @@
 import mongoose from "mongoose";
 
-const SavedCardSchema = new mongoose.Schema({
+const savedCardSchema = new mongoose.Schema({
   userId: { type: String, required: true },
   token: { type: String, required: true },
-  cardholderName: { type: String, required: true },
-  last4: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
-});
+  orderId: { type: String, required: true },
+}, { timestamps: true });
 
-export default mongoose.model("SavedCard", SavedCardSchema);
+export default mongoose.model("SavedCard", savedCardSchema);
