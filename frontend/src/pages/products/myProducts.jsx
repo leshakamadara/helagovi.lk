@@ -10,6 +10,15 @@ import {
   Trash2,
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
+import { toast } from 'sonner';
+import { 
+  Breadcrumb, 
+  BreadcrumbItem, 
+  BreadcrumbLink, 
+  BreadcrumbList, 
+  BreadcrumbPage, 
+  BreadcrumbSeparator 
+} from '../../components/ui/breadcrumb';
 
 const MyProducts = () => {
   const [products, setProducts] = useState([]);
@@ -47,6 +56,10 @@ const MyProducts = () => {
       const data = await response.json();
       setProducts(data.data);
       setPagination(data.pagination);
+      
+      if (data.data.length > 0) {
+        toast.success(`Loaded ${data.data.length} products`);
+      }
     } catch (err) {
       setError(err.message);
       // Mock data for demo
@@ -72,24 +85,30 @@ const MyProducts = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this product?')) return;
-    
-    try {
-      const response = await fetch(`/api/products/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      if (!response.ok) throw new Error('Failed to delete product');
-      
-      setProducts(prev => prev.filter(p => p._id !== id));
-      alert('Product deleted successfully');
-    } catch (err) {
-      alert(err.message);
-    }
+  const handleDelete = async (id, productTitle = 'this product') => {
+    const deletePromise = new Promise(async (resolve, reject) => {
+      try {
+        const response = await fetch(`/api/products/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        if (!response.ok) throw new Error('Failed to delete product');
+        
+        setProducts(prev => prev.filter(p => p._id !== id));
+        resolve();
+      } catch (err) {
+        reject(err);
+      }
+    });
+
+    toast.promise(deletePromise, {
+      loading: 'Deleting product...',
+      success: `${productTitle} deleted successfully!`,
+      error: 'Failed to delete product'
+    });
   };
 
   const handleFilterChange = (key, value) => {
@@ -101,6 +120,25 @@ const MyProducts = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Breadcrumb Navigation */}
+        <div className="mb-6">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/">Home</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/farmer-dashboard">Dashboard</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>My Products</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">My Products</h1>
           <Link to="/create-product" className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 flex items-center">

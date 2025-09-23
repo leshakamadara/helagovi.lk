@@ -12,6 +12,8 @@ import { Slider } from '../../components/ui/slider';
 import { Checkbox } from '../../components/ui/checkbox';
 import { Separator } from '../../components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb';
 
 const districts = ['All Districts', 'Colombo', 'Gampaha', 'Kalutara', 'Kandy', 'Matale', 'Nuwara Eliya',
   'Galle', 'Matara', 'Hambantota', 'Jaffna', 'Kilinochchi', 'Mannar',
@@ -390,6 +392,21 @@ const ProductListing = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Breadcrumb Navigation */}
+        <div className="mb-6">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/">Home</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Products</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Enhanced Filters Sidebar */}
           <div className="lg:w-80">
@@ -414,7 +431,10 @@ const ProductListing = () => {
               <CardContent className={`space-y-6 ${showFilters ? 'block' : 'hidden lg:block'}`}>
                 {/* District Filter */}
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold">Location</label>
+                  <label className="text-sm font-semibold flex items-center gap-2">
+                    <MapPin size={16} className="text-emerald-600" />
+                    Location
+                  </label>
                   <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select district" />
@@ -431,7 +451,10 @@ const ProductListing = () => {
 
                 {/* Category Filter */}
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold">Category</label>
+                  <label className="text-sm font-semibold flex items-center gap-2">
+                    <Leaf size={16} className="text-emerald-600" />
+                    Category
+                  </label>
                   <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
