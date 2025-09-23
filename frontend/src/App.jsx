@@ -10,7 +10,7 @@ import Profile from './pages/users/Profile'
 import ForgotPassword from './pages/users/ForgotPassword'
 import ResetPassword from './pages/users/ResetPassword'
 import VerifyEmail from './pages/users/VerifyEmail'
-import FarmerDashboard from './pages/users/FarmerDashboard'
+import FarmerDashboard from './pages/users/FarmerDashboardNew'
 import BuyerDashboard from './pages/users/BuyerDashboard'
 import AdminDashboard from './pages/users/AdminDashboard'
 
@@ -26,6 +26,7 @@ import Cart from "./pages/buyers/Cart";
 import FarmerWallet from "./pages/farmers/Wallet";
 
 import MainLayout from "./layouts/MainLayout";
+import { Toaster } from 'sonner';
 
 function App() {
   return (
@@ -220,6 +221,12 @@ function App() {
             }
           />
         </Routes>
+        <Toaster 
+          position="top-right"
+          expand={false}
+          richColors
+          closeButton
+        />
       </div>
     </AuthProvider>
   )

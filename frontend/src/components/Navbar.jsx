@@ -19,6 +19,7 @@ import {
   Wallet
 } from 'lucide-react'
 import { Button } from './ui/button'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet'
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -128,78 +129,96 @@ const Navbar = () => {
 
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center">
-            <Button
-              onClick={() => setIsOpen(!isOpen)}
-              variant="ghost"
-              size="sm"
-            >
-              {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </Button>
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[300px]">
+                <SheetHeader>
+                  <SheetTitle className="flex items-center gap-2">
+                    <Sprout className="h-6 w-6 text-emerald-600" />
+                    HeleGovi
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="mt-6 space-y-4">
+                  {isAuthenticated ? (
+                    <>
+                      <div className="space-y-2">
+                        {getRoleSpecificMenuItems().map((item) => (
+                          <Link
+                            key={item.to}
+                            to={item.to}
+                            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                            onClick={() => setIsOpen(false)}
+                          >
+                            <item.icon className="h-5 w-5 text-emerald-600" />
+                            <span className="font-medium">{item.label}</span>
+                          </Link>
+                        ))}
+                      </div>
+                      
+                      <hr className="border-gray-200" />
+                      
+                      <div className="space-y-2">
+                        <Link
+                          to={getDashboardLink()}
+                          className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          <BarChart3 className="h-5 w-5 text-emerald-600" />
+                          <span className="font-medium">Dashboard</span>
+                        </Link>
+                        
+                        <Link
+                          to="/profile"
+                          className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          <User className="h-5 w-5 text-emerald-600" />
+                          <span className="font-medium">Profile</span>
+                        </Link>
+                      </div>
+                      
+                      <hr className="border-gray-200" />
+                      
+                      <Button
+                        onClick={() => {
+                          handleLogout();
+                          setIsOpen(false);
+                        }}
+                        variant="outline"
+                        className="w-full justify-start gap-3"
+                      >
+                        <LogOut className="h-5 w-5" />
+                        Logout
+                      </Button>
+                    </>
+                  ) : (
+                    <div className="space-y-2">
+                      <Link
+                        to="/login"
+                        className="block px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        <span className="font-medium">Login</span>
+                      </Link>
+                      <Link
+                        to="/register"
+                        className="block px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-center"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        <span className="font-medium">Register</span>
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </div>
-
-      {/* Mobile Menu */}
-      {isOpen && (
-        <div className="md:hidden">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white shadow-lg">
-            {isAuthenticated ? (
-              <>
-                {getRoleSpecificMenuItems().map((item) => (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    className="text-gray-700 hover:text-primary-600 flex items-center px-3 py-2 rounded-md text-base font-medium"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <item.icon className="h-5 w-5 mr-2" />
-                    {item.label}
-                  </Link>
-                ))}
-                <hr className="my-2 border-gray-200" />
-                <Link
-                  to={getDashboardLink()}
-                  className="text-gray-700 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  to="/profile"
-                  className="text-gray-700 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Profile
-                </Link>
-                <Button
-                  onClick={handleLogout}
-                  variant="ghost"
-                  className="justify-start w-full"
-                >
-                  Logout
-                </Button>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="text-gray-700 hover:text-primary-600 block px-3 py-2 rounded-md text-base font-medium"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/register"
-                  className="bg-primary-600 text-white block px-3 py-2 rounded-md text-base font-medium text-center"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Register
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      )}
     </nav>
   )
 }

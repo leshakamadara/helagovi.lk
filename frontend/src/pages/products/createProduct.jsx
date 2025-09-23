@@ -1,11 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, X, Calendar, MapPin, Package, DollarSign, FileText, Tag, Loader2, CheckCircle, AlertCircle, Leaf } from 'lucide-react';
+import { Upload, X, Calendar, MapPin, Package, DollarSign, FileText, Tag, Loader2, CheckCircle, AlertCircle, Leaf, CalendarIcon } from 'lucide-react';
 import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb';
+import { Alert, AlertDescription } from '../../components/ui/alert';
+import { Separator } from '../../components/ui/separator';
+import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover';
+import { Calendar as CalendarComponent } from '../../components/ui/calendar';
+import { cn } from '../../lib/utils';
+import { format } from 'date-fns';
 
 // Replace this with your actual lib/axios.js import
 import api from '../../lib/axios';
 
-const ProductCreationForm = () => {
+const ProductCreationForm = () => {  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -28,6 +41,7 @@ const ProductCreationForm = () => {
   const [submitStatus, setSubmitStatus] = useState(null);
   const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [dragActive, setDragActive] = useState(false);
 
   // Sri Lankan districts
   const districts = [
@@ -67,9 +81,9 @@ const ProductCreationForm = () => {
   // Render category options recursively
   const renderCategoryOptions = (categoryList, level = 0) => {
     return categoryList.map(category => [
-      <option key={category._id} value={category._id}>
+      <SelectItem key={category._id} value={category._id}>
         {'  '.repeat(level)} {category.name.en}
-      </option>,
+      </SelectItem>,
       ...(category.children ? renderCategoryOptions(category.children, level + 1) : [])
     ]).flat();
   };
@@ -102,8 +116,22 @@ const ProductCreationForm = () => {
     }
   };
 
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files);
+  // Handle Select component changes
+  const handleSelectChange = (name, value) => {
+    if (name === 'qualityScore') {
+      setFormData(prev => ({ ...prev, [name]: parseInt(value) }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
+    
+    // Clear error when user makes a selection
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  // Shared function for processing image files
+  const processImageFiles = (files) => {
     if (formData.images.length + files.length > 5) {
       setErrors(prev => ({ ...prev, images: 'Maximum 5 images allowed' }));
       return;
@@ -127,6 +155,43 @@ const ProductCreationForm = () => {
     
     if (errors.images) {
       setErrors(prev => ({ ...prev, images: '' }));
+    }
+  };
+
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    processImageFiles(files);
+  };
+
+  // Drag and drop handlers
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    const files = Array.from(e.dataTransfer.files).filter(file => 
+      file.type.startsWith('image/')
+    );
+    
+    if (files.length > 0) {
+      processImageFiles(files);
     }
   };
 
@@ -254,379 +319,417 @@ const ProductCreationForm = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
-        <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-          <div className="bg-green-600 px-6 py-4">
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+      <div className="max-w-4xl mx-auto">
+        {/* Breadcrumb Navigation */}
+        <div className="mb-6">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/">Home</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/farmer-dashboard">Dashboard</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Create Product</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+
+        <Card className="shadow-lg">
+          <CardHeader className="bg-emerald-600 text-white">
+            <CardTitle className="text-2xl flex items-center gap-2">
               <Package className="h-6 w-6" />
               List New Product
-            </h1>
-            <p className="text-green-100 mt-1">Add your farm products to reach more buyers</p>
-          </div>
+            </CardTitle>
+            <p className="text-emerald-100 mt-1">Add your farm products to reach more buyers</p>
+          </CardHeader>
 
-          <div className="p-6 space-y-6">
+          <CardContent className="p-6 space-y-8">
             {/* Status Messages */}
             {submitStatus && (
-              <div className={`p-4 rounded-md flex items-center gap-3 ${
-                submitStatus.type === 'success' 
-                  ? 'bg-green-50 text-green-700 border border-green-200' 
-                  : 'bg-red-50 text-red-700 border border-red-200'
-              }`}>
+              <Alert className={submitStatus.type === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
                 {submitStatus.type === 'success' ? (
-                  <CheckCircle className="h-5 w-5" />
+                  <CheckCircle className="h-4 w-4 text-green-600" />
                 ) : (
-                  <AlertCircle className="h-5 w-5" />
+                  <AlertCircle className="h-4 w-4 text-red-600" />
                 )}
-                {submitStatus.message}
-              </div>
+                <AlertDescription className={submitStatus.type === 'success' ? 'text-green-700' : 'text-red-700'}>
+                  {submitStatus.message}
+                </AlertDescription>
+              </Alert>
             )}
 
-            {/* Basic Information */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Product Information
-              </h2>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Product Title *
-                </label>
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                    errors.title ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                  placeholder="e.g., Fresh Organic Tomatoes"
-                />
-                {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description *
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  rows={3}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                    errors.description ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                  placeholder="Describe your product quality, farming methods, etc."
-                />
-                {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <DollarSign className="inline h-4 w-4 mr-1" />
-                    Price per Unit (LKR) *
-                  </label>
-                  <input
-                    type="number"
-                    name="price"
-                    value={formData.price}
+            {/* Basic Information Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Product Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Product Title *</Label>
+                  <Input
+                    id="title"
+                    name="title"
+                    value={formData.title}
                     onChange={handleInputChange}
-                    min="0"
-                    step="0.01"
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                      errors.price ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                    placeholder="0.00"
+                    placeholder="e.g., Fresh Organic Tomatoes"
+                    className={errors.title ? 'border-red-300' : ''}
                   />
-                  {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
+                  {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Unit *
-                  </label>
-                  <select
-                    name="unit"
-                    value={formData.unit}
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description *</Label>
+                  <Textarea
+                    id="description"
+                    name="description"
+                    value={formData.description}
                     onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                      errors.unit ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                  >
-                    <option value="">Select unit</option>
-                    {units.map(unit => (
-                      <option key={unit} value={unit}>{unit}</option>
-                    ))}
-                  </select>
-                  {errors.unit && <p className="text-red-500 text-sm mt-1">{errors.unit}</p>}
-                </div>
-              </div>
-            </div>
-
-            {/* Location */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
-                Location
-              </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    District *
-                  </label>
-                  <select
-                    name="district"
-                    value={formData.district}
-                    onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                      errors.district ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                  >
-                    <option value="">Select district</option>
-                    {districts.map(district => (
-                      <option key={district} value={district}>{district}</option>
-                    ))}
-                  </select>
-                  {errors.district && <p className="text-red-500 text-sm mt-1">{errors.district}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    City/Town *
-                  </label>
-                  <input
-                    type="text"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                      errors.city ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                    placeholder="Enter city or town"
+                    rows={3}
+                    placeholder="Describe your product quality, farming methods, etc."
+                    className={errors.description ? 'border-red-300' : ''}
                   />
-                  {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
+                  {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
                 </div>
-              </div>
-            </div>
 
-            {/* Category */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Tag className="h-5 w-5" />
-                Category
-              </h2>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Product Category *
-                </label>
-                {categoriesLoading ? (
-                  <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-gray-500">Loading categories...</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="price">
+                      <DollarSign className="inline h-4 w-4 mr-1" />
+                      Price per Unit (LKR) *
+                    </Label>
+                    <Input
+                      id="price"
+                      name="price"
+                      type="number"
+                      value={formData.price}
+                      onChange={handleInputChange}
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      className={errors.price ? 'border-red-300' : ''}
+                    />
+                    {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
                   </div>
-                ) : (
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                      errors.category ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                  >
-                    <option value="">Select category</option>
-                    {renderCategoryOptions(categories)}
-                  </select>
-                )}
-                {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
-                {errors.categories && <p className="text-red-500 text-sm mt-1">{errors.categories}</p>}
-              </div>
-            </div>
 
-            {/* Harvest & Quantity */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Harvest Details
-              </h2>
+                  <div className="space-y-2">
+                    <Label htmlFor="unit">Unit *</Label>
+                    <Select value={formData.unit} onValueChange={(value) => handleSelectChange('unit', value)}>
+                      <SelectTrigger className={errors.unit ? 'border-red-300' : ''}>
+                        <SelectValue placeholder="Select unit" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {units.map(unit => (
+                          <SelectItem key={unit} value={unit}>{unit}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.unit && <p className="text-red-500 text-sm mt-1">{errors.unit}</p>}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Harvest Date *
-                  </label>
-                  <input
-                    type="date"
-                    name="harvestDate"
-                    value={formData.harvestDate}
-                    onChange={handleInputChange}
-                    max={today}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                      errors.harvestDate ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                  />
-                  {errors.harvestDate && <p className="text-red-500 text-sm mt-1">{errors.harvestDate}</p>}
+            {/* Location Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Location
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="district">District *</Label>
+                    <Select value={formData.district} onValueChange={(value) => handleSelectChange('district', value)}>
+                      <SelectTrigger className={errors.district ? 'border-red-300' : ''}>
+                        <SelectValue placeholder="Select district" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {districts.map(district => (
+                          <SelectItem key={district} value={district}>{district}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.district && <p className="text-red-500 text-sm mt-1">{errors.district}</p>}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="city">City/Town *</Label>
+                    <Input
+                      id="city"
+                      name="city"
+                      value={formData.city}
+                      onChange={handleInputChange}
+                      placeholder="Enter city or town"
+                      className={errors.city ? 'border-red-300' : ''}
+                    />
+                    {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Category Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Tag className="h-5 w-5" />
+                  Category
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Label htmlFor="category">Product Category *</Label>
+                  {categoriesLoading ? (
+                    <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="text-gray-500">Loading categories...</span>
+                    </div>
+                  ) : (
+                    <Select value={formData.category} onValueChange={(value) => handleSelectChange('category', value)}>
+                      <SelectTrigger className={errors.category ? 'border-red-300' : ''}>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {renderCategoryOptions(categories)}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
+                  {errors.categories && <p className="text-red-500 text-sm mt-1">{errors.categories}</p>}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Harvest Details Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Harvest Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Harvest Date *</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !formData.harvestDate && "text-muted-foreground",
+                            errors.harvestDate && "border-red-300"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {formData.harvestDate ? format(new Date(formData.harvestDate), "PPP") : <span>Pick a date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <CalendarComponent
+                          mode="single"
+                          selected={formData.harvestDate ? new Date(formData.harvestDate) : undefined}
+                          onSelect={(date) => {
+                            if (date) {
+                              const formattedDate = date.toISOString().split('T')[0];
+                              handleInputChange({ target: { name: 'harvestDate', value: formattedDate } });
+                            }
+                          }}
+                          disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    {errors.harvestDate && <p className="text-red-500 text-sm mt-1">{errors.harvestDate}</p>}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="initialQuantity">Total Quantity *</Label>
+                    <Input
+                      id="initialQuantity"
+                      name="initialQuantity"
+                      type="number"
+                      value={formData.initialQuantity}
+                      onChange={handleInputChange}
+                      min="0"
+                      step="0.01"
+                      placeholder="0"
+                      className={errors.initialQuantity ? 'border-red-300' : ''}
+                    />
+                    {errors.initialQuantity && <p className="text-red-500 text-sm mt-1">{errors.initialQuantity}</p>}
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Total Quantity *
-                  </label>
-                  <input
-                    type="number"
-                    name="initialQuantity"
-                    value={formData.initialQuantity}
-                    onChange={handleInputChange}
-                    min="0"
-                    step="0.01"
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                      errors.initialQuantity ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                    placeholder="0"
-                  />
-                  {errors.initialQuantity && <p className="text-red-500 text-sm mt-1">{errors.initialQuantity}</p>}
-                </div>
-              </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="availableQuantity">Available Quantity *</Label>
+                    <Input
+                      id="availableQuantity"
+                      name="availableQuantity"
+                      type="number"
+                      value={formData.availableQuantity}
+                      onChange={handleInputChange}
+                      min="0"
+                      max={formData.initialQuantity || 999999}
+                      step="0.01"
+                      placeholder="0"
+                      className={errors.availableQuantity ? 'border-red-300' : ''}
+                    />
+                    {errors.availableQuantity && <p className="text-red-500 text-sm mt-1">{errors.availableQuantity}</p>}
+                  </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Available Quantity *
-                  </label>
-                  <input
-                    type="number"
-                    name="availableQuantity"
-                    value={formData.availableQuantity}
-                    onChange={handleInputChange}
-                    min="0"
-                    max={formData.initialQuantity || 999999}
-                    step="0.01"
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                      errors.availableQuantity ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                    placeholder="0"
-                  />
-                  {errors.availableQuantity && <p className="text-red-500 text-sm mt-1">{errors.availableQuantity}</p>}
+                  <div className="space-y-2">
+                    <Label htmlFor="qualityScore">Quality Score (1-5) *</Label>
+                    <Select value={formData.qualityScore.toString()} onValueChange={(value) => handleSelectChange('qualityScore', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select quality score" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 - Basic</SelectItem>
+                        <SelectItem value="2">2 - Fair</SelectItem>
+                        <SelectItem value="3">3 - Good</SelectItem>
+                        <SelectItem value="4">4 - Very Good</SelectItem>
+                        <SelectItem value="5">5 - Excellent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Quality Score (1-5) *
-                  </label>
-                  <select
-                    name="qualityScore"
-                    value={formData.qualityScore}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value={1}>1 - Basic</option>
-                    <option value={2}>2 - Fair</option>
-                    <option value={3}>3 - Good</option>
-                    <option value={4}>4 - Very Good</option>
-                    <option value={5}>5 - Excellent</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="flex items-center gap-3">
+                <div className="flex items-center gap-3">
                   <input
+                    id="isOrganic"
                     type="checkbox"
                     name="isOrganic"
                     checked={formData.isOrganic}
                     onChange={handleInputChange}
                     className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
                   />
-                  <div className="flex items-center gap-1">
+                  <Label htmlFor="isOrganic" className="flex items-center gap-1 cursor-pointer">
                     <Leaf size={16} className="text-green-600" />
-                    <span className="text-sm font-medium text-gray-700">This is an organic product</span>
-                  </div>
-                </label>
-              </div>
-            </div>
+                    <span>This is an organic product</span>
+                  </Label>
+                </div>
+              </CardContent>
+            </Card>
 
-            {/* Image Upload */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Upload className="h-5 w-5" />
-                Product Images
-              </h2>
-
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
-                <div className="text-center">
-                  <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                  <div className="mt-4">
-                    <label className="cursor-pointer">
-                      <span className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors">
-                        Upload Images
-                      </span>
+            {/* Image Upload Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Upload className="h-5 w-5" />
+                  Product Images
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div 
+                  className={`border-2 border-dashed rounded-lg p-6 transition-colors ${
+                    dragActive 
+                      ? 'border-green-500 bg-green-50' 
+                      : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                  onDragEnter={handleDragEnter}
+                  onDragLeave={handleDragLeave}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                >
+                  <div className="text-center">
+                    <Upload className={`mx-auto h-12 w-12 ${
+                      dragActive ? 'text-green-500' : 'text-gray-400'
+                    }`} />
+                    <div className="mt-4">
                       <input
                         type="file"
                         multiple
                         accept="image/*"
                         onChange={handleImageUpload}
                         className="hidden"
+                        id="image-upload"
                       />
-                    </label>
+                      <Button 
+                        type="button"
+                        variant="outline" 
+                        className="bg-green-600 text-white hover:bg-green-700"
+                        onClick={() => document.getElementById('image-upload').click()}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Upload Images
+                      </Button>
+                    </div>
+                    <p className="text-gray-500 text-sm mt-2">
+                      {dragActive 
+                        ? 'Drop images here to upload' 
+                        : 'Drag & drop images here or click to browse'
+                      }
+                    </p>
+                    <p className="text-gray-400 text-xs mt-1">
+                      PNG, JPG, GIF up to 10MB each (Max 5 images)
+                    </p>
                   </div>
-                  <p className="text-gray-500 text-sm mt-2">
-                    PNG, JPG, GIF up to 10MB each (Max 5 images)
-                  </p>
+
+                  {/* Image Preview */}
+                  {formData.images.length > 0 && (
+                    <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-4">
+                      {formData.images.map((image) => (
+                        <div key={image.id} className="relative">
+                          <img
+                            src={image.preview}
+                            alt="Product"
+                            className="w-full h-24 object-cover rounded-lg border"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => removeImage(image.id)}
+                            className="absolute -top-2 -right-2 rounded-full p-1 h-6 w-6"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
+                {errors.images && <p className="text-red-500 text-sm mt-1">{errors.images}</p>}
+              </CardContent>
+            </Card>
 
-                {/* Image Preview */}
-                {formData.images.length > 0 && (
-                  <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-4">
-                    {formData.images.map((image) => (
-                      <div key={image.id} className="relative">
-                        <img
-                          src={image.preview}
-                          alt="Product"
-                          className="w-full h-24 object-cover rounded-lg border"
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => removeImage(image.id)}
-                          className="absolute -top-2 -right-2 rounded-full p-1 h-6 w-6"
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              {errors.images && <p className="text-red-500 text-sm mt-1">{errors.images}</p>}
-            </div>
-
-            {/* Submit Button */}
-            <div className="pt-6 border-t">
-              <Button
-                type="button"
-                onClick={handleSubmit}
-                disabled={loading}
-                className="w-full"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                    Creating Product...
-                  </>
-                ) : (
-                  <>
-                    <Package className="h-5 w-5 mr-2" />
-                    List Product
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
+            {/* Submit Button Card */}
+            <Card>
+              <CardContent className="pt-6">
+                <Button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                      Creating Product...
+                    </>
+                  ) : (
+                    <>
+                      <Package className="h-5 w-5 mr-2" />
+                      List Product
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -17,9 +17,12 @@ import {
   Star
 } from 'lucide-react'
 import { Button } from '../../components/ui/button'
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb'
 
 const FarmerDashboard = () => {
+  console.log('FarmerDashboard component rendered') // Debug log
   const { user } = useAuth()
+  console.log('User from context:', user) // Debug log
   const [stats, setStats] = useState({
     totalProducts: 0,
     activeProducts: 0,
@@ -30,15 +33,17 @@ const FarmerDashboard = () => {
     totalQuantitySold: 0
   })
   const [recentProducts, setRecentProducts] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false) // Changed from true to false for testing
 
   useEffect(() => {
+    console.log('useEffect triggered') // Debug log
     fetchDashboardData()
   }, [])
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true)
+      console.log('Fetching dashboard data...') // Debug log
       
       // Fetch stats
       const statsResponse = await fetch('/api/products/stats/overview', {
@@ -47,9 +52,24 @@ const FarmerDashboard = () => {
         }
       })
       
+      console.log('Stats response status:', statsResponse.status) // Debug log
+      
       if (statsResponse.ok) {
         const statsData = await statsResponse.json()
+        console.log('Stats data:', statsData) // Debug log
         setStats(statsData.data)
+      } else {
+        console.log('Stats response failed, using mock data') // Debug log
+        // Set mock stats for development
+        setStats({
+          totalProducts: 12,
+          activeProducts: 8,
+          soldProducts: 4,
+          totalRevenue: 45000,
+          averagePrice: 425,
+          totalQuantityListed: 500,
+          totalQuantitySold: 180
+        })
       }
 
       // Fetch recent products
@@ -59,10 +79,14 @@ const FarmerDashboard = () => {
         }
       })
       
+      console.log('Products response status:', productsResponse.status) // Debug log
+      
       if (productsResponse.ok) {
         const productsData = await productsResponse.json()
+        console.log('Products data:', productsData) // Debug log
         setRecentProducts(productsData.data)
       } else {
+        console.log('Products response failed, using mock data') // Debug log
         // Mock data for development
         setRecentProducts([
           {
@@ -90,7 +114,22 @@ const FarmerDashboard = () => {
         totalQuantityListed: 500,
         totalQuantitySold: 180
       })
+      // Mock data for development
+      setRecentProducts([
+        {
+          _id: '1',
+          title: 'Fresh Organic Tomatoes',
+          price: 450,
+          unit: 'kg',
+          status: 'active',
+          availableQuantity: 65,
+          initialQuantity: 100,
+          createdAt: '2024-01-20T00:00:00.000Z',
+          primaryImage: { url: 'https://images.unsplash.com/photo-1546470427-227e8e7dfde8?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80' }
+        }
+      ])
     } finally {
+      console.log('Setting loading to false') // Debug log
       setLoading(false)
     }
   }
@@ -117,6 +156,7 @@ const FarmerDashboard = () => {
   }
 
   if (loading) {
+    console.log('Dashboard is in loading state') // Debug log
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
@@ -124,8 +164,25 @@ const FarmerDashboard = () => {
     )
   }
 
+  console.log('Dashboard rendering main content') // Debug log
+
   return (
     <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      {/* Breadcrumb Navigation */}
+      <div className="mb-6">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/">Home</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Farmer Dashboard</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user?.firstName || 'Farmer'}!</h1>
