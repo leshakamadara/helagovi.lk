@@ -22,6 +22,63 @@ const districts = ['All Districts', 'Colombo', 'Gampaha', 'Kalutara', 'Kandy', '
   'Kurunegala', 'Puttalam', 'Anuradhapura', 'Polonnaruwa', 'Badulla',
   'Moneragala', 'Ratnapura', 'Kegalle'];
 
+const banners = [
+  {
+    id: 1,
+    title: "Fresh Organic Vegetables",
+    subtitle: "Farm to Table Freshness",
+    description: "Discover premium quality organic vegetables directly from local farmers",
+    image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2084&q=80",
+    buttonText: "Shop Vegetables",
+    buttonLink: "/marketplace?category=vegetables"
+  },
+  {
+    id: 2,
+    title: "Tropical Fruits Collection",
+    subtitle: "Sweet & Nutritious",
+    description: "Fresh tropical fruits picked at perfect ripeness from Sri Lankan orchards",
+    image: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+    buttonText: "Shop Fruits",
+    buttonLink: "/marketplace?category=fruits"
+  },
+  {
+    id: 3,
+    title: "Premium Rice & Grains",
+    subtitle: "Traditional Quality",
+    description: "Authentic Sri Lankan rice varieties and grains from heritage farms",
+    image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+    buttonText: "Shop Grains",
+    buttonLink: "/marketplace?category=grains"
+  },
+  {
+    id: 4,
+    title: "Fresh Herbs & Spices",
+    subtitle: "Aromatic Excellence",
+    description: "Handpicked herbs and spices that add authentic flavors to your cooking",
+    image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+    buttonText: "Shop Spices",
+    buttonLink: "/marketplace?category=spices"
+  },
+  {
+    id: 5,
+    title: "Organic Coconut Products",
+    subtitle: "Island's Treasure",
+    description: "Pure coconut oil, fresh coconuts, and coconut-based products",
+    image: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+    buttonText: "Shop Coconut",
+    buttonLink: "/marketplace?category=coconut"
+  },
+  {
+    id: 6,
+    title: "Seasonal Farm Specials",
+    subtitle: "Limited Time Offers",
+    description: "Special seasonal produce with unbeatable prices directly from farmers",
+    image: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2069&q=80",
+    buttonText: "View Specials",
+    buttonLink: "/marketplace?special=seasonal"
+  }
+];
+
 const ProductListing = () => {
   const navigate = useNavigate();
   
@@ -42,6 +99,9 @@ const ProductListing = () => {
   const [organicOnly, setOrganicOnly] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
+  
+  // Banner slider state
+  const [activeBanner, setActiveBanner] = useState(0);
 
   const itemsPerPage = 12;
 
@@ -124,6 +184,18 @@ const ProductListing = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, selectedDistrict, selectedCategory, priceRange, organicOnly, sortBy]);
+
+  // Banner auto-swipe logic - rebuilt from scratch
+  useEffect(() => {
+    const bannerInterval = setInterval(() => {
+      setActiveBanner(current => {
+        const next = (current + 1) % 6; // 6 banners (0-5)
+        return next;
+      });
+    }, 4000); // Each banner stays for 4 seconds
+
+    return () => clearInterval(bannerInterval);
+  }, []);
 
   // Calculate pagination
   const totalPages = Math.ceil(totalProducts / itemsPerPage);
@@ -286,30 +358,38 @@ const ProductListing = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Header */}
-      <div className="bg-primary text-primary-foreground">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Fresh from Farm to Table
-            </h1>
-            <p className="text-xl opacity-90 mb-8 max-w-2xl mx-auto">
-              Discover premium quality agricultural products directly from local farmers across Sri Lanka
-            </p>
-            
-            {/* Enhanced Search Bar */}
-            <div className="max-w-2xl mx-auto relative">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground z-10" size={20} />
-                <Input
-                  type="text"
-                  placeholder="Search for fresh vegetables, fruits, grains..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-6 text-lg shadow-lg border-0 focus-visible:ring-2 focus-visible:ring-primary/50 bg-white"
-                />
-              </div>
-            </div>
+      {/* Banner Slider - Simple Implementation */}
+      <div className="relative h-[600px] md:h-[700px] lg:h-[800px] overflow-hidden">
+        {banners.map((banner, index) => (
+          <div
+            key={banner.id}
+            className={`absolute inset-0 w-full h-full transition-opacity duration-500 ${
+              index === activeBanner ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            <img 
+              src={banner.image}
+              alt={`Banner ${index + 1}`}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        ))}
+        
+        {/* Navigation Dots */}
+        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-10">
+          <div className="flex gap-2">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setActiveBanner(index)}
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  index === activeBanner 
+                    ? 'bg-white' 
+                    : 'bg-white/50 hover:bg-white/80'
+                }`}
+                aria-label={`Go to banner ${index + 1}`}
+              />
+            ))}
           </div>
         </div>
       </div>
