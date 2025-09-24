@@ -102,111 +102,8 @@ const ProductListing = () => {
       
     } catch (error) {
       console.error('Error fetching products:', error);
-      
-      // Use mock data as fallback when API fails
-      const mockProducts = [
-        {
-          _id: 'mock-1',
-          title: 'Fresh Organic Tomatoes',
-          price: 450,
-          unit: 'kg',
-          availableQuantity: 65,
-          initialQuantity: 100,
-          status: 'active',
-          category: { name: 'Vegetables' },
-          district: 'Kandy',
-          city: 'Peradeniya',
-          farmer: { firstName: 'Sunil', lastName: 'Perera' },
-          qualityScore: 5,
-          isOrganic: true,
-          images: [{ url: 'https://images.unsplash.com/photo-1546470427-227e8e7dfde8?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80', isPrimary: true }]
-        },
-        {
-          _id: 'mock-2',
-          title: 'Fresh Carrots',
-          price: 200,
-          unit: 'kg',
-          availableQuantity: 30,
-          initialQuantity: 50,
-          status: 'active',
-          category: { name: 'Vegetables' },
-          district: 'Colombo',
-          city: 'Maharagama',
-          farmer: { firstName: 'Kamala', lastName: 'Silva' },
-          qualityScore: 4,
-          isOrganic: false,
-          images: [{ url: 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80', isPrimary: true }]
-        },
-        {
-          _id: 'mock-3',
-          title: 'Organic Potatoes',
-          price: 180,
-          unit: 'kg',
-          availableQuantity: 85,
-          initialQuantity: 120,
-          status: 'active',
-          category: { name: 'Vegetables' },
-          district: 'Badulla',
-          city: 'Bandarawela',
-          farmer: { firstName: 'Nimal', lastName: 'Fernando' },
-          qualityScore: 4.5,
-          isOrganic: true,
-          images: [{ url: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80', isPrimary: true }]
-        },
-        {
-          _id: 'mock-4',
-          title: 'Fresh Cabbage',
-          price: 120,
-          unit: 'kg',
-          availableQuantity: 40,
-          initialQuantity: 60,
-          status: 'active',
-          category: { name: 'Vegetables' },
-          district: 'Nuwara Eliya',
-          city: 'Nuwara Eliya',
-          farmer: { firstName: 'Priya', lastName: 'Jayasuriya' },
-          qualityScore: 4,
-          isOrganic: false,
-          images: [{ url: 'https://images.unsplash.com/photo-1594282486369-38a8b552c83b?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80', isPrimary: true }]
-        },
-        {
-          _id: 'mock-5',
-          title: 'Organic Cucumber',
-          price: 250,
-          unit: 'kg',
-          availableQuantity: 25,
-          initialQuantity: 40,
-          status: 'active',
-          category: { name: 'Vegetables' },
-          district: 'Galle',
-          city: 'Hikkaduwa',
-          farmer: { firstName: 'Ajith', lastName: 'Perera' },
-          qualityScore: 5,
-          isOrganic: true,
-          images: [{ url: 'https://images.unsplash.com/photo-1449300079323-02e209d9d3a6?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80', isPrimary: true }]
-        },
-        {
-          _id: 'mock-6',
-          title: 'Fresh Bell Peppers',
-          price: 350,
-          unit: 'kg',
-          availableQuantity: 15,
-          initialQuantity: 30,
-          status: 'active',
-          category: { name: 'Vegetables' },
-          district: 'Matale',
-          city: 'Dambulla',
-          farmer: { firstName: 'Saman', lastName: 'Wickramasinghe' },
-          qualityScore: 4.5,
-          isOrganic: false,
-          images: [{ url: 'https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80', isPrimary: true }]
-        }
-      ];
-      
-      setProducts(mockProducts);
-      setTotalProducts(mockProducts.length);
-      
-      console.log('Using mock products data due to API failure');
+      setProducts([]);
+      setTotalProducts(0);
     } finally {
       setLoading(false);
     }
@@ -237,7 +134,7 @@ const ProductListing = () => {
 
   const ProductCard = ({ product, isListView = false }) => {
     const primaryImage = product.images?.find(img => img.isPrimary) || product.images?.[0];
-    const imageUrl = primaryImage?.url || 'https://images.unsplash.com/photo-1546470427-227e8e7dfde8?w=400&h=300&fit=crop';
+    const imageUrl = primaryImage?.url || 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg';
     
     return (
       <Card 

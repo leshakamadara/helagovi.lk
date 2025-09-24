@@ -36,59 +36,8 @@ const Cart = () => {
       //   }
       // })
       
-      // Mock data for now
-      const mockCartItems = [
-        {
-          _id: '1',
-          product: {
-            _id: 'prod1',
-            title: 'Fresh Organic Tomatoes',
-            price: 450,
-            unit: 'kg',
-            district: 'Kandy',
-            city: 'Peradeniya',
-            availableQuantity: 65,
-            isOrganic: true,
-            qualityScore: 5,
-            status: 'active',
-            farmer: {
-              firstName: 'Sunil',
-              lastName: 'Perera'
-            },
-            primaryImage: {
-              url: 'https://images.unsplash.com/photo-1546470427-227e8e7dfde8?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80'
-            }
-          },
-          quantity: 3,
-          addedAt: '2024-01-22T00:00:00.000Z'
-        },
-        {
-          _id: '2',
-          product: {
-            _id: 'prod2',
-            title: 'Fresh Carrots',
-            price: 350,
-            unit: 'kg',
-            district: 'Colombo',
-            city: 'Negombo',
-            availableQuantity: 40,
-            isOrganic: false,
-            qualityScore: 4,
-            status: 'active',
-            farmer: {
-              firstName: 'Jane',
-              lastName: 'Smith'
-            },
-            primaryImage: {
-              url: 'https://images.unsplash.com/photo-1445282768818-728615cc910a?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80'
-            }
-          },
-          quantity: 2,
-          addedAt: '2024-01-21T00:00:00.000Z'
-        }
-      ]
-      
-      setCartItems(mockCartItems)
+      // Initialize with empty cart - will be populated when cart API is implemented
+      setCartItems([])
     } catch (error) {
       console.error('Error fetching cart:', error)
     } finally {
@@ -151,7 +100,7 @@ const Cart = () => {
   }
 
   const calculateShipping = () => {
-    // Mock shipping calculation
+    // Shipping calculation - can be enhanced with real shipping logic
     return cartItems.length > 0 ? 200 : 0
   }
 
@@ -217,7 +166,7 @@ const Cart = () => {
                 <div key={item._id} className="p-6">
                   <div className="flex items-center space-x-4">
                     <img
-                      src={item.product.primaryImage?.url || 'https://via.placeholder.com/80x80?text=Product'}
+                      src={item.product.primaryImage?.url || 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg'}
                       alt={item.product.title}
                       className="h-20 w-20 rounded-lg object-cover"
                       onError={(e) => e.target.src = 'https://via.placeholder.com/80x80?text=Product'}

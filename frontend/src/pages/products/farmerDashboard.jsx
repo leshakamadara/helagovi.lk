@@ -202,11 +202,11 @@ const FarmerDashboard = () => {
                     <div className="flex items-center space-x-4">
                       <div className="w-16 h-16 rounded-lg overflow-hidden">
                         <img
-                          src={product.images?.[0]?.url || 'https://via.placeholder.com/64?text=No+Image'}
+                          src={product.images?.[0]?.url || 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg'}
                           alt={product.title}
                           className="w-full h-full object-cover"
                           onError={(e) => {
-                            e.target.src = 'https://via.placeholder.com/64?text=No+Image';
+                            e.target.src = 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg';
                           }}
                         />
                       </div>
