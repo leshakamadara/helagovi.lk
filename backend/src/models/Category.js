@@ -86,7 +86,7 @@ const categorySchema = new Schema({
 categorySchema.index({ 'name.en': 'text', 'name.si': 'text' });
 categorySchema.index({ parent: 1, level: 1 });
 categorySchema.index({ isActive: 1, sortOrder: 1 });
-categorySchema.index({ slug: 1 }, { unique: true });
+// Note: slug index already defined at field level with unique: true
 
 // Virtual for full path
 categorySchema.virtual('fullPath').get(function() {

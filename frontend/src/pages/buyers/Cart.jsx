@@ -12,6 +12,8 @@ import {
   CreditCard
 } from 'lucide-react'
 import { Button } from '../../components/ui/button'
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb'
+import { H1, H2, H3, P, Muted, Large } from '../../components/ui/typography'
 
 const Cart = () => {
   const { user } = useAuth()
@@ -182,9 +184,28 @@ const Cart = () => {
 
   return (
     <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      {/* Breadcrumbs */}
+      <div className="mb-6">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/">Home</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/products">Products</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Shopping Cart</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
+
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Shopping Cart</h1>
-        <p className="mt-2 text-gray-600">Review your items and proceed to checkout</p>
+        <H1 className="text-gray-900">Shopping Cart</H1>
+        <P className="text-gray-600">Review your items and proceed to checkout</P>
       </div>
 
       {cartItems.length > 0 ? (
@@ -203,7 +224,7 @@ const Cart = () => {
                     />
                     
                     <div className="flex-1">
-                      <h3 className="text-lg font-medium text-gray-900">{item.product.title}</h3>
+                      <H3 className="text-gray-900">{item.product.title}</H3>
                       <div className="flex items-center space-x-2 text-sm text-gray-600 mt-1">
                         <MapPin className="h-4 w-4" />
                         <span>{item.product.city}, {item.product.district}</span>
@@ -280,7 +301,7 @@ const Cart = () => {
           {/* Order Summary */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Order Summary</h3>
+              <H3 className="text-gray-900 mb-4">Order Summary</H3>
               
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
@@ -295,7 +316,7 @@ const Cart = () => {
                 
                 <div className="border-t border-gray-200 pt-3">
                   <div className="flex justify-between">
-                    <span className="text-lg font-medium text-gray-900">Total</span>
+                    <Large className="text-gray-900">Total</Large>
                     <span className="text-xl font-bold text-green-600">
                       {formatCurrency(calculateTotal())}
                     </span>
@@ -335,10 +356,10 @@ const Cart = () => {
       ) : (
         <div className="text-center py-12">
           <ShoppingCart className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">Your cart is empty</h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <H3 className="text-gray-900">Your cart is empty</H3>
+          <P className="text-gray-500">
             Add some fresh products to your cart and come back here to checkout.
-          </p>
+          </P>
           <div className="mt-6">
             <Link
               to="/"

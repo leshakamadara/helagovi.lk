@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from "../../context/AuthContext";
 import { Sprout, ShoppingCart, Users, ArrowRight } from 'lucide-react'
+import { H1, H2, H3, P, Muted, Large } from '../../components/ui/typography'
 
 const Home = () => {
   const { isAuthenticated, user } = useAuth()
@@ -21,12 +22,12 @@ const Home = () => {
       <section className="bg-gradient-to-r from-primary-600 to-primary-700 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
+            <H1 className="text-white mb-6">
               Welcome to HeleGovi
-            </h1>
-            <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">
+            </H1>
+            <Large className="text-white mb-8 max-w-3xl mx-auto">
               Connecting farmers and buyers in a seamless online marketplace for agricultural products
-            </p>
+            </Large>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               {isAuthenticated ? (
                 <Link
@@ -60,38 +61,38 @@ const Home = () => {
       {/* Features Section */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
+          <H2 className="text-center text-gray-900 mb-12">
             Why Choose HeleGovi?
-          </h2>
+          </H2>
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="bg-primary-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Sprout className="h-8 w-8 text-primary-600" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">For Farmers</h3>
-              <p className="text-gray-600">
+              <H3 className="mb-2">For Farmers</H3>
+              <P className="text-gray-600">
                 Reach more buyers, showcase your products, and grow your business with our platform.
-              </p>
+              </P>
             </div>
 
             <div className="text-center">
               <div className="bg-primary-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <ShoppingCart className="h-8 w-8 text-primary-600" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">For Buyers</h3>
-              <p className="text-gray-600">
+              <H3 className="mb-2">For Buyers</H3>
+              <P className="text-gray-600">
                 Discover fresh agricultural products directly from farmers at competitive prices.
-              </p>
+              </P>
             </div>
 
             <div className="text-center">
               <div className="bg-primary-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Users className="h-8 w-8 text-primary-600" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Community</h3>
-              <p className="text-gray-600">
+              <H3 className="mb-2">Community</H3>
+              <P className="text-gray-600">
                 Join a growing community of farmers and buyers supporting local agriculture.
-              </p>
+              </P>
             </div>
           </div>
         </div>
@@ -100,12 +101,12 @@ const Home = () => {
       {/* CTA Section */}
       <section className="bg-gray-50 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">
+          <H2 className="text-gray-900 mb-6">
             Ready to get started?
-          </h2>
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+          </H2>
+          <Large className="text-gray-600 mb-8 max-w-3xl mx-auto">
             Join thousands of farmers and buyers who are already using HeleGovi to transform agricultural trade.
-          </p>
+          </Large>
           {!isAuthenticated && (
             <Link
               to="/register"

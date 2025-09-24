@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from '../../components/ui/button';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb';
 
 const EditProduct = () => {
   const { id } = useParams(); // product ID from URL
@@ -102,7 +103,31 @@ const EditProduct = () => {
   if (!product) return <p>Product not found.</p>;
 
   return (
-    <div className="p-6">
+    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      {/* Breadcrumbs */}
+      <div className="mb-6">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/">Home</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/farmer-dashboard">Dashboard</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/my-products">My Products</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Edit Product</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
+
+      <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Edit Product</h1>
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
@@ -189,6 +214,7 @@ const EditProduct = () => {
           </Button>
         </div>
       </form>
+      </div>
     </div>
   );
 };

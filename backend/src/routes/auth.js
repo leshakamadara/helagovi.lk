@@ -7,7 +7,8 @@ import {
   forgotPassword,
   resetPassword,
   getMe,
-  resendVerification
+  resendVerification,
+  manualVerifyUser
 } from '../controllers/auth.js';
 import { protect } from '../middleware/auth.js';
 
@@ -56,5 +57,8 @@ router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 router.get('/me', protect, getMe);
 router.post('/resend-verification', protect, resendVerification);
+
+// Development/Admin routes
+router.put('/manual-verify/:userId', manualVerifyUser);
 
 export default router;

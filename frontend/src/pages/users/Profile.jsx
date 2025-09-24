@@ -5,6 +5,8 @@ import { User, Mail, Phone, Camera, Trash2, Save, Shield, CheckCircle, AlertCirc
 import { api } from '../../lib/axios'
 import toast from 'react-hot-toast'
 import { Button } from '../../components/ui/button'
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb'
+import { H1, H2, H3, P, Muted, Large } from '../../components/ui/typography'
 
 const Profile = () => {
   const [editMode, setEditMode] = useState(false)
@@ -82,6 +84,25 @@ const Profile = () => {
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      {/* Breadcrumbs */}
+      <div className="mb-6">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/">Home</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href={user?.role === 'farmer' ? '/farmer-dashboard' : '/buyer-dashboard'}>Dashboard</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Profile</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
+
       <div className="bg-white shadow rounded-lg overflow-hidden">
         {/* Profile Header */}
         <div className="px-6 py-8 bg-gradient-to-r from-primary-500 to-primary-600 text-white">
@@ -127,11 +148,11 @@ const Profile = () => {
               )}
             </div>
             <div>
-              <h1 className="text-2xl font-bold">
+              <H2>
                 {user.firstName} {user.lastName}
-              </h1>
-              <p className="text-primary-100 capitalize">{user.role}</p>
-              <p className="text-primary-100">{user.email}</p>
+              </H2>
+              <P className="text-primary-100 capitalize">{user.role}</P>
+              <P className="text-primary-100">{user.email}</P>
             </div>
           </div>
         </div>
@@ -235,17 +256,17 @@ const Profile = () => {
 
           {/* Account Actions */}
           <div className="mt-8 pt-8 border-t border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Account Actions</h2>
+            <H2 className="mb-4">Account Actions</H2>
             
             {/* Email Verification Section */}
             <div className="mb-6">
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Email Verification</h3>
+              <H3 className="mb-3 text-gray-700">Email Verification</H3>
               {user.isVerified ? (
                 <div className="flex items-center p-3 bg-green-50 border border-green-200 rounded-md">
                   <CheckCircle className="h-5 w-5 text-green-400 mr-3" />
                   <div>
-                    <p className="text-sm font-medium text-green-800">Email Verified</p>
-                    <p className="text-sm text-green-700">Your email address has been verified</p>
+                    <P className="font-medium text-green-800">Email Verified</P>
+                    <Muted className="text-green-700">Your email address has been verified</Muted>
                   </div>
                 </div>
               ) : (
@@ -253,10 +274,10 @@ const Profile = () => {
                   <div className="flex items-start p-3 bg-amber-50 border border-amber-200 rounded-md">
                     <AlertCircle className="h-5 w-5 text-amber-400 mr-3 mt-0.5" />
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-amber-800">Email Not Verified</p>
-                      <p className="text-sm text-amber-700 mt-1">
+                      <P className="font-medium text-amber-800">Email Not Verified</P>
+                      <Muted className="text-amber-700 mt-1">
                         Please verify your email address to access all features and create products.
-                      </p>
+                      </Muted>
                     </div>
                   </div>
                   <Button

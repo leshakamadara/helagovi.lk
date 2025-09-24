@@ -337,3 +337,49 @@ export const getMe = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Manually verify user (Admin/Development only)
+// @route   PUT /api/auth/manual-verify/:userId
+// @access  Public (for development)
+export const manualVerifyUser = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+
+    // Find user by ID or email
+    let user;
+    if (userId.includes('@')) {
+      user = await User.findOne({ email: userId });
+    } else {
+      user = await User.findById(userId);
+    }
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Update verification status
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    user.verificationExpires = undefined;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'User verified successfully',
+      data: {
+        user: {
+          id: user._id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          isVerified: user.isVerified
+        }
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};

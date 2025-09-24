@@ -16,6 +16,8 @@ import {
   Plus
 } from 'lucide-react'
 import { Button } from '../../components/ui/button'
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb'
+import { H1, H2, H3, P, Muted, Large } from '../../components/ui/typography'
 
 const BuyerDashboard = () => {
   const { user } = useAuth()
@@ -118,10 +120,25 @@ const BuyerDashboard = () => {
 
   return (
     <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      {/* Breadcrumbs */}
+      <div className="mb-6">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/">Home</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Buyer Dashboard</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
+
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user?.firstName || 'Buyer'}!</h1>
-        <p className="mt-2 text-gray-600">Discover fresh agricultural products directly from local farmers.</p>
+        <H1 className="text-gray-900">Welcome back, {user?.firstName || 'Buyer'}!</H1>
+        <P className="text-gray-600">Discover fresh agricultural products directly from local farmers.</P>
       </div>
 
       {/* Stats Overview */}
@@ -134,8 +151,8 @@ const BuyerDashboard = () => {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Orders</dt>
-                  <dd className="text-lg font-medium text-gray-900">{stats.totalOrders}</dd>
+                  <Muted>Total Orders</Muted>
+                  <Large className="font-medium text-gray-900">{stats.totalOrders}</Large>
                 </dl>
               </div>
             </div>
@@ -150,8 +167,8 @@ const BuyerDashboard = () => {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Completed</dt>
-                  <dd className="text-lg font-medium text-gray-900">{stats.completedOrders}</dd>
+                  <Muted>Completed</Muted>
+                  <Large className="font-medium text-gray-900">{stats.completedOrders}</Large>
                 </dl>
               </div>
             </div>
@@ -166,8 +183,8 @@ const BuyerDashboard = () => {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Spent</dt>
-                  <dd className="text-lg font-medium text-gray-900">{formatCurrency(stats.totalSpent)}</dd>
+                  <Muted>Total Spent</Muted>
+                  <Large className="font-medium text-gray-900">{formatCurrency(stats.totalSpent)}</Large>
                 </dl>
               </div>
             </div>
@@ -182,8 +199,8 @@ const BuyerDashboard = () => {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Favorites</dt>
-                  <dd className="text-lg font-medium text-gray-900">{stats.favoriteCount}</dd>
+                  <Muted>Favorites</Muted>
+                  <Large className="font-medium text-gray-900">{stats.favoriteCount}</Large>
                 </dl>
               </div>
             </div>
@@ -196,15 +213,15 @@ const BuyerDashboard = () => {
         <div className="lg:col-span-2">
           <div className="bg-white shadow rounded-lg">
             <div className="px-4 py-5 sm:p-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Quick Actions</h3>
+              <H3 className="mb-4">Quick Actions</H3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Link to="/" className="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
                   <div className="flex-shrink-0">
                     <Search className="h-10 w-10 text-green-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">Browse Products</p>
-                    <p className="text-sm text-gray-500">Explore fresh agricultural products</p>
+                    <P className="font-medium text-gray-900">Browse Products</P>
+                    <Muted>Explore fresh agricultural products</Muted>
                   </div>
                 </Link>
 
@@ -213,8 +230,8 @@ const BuyerDashboard = () => {
                     <ShoppingBag className="h-10 w-10 text-blue-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">My Orders</p>
-                    <p className="text-sm text-gray-500">Track your orders</p>
+                    <P className="font-medium text-gray-900">My Orders</P>
+                    <Muted>Track your orders</Muted>
                   </div>
                 </Link>
 
@@ -223,8 +240,8 @@ const BuyerDashboard = () => {
                     <Heart className="h-10 w-10 text-red-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">Favorites</p>
-                    <p className="text-sm text-gray-500">View saved products</p>
+                    <P className="font-medium text-gray-900">Favorites</P>
+                    <Muted>View saved products</Muted>
                   </div>
                 </Link>
 
@@ -233,8 +250,8 @@ const BuyerDashboard = () => {
                     <ShoppingCart className="h-10 w-10 text-yellow-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">Shopping Cart</p>
-                    <p className="text-sm text-gray-500">Review your items</p>
+                    <P className="font-medium text-gray-900">Shopping Cart</P>
+                    <Muted>Review your items</Muted>
                   </div>
                 </Link>
               </div>
@@ -244,30 +261,30 @@ const BuyerDashboard = () => {
 
         <div className="bg-white shadow rounded-lg">
           <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Order Summary</h3>
+            <H3 className="mb-4">Order Summary</H3>
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Pending Orders</span>
-                  <span className="font-medium">{stats.totalOrders - stats.completedOrders}</span>
+                  <Muted>Pending Orders</Muted>
+                  <P className="font-medium">{stats.totalOrders - stats.completedOrders}</P>
                 </div>
               </div>
               <div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Completed Orders</span>
-                  <span className="font-medium">{stats.completedOrders}</span>
+                  <Muted>Completed Orders</Muted>
+                  <P className="font-medium">{stats.completedOrders}</P>
                 </div>
               </div>
               <div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Avg. Order Value</span>
-                  <span className="font-medium">{formatCurrency(stats.totalSpent / (stats.totalOrders || 1))}</span>
+                  <Muted>Avg. Order Value</Muted>
+                  <P className="font-medium">{formatCurrency(stats.totalSpent / (stats.totalOrders || 1))}</P>
                 </div>
               </div>
               <div className="pt-4 border-t border-gray-200">
                 <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-900">Total Spent</span>
-                  <span className="text-lg font-bold text-green-600">{formatCurrency(stats.totalSpent)}</span>
+                  <P className="font-medium text-gray-900">Total Spent</P>
+                  <Large className="font-bold text-green-600">{formatCurrency(stats.totalSpent)}</Large>
                 </div>
               </div>
             </div>
@@ -281,7 +298,7 @@ const BuyerDashboard = () => {
         <div className="bg-white shadow rounded-lg">
           <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">Fresh Products</h3>
+              <H3>Fresh Products</H3>
               <Link to="/" className="text-sm font-medium text-green-600 hover:text-green-500">
                 View all
               </Link>
@@ -300,20 +317,20 @@ const BuyerDashboard = () => {
                         onError={(e) => e.target.src = 'https://via.placeholder.com/50x50?text=Product'}
                       />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{product.title}</p>
+                        <P className="font-medium text-gray-900">{product.title}</P>
                         <div className="flex items-center space-x-2 text-sm text-gray-500">
                           <MapPin className="h-3 w-3" />
-                          <span>{product.district}</span>
+                          <Muted>{product.district}</Muted>
                           {product.farmer && (
-                            <span>• by {product.farmer.firstName} {product.farmer.lastName}</span>
+                            <Muted>• by {product.farmer.firstName} {product.farmer.lastName}</Muted>
                           )}
                         </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-medium text-green-600">
+                      <P className="font-medium text-green-600">
                         {formatCurrency(product.price)}/{product.unit}
-                      </p>
+                      </P>
                       <Button 
                         variant="link"
                         size="sm"
@@ -328,8 +345,8 @@ const BuyerDashboard = () => {
             ) : (
               <div className="px-4 py-8 text-center">
                 <Search className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">Discover Products</h3>
-                <p className="mt-1 text-sm text-gray-500">Browse fresh agricultural products from local farmers.</p>
+                <H3 className="mt-2">Discover Products</H3>
+                <Muted className="mt-1">Browse fresh agricultural products from local farmers.</Muted>
                 <div className="mt-6">
                   <Link
                     to="/"
@@ -348,7 +365,7 @@ const BuyerDashboard = () => {
         <div className="bg-white shadow rounded-lg">
           <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">Recent Orders</h3>
+              <H3>Recent Orders</H3>
               <Link to="/my-orders" className="text-sm font-medium text-blue-600 hover:text-blue-500">
                 View all
               </Link>
@@ -360,16 +377,16 @@ const BuyerDashboard = () => {
                 <div key={order._id} className="px-4 py-4 hover:bg-gray-50">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Order #{order.orderNumber}</p>
+                      <P className="font-medium text-gray-900">Order #{order.orderNumber}</P>
                       <div className="flex items-center space-x-2 text-sm text-gray-500 mt-1">
                         <Clock className="h-3 w-3" />
-                        <span>{new Date(order.createdAt).toLocaleDateString()}</span>
-                        <span>• {order.items} items</span>
-                        <span>• from {order.farmer.firstName} {order.farmer.lastName}</span>
+                        <Muted>{new Date(order.createdAt).toLocaleDateString()}</Muted>
+                        <Muted>• {order.items} items</Muted>
+                        <Muted>• from {order.farmer.firstName} {order.farmer.lastName}</Muted>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-medium text-gray-900">{formatCurrency(order.total)}</p>
+                      <P className="font-medium text-gray-900">{formatCurrency(order.total)}</P>
                       <div className="mt-1">
                         {getStatusBadge(order.status)}
                       </div>
@@ -380,8 +397,8 @@ const BuyerDashboard = () => {
             ) : (
               <div className="px-4 py-8 text-center">
                 <ShoppingBag className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No orders yet</h3>
-                <p className="mt-1 text-sm text-gray-500">Start shopping to see your orders here.</p>
+                <H3 className="mt-2">No orders yet</H3>
+                <Muted className="mt-1">Start shopping to see your orders here.</Muted>
                 <div className="mt-6">
                   <Link
                     to="/"

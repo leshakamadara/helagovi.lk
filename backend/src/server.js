@@ -63,7 +63,10 @@ app.use(errorHandler);
 
 // Connect DB and start server
 connectDB().then(() => {
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  app.listen(PORT, () => console.log(`Server running on port ${PORT} with database`));
+}).catch((error) => {
+  console.log('Database connection failed, starting server without DB:', error.message);
+  app.listen(PORT, () => console.log(`Server running on port ${PORT} WITHOUT database`));
 });
 
 

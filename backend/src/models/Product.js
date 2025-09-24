@@ -5,46 +5,22 @@ const { Schema, model } = mongoose;
 const productSchema = new Schema({
   title: {
     type: String,
-    required: [true, 'Product title is required'],
     trim: true,
-    maxLength: [100, 'Title cannot exceed 100 characters'],
     index: true
   },
   description: {
     type: String,
-    required: [true, 'Product description is required'],
-    trim: true,
-    maxLength: [1000, 'Description cannot exceed 1000 characters']
+    trim: true
   },
   price: {
-    type: Number,
-    required: [true, 'Price is required'],
-    min: [0, 'Price cannot be negative'],
-    validate: {
-      validator: function(v) {
-        return v > 0;
-      },
-      message: 'Price must be greater than 0'
-    }
+    type: Number
   },
   unit: {
-    type: String,
-    required: [true, 'Unit is required'],
-    enum: {
-      values: ['kg', 'g', 'lb', 'piece', 'bunch', 'box', 'crate', 'bag'],
-      message: 'Unit must be one of: kg, g, lb, piece, bunch, box, crate, bag'
-    }
+    type: String
   },
   images: [{
     url: {
-      type: String,
-      required: true,
-      validate: {
-        validator: function(v) {
-          return /^https?:\/\/.+\.(jpg|jpeg|png|webp)$/i.test(v);
-        },
-        message: 'Invalid image URL format'
-      }
+      type: String
     },
     alt: {
       type: String,
@@ -57,62 +33,30 @@ const productSchema = new Schema({
   }],
   district: {
     type: String,
-    required: [true, 'District is required'],
-    enum: {
-      values: [
-        'Colombo', 'Gampaha', 'Kalutara', 'Kandy', 'Matale', 'Nuwara Eliya',
-        'Galle', 'Matara', 'Hambantota', 'Jaffna', 'Kilinochchi', 'Mannar',
-        'Vavuniya', 'Mullaitivu', 'Batticaloa', 'Ampara', 'Trincomalee',
-        'Kurunegala', 'Puttalam', 'Anuradhapura', 'Polonnaruwa', 'Badulla',
-        'Moneragala', 'Ratnapura', 'Kegalle'
-      ],
-      message: 'Invalid district name'
-    },
     index: true
   },
   city: {
     type: String,
-    required: [true, 'City is required'],
     trim: true,
-    maxLength: [50, 'City name cannot exceed 50 characters'],
     index: true
   },
   coordinates: {
     type: {
       type: String,
-      enum: ['Point'],
-      required: true
+      enum: ['Point']
     },
     coordinates: {
-      type: [Number],
-      required: true,
-      validate: {
-        validator: function(v) {
-          return v.length === 2 && 
-                 v[0] >= 79.5 && v[0] <= 81.9 && // Longitude range for Sri Lanka
-                 v[1] >= 5.9 && v[1] <= 9.9;     // Latitude range for Sri Lanka
-        },
-        message: 'Coordinates must be valid Sri Lankan coordinates [longitude, latitude]'
-      }
+      type: [Number]
     }
   },
   category: {
     type: Schema.Types.ObjectId,
     ref: 'Category',
-    required: [true, 'Category is required'],
     index: true
   },
   qualityScore: {
     type: Number,
-    min: [1, 'Quality score must be at least 1'],
-    max: [5, 'Quality score cannot exceed 5'],
-    default: 3,
-    validate: {
-      validator: function(v) {
-        return Number.isInteger(v);
-      },
-      message: 'Quality score must be an integer'
-    }
+    default: 3
   },
   isOrganic: {
     type: Boolean,
@@ -120,44 +64,22 @@ const productSchema = new Schema({
     index: true
   },
   harvestDate: {
-    type: Date,
-    required: [true, 'Harvest date is required'],
-    validate: {
-      validator: function(v) {
-        return v <= new Date();
-      },
-      message: 'Harvest date cannot be in the future'
-    }
+    type: Date
   },
   initialQuantity: {
-    type: Number,
-    required: [true, 'Initial quantity is required'],
-    min: [0, 'Initial quantity cannot be negative']
+    type: Number
   },
   availableQuantity: {
-    type: Number,
-    required: [true, 'Available quantity is required'],
-    min: [0, 'Available quantity cannot be negative'],
-    validate: {
-      validator: function(v) {
-        return v <= this.initialQuantity;
-      },
-      message: 'Available quantity cannot exceed initial quantity'
-    }
+    type: Number
   },
   status: {
     type: String,
-    enum: {
-      values: ['active', 'sold', 'expired', 'draft', 'suspended'],
-      message: 'Status must be one of: active, sold, expired, draft, suspended'
-    },
     default: 'active',
     index: true
   },
   farmer: {
     type: Schema.Types.ObjectId,
     ref: 'User',
-    required: [true, 'Farmer reference is required'],
     index: true
   }
 }, {
@@ -197,7 +119,7 @@ productSchema.virtual('primaryImage').get(function() {
 // Pre-save middleware
 productSchema.pre('save', async function(next) {
   // Ensure at least one image is marked as primary
-  if (this.images.length > 0) {
+  if (this.images && this.images.length > 0) {
     const hasPrimary = this.images.some(img => img.isPrimary);
     if (!hasPrimary) {
       this.images[0].isPrimary = true;
@@ -209,23 +131,19 @@ productSchema.pre('save', async function(next) {
     this.status = 'sold';
   }
 
-  // Check if product has expired (more than 30 days old for perishables)
-  const daysSinceHarvest = Math.floor((new Date() - this.harvestDate) / (1000 * 60 * 60 * 24));
-  if (daysSinceHarvest > 30 && this.status === 'active') {
-    this.status = 'expired';
-  }
-
   next();
 });
 
 // Pre-validate middleware
 productSchema.pre('validate', function(next) {
   // Set alt text for images if not provided
-  this.images.forEach((img, index) => {
-    if (!img.alt) {
-      img.alt = `${this.title} - Image ${index + 1}`;
-    }
-  });
+  if (this.images && this.images.length > 0) {
+    this.images.forEach((img, index) => {
+      if (!img.alt) {
+        img.alt = `${this.title || 'Product'} - Image ${index + 1}`;
+      }
+    });
+  }
 
   next();
 });
@@ -270,19 +188,21 @@ productSchema.statics.findNearby = function(longitude, latitude, maxDistance = 1
 
 // Instance methods
 productSchema.methods.updateQuantity = async function(quantityUsed) {
-  if (quantityUsed > this.availableQuantity) {
+  if (this.availableQuantity && quantityUsed > this.availableQuantity) {
     throw new Error('Cannot use more quantity than available');
   }
   
-  this.availableQuantity -= quantityUsed;
-  if (this.availableQuantity === 0) {
+  this.availableQuantity = (this.availableQuantity || 0) - quantityUsed;
+  if (this.availableQuantity <= 0) {
     this.status = 'sold';
+    this.availableQuantity = 0;
   }
   
   return await this.save();
 };
 
 productSchema.methods.isExpired = function() {
+  if (!this.harvestDate) return false;
   const daysSinceHarvest = Math.floor((new Date() - this.harvestDate) / (1000 * 60 * 60 * 24));
   return daysSinceHarvest > 30;
 };

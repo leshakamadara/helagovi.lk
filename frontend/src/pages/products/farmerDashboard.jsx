@@ -5,6 +5,7 @@ import { Plus, Package, TrendingUp, DollarSign, CheckCircle, AlertCircle, Eye, S
 import { useAuth } from "../../context/AuthContext";
 import { api } from "../../lib/axios";
 import { Button } from '../../components/ui/button';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb';
 
 const FarmerDashboard = () => {
   const [stats, setStats] = useState(null);
@@ -89,6 +90,21 @@ const FarmerDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Breadcrumbs */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/">Home</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Farmer Dashboard</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
+
       {/* Header */}
       <div className="bg-gradient-to-r from-green-600 to-green-700 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
