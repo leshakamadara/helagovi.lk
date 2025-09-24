@@ -11,7 +11,10 @@ const MERCHANT_ID = process.env.PAYHERE_MERCHANT_ID || "1232059";
 const MERCHANT_SECRET = process.env.PAYHERE_MERCHANT_SECRET || "MTUzNjMyNzg3NDMxNDAzNjE3MjgxMDU0MjM1MTI0Mzk2OTQzMDMw";
 const PAYHERE_ACCESS_TOKEN = process.env.PAYHERE_ACCESS_TOKEN || "NE9WeUlQS01xcE00SkZuSnNnanJOSjNEMDo0T1pwcGkwZkdacDRlV2NQZ1RicHZhOFJqb2RkMkFneks4TVBuUWk3VlRmQQ==";
 
-const PUBLIC_URL ="https://https://coraline-plastery-sheba.ngrok-free.dev.ngrok.io"; // ngrok public URL
+const PAYHERE_APP_ID="4OVyIPKMqpM4JFnJsgjrNJ3D0"
+const PAYHERE_APP_SECRET="4OZppi0fGZp4eWcPgTbpva8Rjodd2AgzK8MPnQi7VTfA"
+
+const PUBLIC_URL ="https://coraline-plastery-sheba.ngrok-free.dev"; // ngrok public URL
 
 // -----------------------------
 // Helper: Verify MD5 Signature
@@ -125,10 +128,25 @@ router.post("/charge", async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // Retrieve preapproved token
+    // 1. Retrieve preapproved token
     const savedCard = await SavedCard.findOne({ userId });
     if (!savedCard) return res.status(404).json({ message: "No preapproved token found" });
 
+    // 2. 🔑 Fetch a fresh access token
+    const auth = Buffer.from(`${PAYHERE_APP_ID}:${PAYHERE_APP_SECRET}`).toString("base64");
+    const tokenRes = await axios.post(
+      "https://sandbox.payhere.lk/merchant/v1/oauth/token",
+      "grant_type=client_credentials",
+      {
+        headers: {
+          Authorization: `Basic ${auth}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      }
+    );
+    const accessToken = tokenRes.data.access_token;
+
+    // 3. Build charge body
     const body = {
       type: "PAYMENT",
       order_id,
@@ -138,13 +156,26 @@ router.post("/charge", async (req, res) => {
       customer_token: savedCard.token,
       custom_1: userId,
       notify_url: `${PUBLIC_URL}/api/pay/charge-notify`,
-      itemList: [{ name: items, number: order_id, quantity: 1, unit_amount: amount }]
+      itemList: [
+        {
+          name: items,
+          number: order_id,
+          quantity: 1,
+          unit_amount: amount,
+        },
+      ],
     };
 
+    // 4. Call PayHere charge API
     const response = await axios.post(
       "https://sandbox.payhere.lk/merchant/v1/payment/charge",
       body,
-      { headers: { Authorization: `Bearer ${PAYHERE_ACCESS_TOKEN}`, "Content-Type": "application/json" } }
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      }
     );
 
     const data = response.data;
