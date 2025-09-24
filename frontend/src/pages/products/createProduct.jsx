@@ -19,6 +19,7 @@ import { useAuth } from '../../context/AuthContext';
 
 // Replace this with your actual lib/axios.js import
 import api from '../../lib/axios';
+import imageService from '../../services/imageService';
 
 const ProductCreationForm = () => {  
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -139,28 +140,77 @@ const ProductCreationForm = () => {
     }
   };
 
-  // Shared function for processing image files
-  const processImageFiles = (files) => {
+    // Shared function for processing image files
+  const processImageFiles = async (files) => {
+    // Validate files first
+    const validation = imageService.validateImages(files);
+    if (!validation.isValid) {
+      setErrors(prev => ({ ...prev, images: validation.errors.join(', ') }));
+      return;
+    }
+
+    // Check total image limit
     if (formData.images.length + files.length > 5) {
       setErrors(prev => ({ ...prev, images: 'Maximum 5 images allowed' }));
       return;
     }
 
-    // For demo purposes, we'll use placeholder URLs
-    // In a real app, you'd upload these files to a cloud storage service like AWS S3, Cloudinary, etc.
-    const newImages = files.map((file, index) => ({
-      url: `https://images.unsplash.com/photo-1546470427-227e8e7dfde8.jpg?w=400&h=300&fit=crop&t=${Date.now()}_${index}`,
-      alt: `${formData.title || 'Product'} - Image ${formData.images.length + index + 1}`,
-      isPrimary: formData.images.length === 0 && index === 0,
-      file: file, // Keep file for preview
+    // Create temporary preview objects while uploading
+    const tempImages = files.map((file, index) => ({
+      id: Math.random().toString(36).substr(2, 9),
+      file: file,
       preview: URL.createObjectURL(file),
-      id: Math.random().toString(36).substr(2, 9)
+      uploading: true,
+      isPrimary: formData.images.length === 0 && index === 0,
+      alt: `${formData.title || 'Product'} - Image ${formData.images.length + index + 1}`
     }));
 
+    // Add temp images to show previews immediately
     setFormData(prev => ({
       ...prev,
-      images: [...prev.images, ...newImages]
+      images: [...prev.images, ...tempImages]
     }));
+
+    // Upload images to Cloudinary
+    try {
+      const uploadResult = await imageService.uploadProductImages(files);
+      
+      if (uploadResult.success) {
+        // Replace temp images with real uploaded images
+        setFormData(prev => ({
+          ...prev,
+          images: prev.images.map(img => {
+            const tempImg = tempImages.find(temp => temp.id === img.id);
+            if (tempImg) {
+              const uploadedImg = uploadResult.data[tempImages.indexOf(tempImg)];
+              return {
+                ...uploadedImg,
+                id: img.id,
+                preview: img.preview,
+                uploading: false,
+                uploaded: true
+              };
+            }
+            return img;
+          })
+        }));
+      } else {
+        // Remove temp images on upload failure
+        setFormData(prev => ({
+          ...prev,
+          images: prev.images.filter(img => !tempImages.find(temp => temp.id === img.id))
+        }));
+        setErrors(prev => ({ ...prev, images: uploadResult.error }));
+      }
+    } catch (error) {
+      console.error('Image upload error:', error);
+      // Remove temp images on error
+      setFormData(prev => ({
+        ...prev,
+        images: prev.images.filter(img => !tempImages.find(temp => temp.id === img.id))
+      }));
+      setErrors(prev => ({ ...prev, images: 'Failed to upload images' }));
+    }
     
     if (errors.images) {
       setErrors(prev => ({ ...prev, images: '' }));
@@ -204,7 +254,19 @@ const ProductCreationForm = () => {
     }
   };
 
-  const removeImage = (imageId) => {
+  const removeImage = async (imageId) => {
+    const imageToRemove = formData.images.find(img => img.id === imageId);
+    
+    if (imageToRemove?.cloudinaryId) {
+      try {
+        await imageService.deleteProductImage(imageToRemove.cloudinaryId);
+        console.log('Image deleted from Cloudinary successfully');
+      } catch (error) {
+        console.warn('Failed to delete image from Cloudinary:', error);
+        // Continue with local removal even if Cloudinary deletion fails
+      }
+    }
+    
     setFormData(prev => ({
       ...prev,
       images: prev.images.filter(img => img.id !== imageId)
@@ -212,10 +274,24 @@ const ProductCreationForm = () => {
   };
 
   const validateForm = () => {
-    // VALIDATION TEMPORARILY DISABLED FOR DEBUGGING
-    console.log('🔍 Form validation bypassed for debugging');
-    console.log('📝 Current form data:', formData);
-    return true; // Always pass validation
+    const newErrors = {};
+
+    // Check if any images are still uploading
+    const uploadingImages = formData.images.filter(img => img.uploading);
+    if (uploadingImages.length > 0) {
+      newErrors.images = 'Please wait for all images to finish uploading';
+      setErrors(newErrors);
+      return false;
+    }
+
+    // Basic required field validation
+    if (!formData.title?.trim()) newErrors.title = 'Product title is required';
+    if (!formData.description?.trim()) newErrors.description = 'Product description is required';
+    if (!formData.price || formData.price <= 0) newErrors.price = 'Valid price is required';
+    if (!formData.initialQuantity || formData.initialQuantity <= 0) newErrors.initialQuantity = 'Valid quantity is required';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
@@ -257,15 +333,20 @@ const ProductCreationForm = () => {
         harvestDate: formData.harvestDate || '2025-09-22', // Default to yesterday
         initialQuantity: parseFloat(formData.initialQuantity) || 1,
         availableQuantity: parseFloat(formData.availableQuantity) || 1,
-        images: formData.images.length > 0 ? formData.images.map(img => ({
-          url: img.url,
-          alt: img.alt,
-          isPrimary: img.isPrimary
-        })) : [{ // Default image if none uploaded
-          url: 'https://images.unsplash.com/photo-1546470427-227e8e7dfde8?w=400&h=300&fit=crop',
-          alt: 'Default product image',
-          isPrimary: true
-        }]
+        images: formData.images.length > 0 && formData.images.filter(img => img.url && !img.uploading).length > 0 
+          ? formData.images
+              .filter(img => img.url && !img.uploading) // Only include successfully uploaded images
+              .map(img => ({
+                url: img.url,
+                alt: img.alt || 'Product image',
+                isPrimary: img.isPrimary || false,
+                publicId: img.publicId // Include for future deletion
+              })) 
+          : [{ // Default image if none uploaded successfully
+              url: 'https://images.unsplash.com/photo-1546470427-227e8e7dfde8?w=400&h=300&fit=crop',
+              alt: 'Default product image',
+              isPrimary: true
+            }]
       };
 
       // Debug: Log the data being sent
@@ -758,15 +839,28 @@ const ProductCreationForm = () => {
                       {formData.images.map((image) => (
                         <div key={image.id} className="relative">
                           <img
-                            src={image.preview}
+                            src={image.url || image.preview}
                             alt="Product"
-                            className="w-full h-24 object-cover rounded-lg border"
+                            className={`w-full h-24 object-cover rounded-lg border ${
+                              image.uploading ? 'opacity-50' : ''
+                            }`}
                           />
+                          {image.uploading && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg">
+                              <Loader2 className="h-6 w-6 animate-spin text-white" />
+                            </div>
+                          )}
+                          {image.isPrimary && (
+                            <div className="absolute top-1 left-1 bg-green-500 text-white text-xs px-2 py-1 rounded">
+                              Primary
+                            </div>
+                          )}
                           <Button
                             type="button"
                             variant="destructive"
                             size="sm"
                             onClick={() => removeImage(image.id)}
+                            disabled={image.uploading}
                             className="absolute -top-2 -right-2 rounded-full p-1 h-6 w-6"
                           >
                             <X className="h-3 w-3" />

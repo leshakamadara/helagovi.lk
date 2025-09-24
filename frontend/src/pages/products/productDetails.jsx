@@ -2,8 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { formatDate, getStatusColor, getFreshnessColor } from '../../lib/utils';
+import api from '../../lib/axios';
 import { Button } from '../../components/ui/button';
 import { H1, H2, H3, P, Muted, Large } from '../../components/ui/typography';
+import { Card, CardContent } from '../../components/ui/card';
+import { Alert, AlertDescription } from '../../components/ui/alert';
+import { Badge } from '../../components/ui/badge';
+import LoginModal from '../../components/LoginModal';
 
 import { 
   MapPin, 
@@ -37,6 +42,16 @@ const ProductDetails = () => {
   const [purchasing, setPurchasing] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
+
+  // Helper function to safely render multilingual text
+  const renderText = (text, defaultValue = '') => {
+    if (!text) return defaultValue;
+    if (typeof text === 'string') return text;
+    if (typeof text === 'object' && text.en) return text.en;
+    return defaultValue;
+  };
 
   // API integration function
   const apiCall = async (url, options = {}) => {
@@ -69,60 +84,128 @@ const ProductDetails = () => {
       
       // Try to fetch from API first
       try {
-        const response = await fetch(`/api/products/${productId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setProduct(data.data);
+        const response = await api.get(`/products/${productId}`);
+        if (response.data?.success && response.data?.data) {
+          console.log('Successfully fetched product from API:', response.data.data);
+          setProduct(response.data.data);
           return;
         }
       } catch (apiError) {
-        console.log('API not available, using mock data');
+        console.log('API not available, using mock data:', apiError.message);
       }
       
-      // Mock product data if API fails
-      const mockProduct = {
-        _id: productId,
-        title: "Fresh Organic Tomatoes",
-        description: "Premium quality organic tomatoes grown without pesticides. Perfect for salads, cooking, and fresh consumption. Harvested at peak ripeness.",
-        price: 450,
-        unit: "kg",
-        images: [
-          { url: "https://images.unsplash.com/photo-1546470427-227e8e7dfde8?auto=format&fit=crop&w=500&q=80", alt: "Fresh Organic Tomatoes - Main", isPrimary: true },
-          { url: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&w=500&q=80", alt: "Tomatoes Close-up", isPrimary: false },
-          { url: "https://images.unsplash.com/photo-1592841200221-a6898f307baa?auto=format&fit=crop&w=500&q=80", alt: "Tomato Farm", isPrimary: false }
-        ],
-        district: "Kandy",
-        city: "Peradeniya",
-        category: { _id: "cat1", name: "Vegetables" },
-        qualityScore: 5,
-        isOrganic: true,
-        harvestDate: "2024-01-15T00:00:00.000Z",
-        initialQuantity: 100,
-        availableQuantity: 65,
-        status: "active",
-        farmer: {
-          _id: "farmer1",
-          firstName: "Sunil",
-          lastName: "Perera",
-          email: "sunil@example.com",
-          phone: "+94 77 123 4567"
+      // Mock products data matching ProductListing mock data
+      const mockProducts = {
+        'mock-1': {
+          _id: 'mock-1',
+          title: "Fresh Organic Tomatoes",
+          description: "Premium quality organic tomatoes grown without pesticides. Perfect for salads, cooking, and fresh consumption. Harvested at peak ripeness.",
+          price: 450,
+          unit: "kg",
+          images: [
+            { url: "https://images.unsplash.com/photo-1546470427-227e8e7dfde8?auto=format&fit=crop&w=500&q=80", alt: "Fresh Organic Tomatoes - Main", isPrimary: true },
+            { url: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&w=500&q=80", alt: "Tomatoes Close-up", isPrimary: false },
+            { url: "https://images.unsplash.com/photo-1592841200221-a6898f307baa?auto=format&fit=crop&w=500&q=80", alt: "Tomato Farm", isPrimary: false }
+          ],
+          district: "Kandy",
+          city: "Peradeniya",
+          category: { _id: "cat1", name: "Vegetables" },
+          qualityScore: 5,
+          isOrganic: true,
+          harvestDate: "2024-01-15T00:00:00.000Z",
+          initialQuantity: 100,
+          availableQuantity: 65,
+          status: "active",
+          farmer: {
+            _id: "farmer1",
+            firstName: "Sunil",
+            lastName: "Perera",
+            email: "sunil@example.com",
+            phone: "+94 77 123 4567"
+          },
+          freshnessDays: 5,
+          soldPercentage: 35,
+          createdAt: "2024-01-15T00:00:00.000Z"
         },
-        freshnessDays: 5,
-        soldPercentage: 35,
-        createdAt: "2024-01-15T00:00:00.000Z"
+        'mock-2': {
+          _id: 'mock-2',
+          title: "Fresh Carrots",
+          description: "High-quality fresh carrots, perfect for cooking, juicing, or eating raw. Rich in beta-carotene and vitamins.",
+          price: 200,
+          unit: "kg",
+          images: [
+            { url: "https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?auto=format&fit=crop&w=500&q=80", alt: "Fresh Carrots - Main", isPrimary: true },
+            { url: "https://images.unsplash.com/photo-1582515073490-39981397c445?auto=format&fit=crop&w=500&q=80", alt: "Carrot Field", isPrimary: false }
+          ],
+          district: "Colombo",
+          city: "Maharagama",
+          category: { _id: "cat1", name: "Vegetables" },
+          qualityScore: 4,
+          isOrganic: false,
+          harvestDate: "2024-01-20T00:00:00.000Z",
+          initialQuantity: 50,
+          availableQuantity: 30,
+          status: "active",
+          farmer: {
+            _id: "farmer2",
+            firstName: "Kamala",
+            lastName: "Silva",
+            email: "kamala@example.com",
+            phone: "+94 77 234 5678"
+          },
+          freshnessDays: 3,
+          soldPercentage: 40,
+          createdAt: "2024-01-20T00:00:00.000Z"
+        },
+        'mock-3': {
+          _id: 'mock-3',
+          title: "Organic Potatoes",
+          description: "Premium organic potatoes, perfect for all your culinary needs. Grown in the fertile highlands of Badulla.",
+          price: 180,
+          unit: "kg",
+          images: [
+            { url: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&w=500&q=80", alt: "Organic Potatoes - Main", isPrimary: true },
+            { url: "https://images.unsplash.com/photo-1597362925123-77861d3fbac7?auto=format&fit=crop&w=500&q=80", alt: "Potato Harvest", isPrimary: false }
+          ],
+          district: "Badulla",
+          city: "Bandarawela",
+          category: { _id: "cat1", name: "Vegetables" },
+          qualityScore: 4.5,
+          isOrganic: true,
+          harvestDate: "2024-01-18T00:00:00.000Z",
+          initialQuantity: 120,
+          availableQuantity: 85,
+          status: "active",
+          farmer: {
+            _id: "farmer3",
+            firstName: "Nimal",
+            lastName: "Fernando",
+            email: "nimal@example.com",
+            phone: "+94 77 345 6789"
+          },
+          freshnessDays: 7,
+          soldPercentage: 29,
+          createdAt: "2024-01-18T00:00:00.000Z"
+        }
       };
+      
+      // Get specific mock product or default to first one
+      const mockProduct = mockProducts[productId] || mockProducts['mock-1'];
       
       setProduct(mockProduct);
     } catch (err) {
+      console.error('Error in fetchProduct:', err);
       setError(err.message || 'Failed to fetch product');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = async (buyNow = false) => {
     if (!user) {
-      alert('Please log in to add items to cart');
+      // Set pending action and show login modal
+      setPendingAction(buyNow ? 'buyNow' : 'addToCart');
+      setShowLoginModal(true);
       return;
     }
     
@@ -147,7 +230,15 @@ const ProductDetails = () => {
       // });
       
       // Mock success
-      alert('Added to cart successfully!');
+      if (buyNow) {
+        alert('Item added to cart! Redirecting to checkout...');
+        // Redirect to cart page after adding
+        setTimeout(() => {
+          window.location.href = '/cart';
+        }, 1000);
+      } else {
+        alert('Added to cart successfully!');
+      }
       setQuantity(1);
     } catch (err) {
       alert(err.message || 'Failed to add to cart');
@@ -156,9 +247,24 @@ const ProductDetails = () => {
     }
   };
 
+  const handleLoginSuccess = () => {
+    // After successful login, execute the pending action
+    if (pendingAction === 'addToCart') {
+      handleAddToCart(false);
+    } else if (pendingAction === 'buyNow') {
+      handleAddToCart(true);
+    } else if (pendingAction === 'favorite') {
+      handleToggleFavorite();
+    }
+    // Clear pending action
+    setPendingAction(null);
+  };
+
   const handleToggleFavorite = async () => {
     if (!user) {
-      alert('Please log in to add favorites');
+      // Set pending action and show login modal
+      setPendingAction('favorite');
+      setShowLoginModal(true);
       return;
     }
     
@@ -173,7 +279,7 @@ const ProductDetails = () => {
       // await apiCall(`/api/favorites/${product._id}`, {
       //   method,
       //   headers: {
-      //     'Authorization': `Bearer ${localStorage.getItem('token')}`
+      //     'Authorization': `Bearer ${localStorage.getToken()}`
       //   }
       // });
       
@@ -222,7 +328,7 @@ const ProductDetails = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <H2 className="text-gray-900 mb-2">Product Not Found</H2>
-          <P className="text-gray-600 mb-4">{error}</P>
+          <P className="text-gray-600 mb-4">{error || 'Product data not available'}</P>
           <button
             onClick={() => window.history.back()}
             className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
@@ -271,10 +377,11 @@ const ProductDetails = () => {
             <div className="space-y-4">
               <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
                 <img
-                  src={product.images[selectedImage]?.url}
-                  alt={product.images[selectedImage]?.alt}
+                  src={product.images[selectedImage]?.url || 'https://via.placeholder.com/400x400?text=Product+Image'}
+                  alt={product.images[selectedImage]?.alt || 'Product image'}
                   className="w-full h-full object-cover"
                   onError={(e) => {
+                    e.target.onerror = null; // Prevent infinite loop
                     e.target.src = 'https://via.placeholder.com/400x400?text=Product+Image';
                   }}
                 />
@@ -290,10 +397,11 @@ const ProductDetails = () => {
                       }`}
                     >
                       <img
-                        src={image.url}
-                        alt={image.alt}
+                        src={image.url || 'https://via.placeholder.com/100x100?text=Image'}
+                        alt={image.alt || 'Product thumbnail'}
                         className="w-full h-full object-cover"
                         onError={(e) => {
+                          e.target.onerror = null; // Prevent infinite loop
                           e.target.src = 'https://via.placeholder.com/100x100?text=Image';
                         }}
                       />
@@ -309,27 +417,47 @@ const ProductDetails = () => {
                 <div className="flex items-start justify-between mb-2">
                   <H1>{product.title}</H1>
                   <div className="flex space-x-2">
-                    <button 
+                    <Button
                       onClick={handleToggleFavorite}
-                      className={`p-2 rounded-full transition-colors ${
-                        isFavorite ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'hover:bg-gray-100 text-gray-600'
+                      variant="ghost"
+                      size="icon"
+                      className={`rounded-full transition-all duration-200 ${
+                        isFavorite 
+                          ? 'bg-red-50 text-red-600 hover:bg-red-100 hover:scale-110' 
+                          : 'hover:bg-muted hover:scale-110'
                       }`}
                     >
-                      <Heart className={`h-5 w-5 ${isFavorite ? 'fill-current' : ''}`} />
-                    </button>
-                    <Button variant="ghost" size="sm" className="p-2 rounded-full">
-                      <Share2 className="h-5 w-5 text-gray-600" />
+                      <Heart className={`h-5 w-5 transition-all duration-200 ${isFavorite ? 'fill-current' : ''}`} />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted hover:scale-110 transition-all duration-200">
+                      <Share2 className="h-5 w-5" />
                     </Button>
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-4 mb-4">
-                  <span className="text-3xl font-bold text-green-600">
-                    Rs. {product.price.toLocaleString()}/{product.unit}
-                  </span>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(product.status)}`}>
-                    {product.status.charAt(0).toUpperCase() + product.status.slice(1)}
-                  </span>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-2 sm:space-y-0">
+                  <div className="space-y-1">
+                    <span className="text-4xl font-bold text-primary">
+                      Rs. {product.price.toLocaleString()}
+                    </span>
+                    <span className="text-lg text-muted-foreground">
+                      per {product.unit}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Badge 
+                      variant={product.status === 'active' ? 'default' : 'secondary'}
+                      className={`${product.status === 'active' ? 'bg-green-500 hover:bg-green-600' : ''} text-white`}
+                    >
+                      {product.status.charAt(0).toUpperCase() + product.status.slice(1)}
+                    </Badge>
+                    {product.isOrganic && (
+                      <Badge variant="outline" className="border-green-500 text-green-700 bg-green-50">
+                        <Leaf className="h-3 w-3 mr-1" />
+                        Organic
+                      </Badge>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-center space-x-4 text-sm text-gray-600">
@@ -379,8 +507,8 @@ const ProductDetails = () => {
                   </div>
                 </div>
 
-                {/* Purchase Section */}
-                {product.status === 'active' && product.availableQuantity > 0 && user && user.role === 'buyer' && (
+                {/* Purchase Section - Show for all users when product is active and available */}
+                {product.status === 'active' && product.availableQuantity > 0 && (
                   <div className="space-y-4">
                     <div className="flex items-center space-x-4">
                       <div>
@@ -422,45 +550,62 @@ const ProductDetails = () => {
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <button
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Button
                         onClick={handleAddToCart}
                         disabled={addingToCart}
-                        className="bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium flex items-center justify-center"
+                        variant="outline"
+                        size="lg"
+                        className="h-12 text-base font-medium border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200"
                       >
                         <ShoppingCart className="h-5 w-5 mr-2" />
-                        {addingToCart ? 'Adding...' : 'Add to Cart'}
-                      </button>
-                      <button
-                        onClick={() => {
-                          handleAddToCart();
-                          // Redirect to cart page after adding
-                          setTimeout(() => {
-                            window.location.href = '/cart';
-                          }, 1000);
-                        }}
+                        {addingToCart ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                            Adding...
+                          </>
+                        ) : (
+                          'Add to Cart'
+                        )}
+                      </Button>
+                      <Button
+                        onClick={() => handleAddToCart(true)}
                         disabled={addingToCart}
-                        className="bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
+                        size="lg"
+                        className="h-12 text-base font-medium bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
                       >
-                        Buy Now
-                      </button>
+                        {addingToCart ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <ArrowLeft className="h-5 w-5 mr-2 rotate-180" />
+                            Buy Now
+                          </>
+                        )}
+                      </Button>
                     </div>
-                  </div>
-                )}
-                
-                {/* Show message for non-buyers */}
-                {user && user.role !== 'buyer' && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <p className="text-yellow-800">Only registered buyers can purchase products.</p>
-                  </div>
-                )}
-                
-                {/* Show login message for non-authenticated users */}
-                {!user && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <p className="text-blue-800">
-                      Please <a href="/login" className="underline font-medium">log in</a> as a buyer to purchase this product.
-                    </p>
+
+                    {/* Show role-specific messages below buttons */}
+                    {user && user.role !== 'buyer' && (
+                      <Alert className="border-orange-200 bg-orange-50">
+                        <User className="h-4 w-4 text-orange-600" />
+                        <AlertDescription className="text-orange-800">
+                          Only registered buyers can purchase products.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    
+                    {!user && (
+                      <Alert className="border-blue-200 bg-blue-50">
+                        <User className="h-4 w-4 text-blue-600" />
+                        <AlertDescription className="text-blue-800">
+                          <span className="font-medium">Ready to purchase?</span> Click "Add to Cart" or "Buy Now" to sign in.
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </div>
                 )}
               </div>
@@ -477,7 +622,9 @@ const ProductDetails = () => {
                   <div className="flex items-center">
                     <Package className="h-4 w-4 text-gray-500 mr-2" />
                     <span className="text-gray-600">Category:</span>
-                    <span className="ml-2 font-medium">{product.category.name}</span>
+                    <span className="ml-2 font-medium">
+                      {renderText(product.category.name, 'Category')}
+                    </span>
                   </div>
                   <div className="flex items-center">
                     <MapPin className="h-4 w-4 text-gray-500 mr-2" />
@@ -497,20 +644,29 @@ const ProductDetails = () => {
                 <User className="h-8 w-8 text-white" />
               </div>
               <div className="flex-1">
-                <h4 className="text-lg font-medium text-gray-900">{product.farmer.firstName} {product.farmer.lastName}</h4>
+                <h4 className="text-lg font-medium text-gray-900">
+                  {product.farmer.firstName && product.farmer.lastName 
+                    ? `${product.farmer.firstName} ${product.farmer.lastName}`
+                    : 'Farmer Profile'
+                  }
+                </h4>
                 <div className="mt-2 space-y-1">
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Phone className="h-4 w-4 mr-2" />
-                    <a href={`tel:${product.farmer.phone}`} className="hover:text-green-600 transition-colors">
-                      {product.farmer.phone}
-                    </a>
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Mail className="h-4 w-4 mr-2" />
-                    <a href={`mailto:${product.farmer.email}`} className="hover:text-green-600 transition-colors">
-                      {product.farmer.email}
-                    </a>
-                  </div>
+                  {product.farmer.phone && (
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Phone className="h-4 w-4 mr-2" />
+                      <a href={`tel:${product.farmer.phone}`} className="hover:text-green-600 transition-colors">
+                        {product.farmer.phone}
+                      </a>
+                    </div>
+                  )}
+                  {product.farmer.email && (
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Mail className="h-4 w-4 mr-2" />
+                      <a href={`mailto:${product.farmer.email}`} className="hover:text-green-600 transition-colors">
+                        {product.farmer.email}
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="space-y-2">
@@ -525,6 +681,15 @@ const ProductDetails = () => {
           </div>
         </div>
       </div>
+
+      {/* Login Modal */}
+      <LoginModal
+        open={showLoginModal}
+        onOpenChange={setShowLoginModal}
+        onSuccessCallback={handleLoginSuccess}
+        title="Login Required"
+        description="Please sign in to add items to your cart or favorites."
+      />
     </div>
   );
 };
