@@ -271,10 +271,10 @@ const OrderDetails = () => {
                 {order.items.map((item, index) => (
                   <div key={index} className="flex items-center space-x-4 py-4 border-b border-gray-100 last:border-b-0">
                     <img
-                      src={item.productSnapshot.image.url || 'https://via.placeholder.com/80x80?text=Product'}
+                      src={item.productSnapshot.image.url || 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg'}
                       alt={item.productSnapshot.title}
                       className="h-20 w-20 rounded-lg object-cover"
-                      onError={(e) => e.target.src = 'https://via.placeholder.com/80x80?text=Product'}
+                      onError={(e) => e.target.src = 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg'}
                     />
                     
                     <div className="flex-1">

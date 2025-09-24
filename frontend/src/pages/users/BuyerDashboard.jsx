@@ -47,36 +47,14 @@ const BuyerDashboard = () => {
         setRecentProducts(productsData.data)
       }
 
-      // Mock data for development since we don't have these endpoints yet
-      setFavoriteProducts([
-        {
-          _id: '1',
-          title: 'Fresh Organic Tomatoes',
-          price: 450,
-          unit: 'kg',
-          farmer: { firstName: 'John', lastName: 'Doe' },
-          district: 'Colombo',
-          primaryImage: { url: 'https://images.unsplash.com/photo-1546470427-227e8e7dfde8?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80' }
-        }
-      ])
-
-      setRecentOrders([
-        {
-          _id: '1',
-          orderNumber: 'ORD-001',
-          status: 'delivered',
-          total: 2250,
-          items: 2,
-          createdAt: '2024-01-20T00:00:00.000Z',
-          farmer: { firstName: 'John', lastName: 'Doe' }
-        }
-      ])
-
+      // Initialize empty arrays for now - these will be populated when the backend endpoints are implemented
+      setFavoriteProducts([])
+      setRecentOrders([])
       setStats({
-        totalOrders: 5,
-        completedOrders: 4,
-        totalSpent: 12500,
-        favoriteCount: 8
+        totalOrders: 0,
+        completedOrders: 0,
+        totalSpent: 0,
+        favoriteCount: 0
       })
 
     } catch (error) {
@@ -311,10 +289,10 @@ const BuyerDashboard = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <img
-                        src={product.primaryImage?.url || product.images?.[0]?.url || 'https://via.placeholder.com/50x50?text=Product'}
+                        src={product.primaryImage?.url || product.images?.[0]?.url || 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg'}
                         alt={product.title}
                         className="h-12 w-12 rounded-lg object-cover"
-                        onError={(e) => e.target.src = 'https://via.placeholder.com/50x50?text=Product'}
+                        onError={(e) => e.target.src = 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg'}
                       />
                       <div>
                         <P className="font-medium text-gray-900">{product.title}</P>

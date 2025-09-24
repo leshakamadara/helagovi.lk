@@ -19,35 +19,7 @@ const MyProducts = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showMockData, setShowMockData] = useState(false);
 
-  // Mock data as fallback
-  const mockProducts = [
-    {
-      _id: 'mock-1',
-      title: 'Fresh Organic Tomatoes (Demo)',
-      price: 450,
-      unit: 'kg',
-      availableQuantity: 65,
-      initialQuantity: 100,
-      status: 'active',
-      category: { name: 'Vegetables' },
-      images: [{ url: 'https://images.unsplash.com/photo-1546470427-227e8e7dfde8?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80' }],
-      isOrganic: true
-    },
-    {
-      _id: 'mock-2',
-      title: 'Fresh Carrots (Demo)',
-      price: 200,
-      unit: 'kg',
-      availableQuantity: 30,
-      initialQuantity: 50,
-      status: 'active',
-      category: { name: 'Vegetables' },
-      images: [{ url: 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80' }],
-      isOrganic: false
-    }
-  ];
 
   useEffect(() => {
     fetchMyProducts();
@@ -57,7 +29,6 @@ const MyProducts = () => {
     try {
       setLoading(true);
       setError(null);
-      setShowMockData(false);
       
       const token = localStorage.getItem('token');
       
@@ -86,11 +57,7 @@ const MyProducts = () => {
       
       const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch products';
       setError(errorMessage);
-      
-      // Show mock data as fallback
-      setProducts(mockProducts);
-      setShowMockData(true);
-      console.log('Using mock data due to API error');
+      setProducts([]);
       
     } finally {
       setLoading(false);
@@ -183,7 +150,6 @@ const MyProducts = () => {
             <div className="flex justify-between items-start">
               <div>
                 <strong>API Error:</strong> {error}
-                {showMockData && <div className="mt-1 text-sm">Showing demo data below.</div>}
               </div>
               <button 
                 onClick={fetchMyProducts}
@@ -202,14 +168,8 @@ const MyProducts = () => {
           </div>
         )}
 
-        {showMockData && (
-          <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-6">
-            <strong>ℹ️ Demo Mode:</strong> Showing sample data. Start the backend server to see your real products.
-          </div>
-        )}
-
         {/* No Products Message */}
-        {!loading && products.length === 0 && !showMockData && (
+        {!loading && products.length === 0 && (
           <div className="text-center py-12">
             <div className="max-w-md mx-auto">
               <div className="text-6xl mb-4">🌾</div>
@@ -300,18 +260,11 @@ const MyProducts = () => {
                       <button 
                         onClick={() => handleDelete(product._id, product.title)} 
                         className="flex-1 bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 transition-colors text-sm"
-                        disabled={showMockData}
-                        title={showMockData ? "Demo data - Start backend to enable" : "Delete product"}
+                        title="Delete product"
                       >
                         🗑️ Delete
                       </button>
                     </div>
-                    
-                    {showMockData && (
-                      <div className="mt-2 text-xs text-blue-600 text-center">
-                        Demo data - Start backend to enable editing
-                      </div>
-                    )}
                   </div>
                 </div>
               );

@@ -94,105 +94,9 @@ const ProductDetails = () => {
         console.log('API not available, using mock data:', apiError.message);
       }
       
-      // Mock products data matching ProductListing mock data
-      const mockProducts = {
-        'mock-1': {
-          _id: 'mock-1',
-          title: "Fresh Organic Tomatoes",
-          description: "Premium quality organic tomatoes grown without pesticides. Perfect for salads, cooking, and fresh consumption. Harvested at peak ripeness.",
-          price: 450,
-          unit: "kg",
-          images: [
-            { url: "https://images.unsplash.com/photo-1546470427-227e8e7dfde8?auto=format&fit=crop&w=500&q=80", alt: "Fresh Organic Tomatoes - Main", isPrimary: true },
-            { url: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&w=500&q=80", alt: "Tomatoes Close-up", isPrimary: false },
-            { url: "https://images.unsplash.com/photo-1592841200221-a6898f307baa?auto=format&fit=crop&w=500&q=80", alt: "Tomato Farm", isPrimary: false }
-          ],
-          district: "Kandy",
-          city: "Peradeniya",
-          category: { _id: "cat1", name: "Vegetables" },
-          qualityScore: 5,
-          isOrganic: true,
-          harvestDate: "2024-01-15T00:00:00.000Z",
-          initialQuantity: 100,
-          availableQuantity: 65,
-          status: "active",
-          farmer: {
-            _id: "farmer1",
-            firstName: "Sunil",
-            lastName: "Perera",
-            email: "sunil@example.com",
-            phone: "+94 77 123 4567"
-          },
-          freshnessDays: 5,
-          soldPercentage: 35,
-          createdAt: "2024-01-15T00:00:00.000Z"
-        },
-        'mock-2': {
-          _id: 'mock-2',
-          title: "Fresh Carrots",
-          description: "High-quality fresh carrots, perfect for cooking, juicing, or eating raw. Rich in beta-carotene and vitamins.",
-          price: 200,
-          unit: "kg",
-          images: [
-            { url: "https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?auto=format&fit=crop&w=500&q=80", alt: "Fresh Carrots - Main", isPrimary: true },
-            { url: "https://images.unsplash.com/photo-1582515073490-39981397c445?auto=format&fit=crop&w=500&q=80", alt: "Carrot Field", isPrimary: false }
-          ],
-          district: "Colombo",
-          city: "Maharagama",
-          category: { _id: "cat1", name: "Vegetables" },
-          qualityScore: 4,
-          isOrganic: false,
-          harvestDate: "2024-01-20T00:00:00.000Z",
-          initialQuantity: 50,
-          availableQuantity: 30,
-          status: "active",
-          farmer: {
-            _id: "farmer2",
-            firstName: "Kamala",
-            lastName: "Silva",
-            email: "kamala@example.com",
-            phone: "+94 77 234 5678"
-          },
-          freshnessDays: 3,
-          soldPercentage: 40,
-          createdAt: "2024-01-20T00:00:00.000Z"
-        },
-        'mock-3': {
-          _id: 'mock-3',
-          title: "Organic Potatoes",
-          description: "Premium organic potatoes, perfect for all your culinary needs. Grown in the fertile highlands of Badulla.",
-          price: 180,
-          unit: "kg",
-          images: [
-            { url: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&w=500&q=80", alt: "Organic Potatoes - Main", isPrimary: true },
-            { url: "https://images.unsplash.com/photo-1597362925123-77861d3fbac7?auto=format&fit=crop&w=500&q=80", alt: "Potato Harvest", isPrimary: false }
-          ],
-          district: "Badulla",
-          city: "Bandarawela",
-          category: { _id: "cat1", name: "Vegetables" },
-          qualityScore: 4.5,
-          isOrganic: true,
-          harvestDate: "2024-01-18T00:00:00.000Z",
-          initialQuantity: 120,
-          availableQuantity: 85,
-          status: "active",
-          farmer: {
-            _id: "farmer3",
-            firstName: "Nimal",
-            lastName: "Fernando",
-            email: "nimal@example.com",
-            phone: "+94 77 345 6789"
-          },
-          freshnessDays: 7,
-          soldPercentage: 29,
-          createdAt: "2024-01-18T00:00:00.000Z"
-        }
-      };
-      
-      // Get specific mock product or default to first one
-      const mockProduct = mockProducts[productId] || mockProducts['mock-1'];
-      
-      setProduct(mockProduct);
+      // Product not found
+      setError('Product not found');
+      setProduct(null);
     } catch (err) {
       console.error('Error in fetchProduct:', err);
       setError(err.message || 'Failed to fetch product');
@@ -377,12 +281,12 @@ const ProductDetails = () => {
             <div className="space-y-4">
               <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
                 <img
-                  src={product.images[selectedImage]?.url || 'https://via.placeholder.com/400x400?text=Product+Image'}
+                  src={product.images[selectedImage]?.url || 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg'}
                   alt={product.images[selectedImage]?.alt || 'Product image'}
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     e.target.onerror = null; // Prevent infinite loop
-                    e.target.src = 'https://via.placeholder.com/400x400?text=Product+Image';
+                    e.target.src = 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg';
                   }}
                 />
               </div>
@@ -397,12 +301,12 @@ const ProductDetails = () => {
                       }`}
                     >
                       <img
-                        src={image.url || 'https://via.placeholder.com/100x100?text=Image'}
+                        src={image.url || 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg'}
                         alt={image.alt || 'Product thumbnail'}
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           e.target.onerror = null; // Prevent infinite loop
-                          e.target.src = 'https://via.placeholder.com/100x100?text=Image';
+                          e.target.src = 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg';
                         }}
                       />
                     </button>

@@ -343,7 +343,7 @@ const ProductCreationForm = () => {
                 publicId: img.publicId // Include for future deletion
               })) 
           : [{ // Default image if none uploaded successfully
-              url: 'https://images.unsplash.com/photo-1546470427-227e8e7dfde8?w=400&h=300&fit=crop',
+              url: 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg',
               alt: 'Default product image',
               isPrimary: true
             }]
