@@ -203,6 +203,42 @@ export const getAllProducts = async (req, res) => {
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
 
+    // Build projection object
+    const projection = {
+      title: 1,
+      description: 1,
+      price: 1,
+      unit: 1,
+      images: 1,
+      district: 1,
+      city: 1,
+      coordinates: 1,
+      qualityScore: 1,
+      isOrganic: 1,
+      harvestDate: 1,
+      availableQuantity: 1,
+      status: 1,
+      createdAt: 1,
+      updatedAt: 1,
+      freshnessDays: 1,
+      soldPercentage: 1,
+      primaryImage: 1,
+      'category._id': 1,
+      'category.name': 1,
+      'category.slug': 1,
+      'farmer._id': 1,
+      'farmer.name': 1,
+      'farmer.phone': 1
+    };
+
+    // Add custom fields if specified
+    if (fields) {
+      const customFields = fields.split(',');
+      customFields.forEach(field => {
+        projection[field.trim()] = 1;
+      });
+    }
+
     // Build aggregation pipeline for better performance
     const pipeline = [
       { $match: query },
@@ -235,36 +271,7 @@ export const getAllProducts = async (req, res) => {
               $unwind: '$farmer'
             },
             {
-              $project: {
-                title: 1,
-                description: 1,
-                price: 1,
-                unit: 1,
-                images: 1,
-                district: 1,
-                city: 1,
-                coordinates: 1,
-                qualityScore: 1,
-                isOrganic: 1,
-                harvestDate: 1,
-                availableQuantity: 1,
-                status: 1,
-                createdAt: 1,
-                updatedAt: 1,
-                freshnessDays: 1,
-                soldPercentage: 1,
-                primaryImage: 1,
-                'category._id': 1,
-                'category.name': 1,
-                'category.slug': 1,
-                'farmer._id': 1,
-                'farmer.name': 1,
-                'farmer.phone': 1,
-                ...(fields && fields.split(',').reduce((acc, field) => {
-                  acc[field] = 1;
-                  return acc;
-                }, {}))
-              }
+              $project: projection
             }
           ],
           totalCount: [{ $count: 'count' }]

@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, Link } from 'react-router-dom'
+import { Sprout } from 'lucide-react'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -41,13 +42,51 @@ function App() {
           {/* User / Auth Routes - with individual navbar */}
           <Route path="/register" element={
             <>
-              <Navbar />
+              <div className="bg-white shadow-lg">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="flex justify-between h-16">
+                    <div className="flex items-center">
+                      <Link to="/" className="flex-shrink-0 flex items-center">
+                        <Sprout className="h-8 w-8 text-emerald-600" />
+                        <span className="ml-2 text-xl font-bold text-gray-800">HeleGovi</span>
+                      </Link>
+                    </div>
+                    <div className="flex items-center">
+                      <Link 
+                        to="/login"
+                        className="bg-emerald-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-emerald-700"
+                      >
+                        Login
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <Register />
             </>
           } />
           <Route path="/login" element={
             <>
-              <Navbar />
+              <div className="bg-white shadow-lg">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="flex justify-between h-16">
+                    <div className="flex items-center">
+                      <Link to="/" className="flex-shrink-0 flex items-center">
+                        <Sprout className="h-8 w-8 text-emerald-600" />
+                        <span className="ml-2 text-xl font-bold text-gray-800">HeleGovi</span>
+                      </Link>
+                    </div>
+                    <div className="flex items-center">
+                      <Link 
+                        to="/register"
+                        className="bg-emerald-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-emerald-700"
+                      >
+                        Sign Up
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <Login />
             </>
           } />
@@ -110,7 +149,11 @@ function App() {
           {/* Product / Marketplace Routes */}
           <Route
             path="/marketplace"
-            element={<Navigate to="/" replace />}
+            element={
+              <MainLayout>
+                <ProductListing />
+              </MainLayout>
+            }
           />
           <Route
             path="/create-product"
