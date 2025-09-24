@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { formatDate, getStatusColor, getFreshnessColor } from '../../lib/utils';
 import { Button } from '../../components/ui/button';
+import { H1, H2, H3, P, Muted, Large } from '../../components/ui/typography';
 
 import { 
   MapPin, 
@@ -21,6 +22,7 @@ import {
   Plus,
   Minus
 } from 'lucide-react';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb';
 
 const ProductDetails = () => {
   const [searchParams] = useSearchParams();
@@ -219,8 +221,8 @@ const ProductDetails = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Product Not Found</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <H2 className="text-gray-900 mb-2">Product Not Found</H2>
+          <P className="text-gray-600 mb-4">{error}</P>
           <button
             onClick={() => window.history.back()}
             className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
@@ -235,6 +237,25 @@ const ProductDetails = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Breadcrumbs */}
+        <div className="mb-6">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/">Home</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/products">Products</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Product Details</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+
         {/* Back Button */}
         <button
           onClick={() => window.history.back()}
@@ -286,7 +307,7 @@ const ProductDetails = () => {
             <div className="space-y-6">
               <div>
                 <div className="flex items-start justify-between mb-2">
-                  <h1 className="text-3xl font-bold text-gray-900">{product.title}</h1>
+                  <H1>{product.title}</H1>
                   <div className="flex space-x-2">
                     <button 
                       onClick={handleToggleFavorite}
@@ -332,18 +353,18 @@ const ProductDetails = () => {
               </div>
 
               <div className="border-t pt-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Description</h3>
-                <p className="text-gray-700 leading-relaxed">{product.description}</p>
+                <H3 className="mb-2">Description</H3>
+                <P className="text-gray-700 leading-relaxed">{product.description}</P>
               </div>
 
               {/* Availability */}
               <div className="border-t pt-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Availability</h3>
-                    <p className="text-sm text-gray-600">
+                    <H3>Availability</H3>
+                    <Muted>
                       {product.availableQuantity} {product.unit} available
-                    </p>
+                    </Muted>
                   </div>
                   <div className="text-right">
                     <div className="text-sm text-gray-600">

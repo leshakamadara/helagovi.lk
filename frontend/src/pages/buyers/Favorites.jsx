@@ -10,6 +10,8 @@ import {
   Leaf,
   Eye
 } from 'lucide-react'
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb'
+import { H1, H2, H3, P, Muted, Large } from '../../components/ui/typography'
 
 const Favorites = () => {
   const { user } = useAuth()
@@ -175,9 +177,28 @@ const Favorites = () => {
 
   return (
     <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      {/* Breadcrumbs */}
+      <div className="mb-6">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/">Home</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/buyer-dashboard">Dashboard</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>My Favorites</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
+
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">My Favorites</h1>
-        <p className="mt-2 text-gray-600">Your saved products</p>
+        <H1 className="text-gray-900">My Favorites</H1>
+        <P className="text-gray-600">Your saved products</P>
       </div>
 
       {favorites.length > 0 ? (

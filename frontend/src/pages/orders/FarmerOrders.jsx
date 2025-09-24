@@ -15,6 +15,8 @@ import {
   Phone,
   Mail
 } from 'lucide-react'
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb'
+import { H1, H2, H3, P, Muted, Large } from '../../components/ui/typography'
 
 const FarmerOrders = () => {
   const { user } = useAuth()
@@ -263,9 +265,28 @@ const FarmerOrders = () => {
 
   return (
     <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      {/* Breadcrumbs */}
+      <div className="mb-6">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/">Home</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/farmer-dashboard">Dashboard</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Order Management</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
+
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Order Management</h1>
-        <p className="mt-2 text-gray-600">Manage orders for your products</p>
+        <H1 className="text-gray-900">Order Management</H1>
+        <P className="text-gray-600">Manage orders for your products</P>
       </div>
 
       {/* Filter Tabs */}

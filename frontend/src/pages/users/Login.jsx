@@ -9,6 +9,7 @@ import { Label } from '../../components/ui/label'
 import { Checkbox } from '../../components/ui/checkbox'
 import { Alert, AlertDescription } from '../../components/ui/alert'
 import { toast } from 'sonner'
+import { H2, P, Muted } from '../../components/ui/typography'
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false)
@@ -34,12 +35,12 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900">
+          <H2>
             Sign in to your account
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          </H2>
+          <Muted className="mt-2">
             Welcome back to HeleGovi
-          </p>
+          </Muted>
         </div>
 
         <div className="bg-white p-8 rounded-lg shadow-md border">

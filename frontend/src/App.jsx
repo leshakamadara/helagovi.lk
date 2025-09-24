@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import ErrorBoundary from './components/ErrorBoundary'
 import RoleBasedHome from './components/RoleBasedHome'
 import Navbar from './components/Navbar'
 import Home from './pages/users/Home'
@@ -24,6 +25,7 @@ import FarmerOrders from "./pages/orders/FarmerOrders";
 import Favorites from "./pages/buyers/Favorites";
 import Cart from "./pages/buyers/Cart";
 import FarmerWallet from "./pages/farmers/Wallet";
+import Debug from "./pages/Debug";
 
 import MainLayout from "./layouts/MainLayout";
 import { Toaster } from 'sonner';
@@ -67,6 +69,9 @@ function App() {
               <VerifyEmail />
             </>
           } />
+
+          {/* Debug Route */}
+          <Route path="/debug" element={<Debug />} />
 
           {/* Protected Routes - with individual navbar */}
           <Route path="/profile" element={
@@ -128,11 +133,13 @@ function App() {
           <Route
             path="/my-products"
             element={
-              <ProtectedRoute allowedRoles={['farmer', 'admin']}>
-                <MainLayout>
-                  <MyProducts />
-                </MainLayout>
-              </ProtectedRoute>
+              <ErrorBoundary>
+                <ProtectedRoute allowedRoles={['farmer', 'admin']}>
+                  <MainLayout>
+                    <MyProducts />
+                  </MainLayout>
+                </ProtectedRoute>
+              </ErrorBoundary>
             }
           />
           <Route
