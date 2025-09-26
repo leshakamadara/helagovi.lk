@@ -108,26 +108,19 @@ const ProductListing = () => {
   // Fetch categories from API
   const fetchCategories = useCallback(async () => {
     try {
-      const response = await api.get('/categories');
+      // Fetch only root categories (main parent categories) for filtering
+      const response = await api.get('/categories/roots?includeCounts=true');
       const categoriesData = response.data.categories || [];
       
-      // Flatten categories for dropdown
-      const flatCategories = [];
-      const flattenCategories = (cats, level = 0) => {
-        cats.forEach(cat => {
-          flatCategories.push({
-            _id: cat._id,
-            name: cat.name.en,
-            level
-          });
-          if (cat.children && cat.children.length > 0) {
-            flattenCategories(cat.children, level + 1);
-          }
-        });
-      };
+      // Use only root categories for filter dropdown
+      const rootCategories = categoriesData.map(cat => ({
+        _id: cat._id,
+        name: cat.name.en,
+        level: 0,
+        productCount: cat.totalProductCount || 0
+      }));
       
-      flattenCategories(categoriesData);
-      setCategories([{ _id: 'all', name: 'All Categories', level: 0 }, ...flatCategories]);
+      setCategories([{ _id: 'all', name: 'All Categories', level: 0 }, ...rootCategories]);
     } catch (error) {
       console.error('Error fetching categories:', error);
     }
@@ -150,7 +143,10 @@ const ProductListing = () => {
       if (selectedDistrict !== 'All Districts') params.append('district', selectedDistrict);
       if (selectedCategory !== 'All Categories') {
         const categoryId = categories.find(cat => cat.name === selectedCategory)?._id;
-        if (categoryId && categoryId !== 'all') params.append('category', categoryId);
+        if (categoryId && categoryId !== 'all') {
+          // For root category filtering, use categoryRoot parameter to include all subcategories
+          params.append('categoryRoot', categoryId);
+        }
       }
       if (priceRange.min > 0) params.append('minPrice', priceRange.min);
       if (priceRange.max < 1000) params.append('maxPrice', priceRange.max);
@@ -506,7 +502,8 @@ const ProductListing = () => {
                     <SelectContent>
                       {categories.map(category => (
                         <SelectItem key={category._id} value={category.name}>
-                          {'  '.repeat(category.level)}{category.name}
+                          {category.name}
+                          {category.productCount > 0 && ` (${category.productCount})`}
                         </SelectItem>
                       ))}
                     </SelectContent>

@@ -113,6 +113,15 @@ const Navbar = () => {
     { to: '/buyer-dashboard', label: 'Dashboard', icon: BarChart3 }
   ]
 
+  const getFarmerMenuItems = () => [
+    { to: '/profile', label: 'Profile', icon: User },
+    { to: '/farmer-orders', label: 'My Orders', icon: ShoppingBag },
+    { to: '/my-products', label: 'My Products', icon: Package },
+    { to: '/farmer-dashboard', label: 'Dashboard', icon: BarChart3 },
+    { to: '/farmer/wallet', label: 'Wallet', icon: Wallet },
+    { to: '/create-product', label: 'Add Product', icon: Plus }
+  ]
+
   const getDashboardLink = () => {
     if (!user) return '/'
     switch (user.role) {
@@ -130,12 +139,20 @@ const Navbar = () => {
     return (firstName[0] + (lastName[0] || '')).toUpperCase()
   }
 
-  // Check if current page is a profile-related page for logged-in buyers
+  // Check if current page should hide search bar (profile pages for buyers, all pages for farmers)
   const isProfileRelatedPage = () => {
-    if (!isAuthenticated || user?.role !== 'buyer') return false
+    if (!isAuthenticated) return false
     
-    const profileRoutes = ['/profile', '/my-orders', '/favorites', '/buyer-dashboard']
-    return profileRoutes.includes(location.pathname)
+    // Hide search bar for farmers on all pages
+    if (user?.role === 'farmer') return true
+    
+    // Hide search bar for buyers on profile pages
+    if (user?.role === 'buyer') {
+      const profileRoutes = ['/profile', '/my-orders', '/favorites', '/buyer-dashboard']
+      return profileRoutes.includes(location.pathname)
+    }
+    
+    return false
   }
 
   return (
@@ -190,8 +207,8 @@ const Navbar = () => {
               )}
               
               {isAuthenticated ? (
-                // Avatar with dropdown for logged in buyers
-                user.role === 'buyer' ? (
+                // Avatar with dropdown for logged in users (buyers and farmers)
+                (user.role === 'buyer' || user.role === 'farmer') ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger className="flex items-center space-x-2 hover:bg-gray-100 rounded-lg px-3 py-2">
                       <Avatar className="h-8 w-8">
@@ -204,7 +221,7 @@ const Navbar = () => {
                       <ChevronDown className="h-4 w-4 text-gray-500" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-48" align="end">
-                      {getBuyerMenuItems().map((item) => (
+                      {(user.role === 'buyer' ? getBuyerMenuItems() : getFarmerMenuItems()).map((item) => (
                         <DropdownMenuItem key={item.to} asChild>
                           <Link to={item.to} className="flex items-center">
                             <item.icon className="h-4 w-4 mr-2" />
@@ -220,7 +237,7 @@ const Navbar = () => {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 ) : (
-                  // For farmers/admins, show simple logout button (maintain existing behavior)
+                  // For admins, show simple logout button
                   <Button onClick={handleLogout} variant="ghost" size="sm">
                     <LogOut className="h-5 w-5 mr-1" />
                     Logout
@@ -270,10 +287,10 @@ const Navbar = () => {
                     <hr className="border-gray-200" />
                     
                     {isAuthenticated ? (
-                      user.role === 'buyer' ? (
+                      (user.role === 'buyer' || user.role === 'farmer') ? (
                         <>
                           <div className="space-y-2">
-                            {getBuyerMenuItems().map((item) => (
+                            {(user.role === 'buyer' ? getBuyerMenuItems() : getFarmerMenuItems()).map((item) => (
                               <Link
                                 key={item.to}
                                 to={item.to}

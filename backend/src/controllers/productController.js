@@ -4,10 +4,11 @@ import { validationResult } from 'express-validator';
 import mongoose from 'mongoose';
 
 // Helper function to build search query
-const buildSearchQuery = (queryParams) => {
+const buildSearchQuery = async (queryParams) => {
   const {
     search,
     category,
+    categoryRoot,
     district,
     city,
     minPrice,
@@ -28,10 +29,29 @@ const buildSearchQuery = (queryParams) => {
     query.$text = { $search: search };
   }
 
-  // Category filter
+  // Category filter - direct category match
   if (category) {
     if (mongoose.isValidObjectId(category)) {
-      query.category = category;
+      query.category = new mongoose.Types.ObjectId(category);
+    }
+  }
+
+  // Category root filter - includes all subcategories
+  if (categoryRoot && !category) {
+    if (mongoose.isValidObjectId(categoryRoot)) {
+      try {
+        const rootCategory = await Category.findById(categoryRoot);
+        if (rootCategory) {
+          // Get all descendant categories
+          const descendants = await rootCategory.getDescendants();
+          const categoryIds = [new mongoose.Types.ObjectId(categoryRoot), ...descendants.map(d => new mongoose.Types.ObjectId(d._id))];
+          query.category = { $in: categoryIds };
+        }
+      } catch (error) {
+        console.error('Error fetching category descendants:', error);
+        // Fallback to direct category match
+        query.category = new mongoose.Types.ObjectId(categoryRoot);
+      }
     }
   }
 
@@ -187,7 +207,7 @@ export const getAllProducts = async (req, res) => {
     } = req.query;
 
     // Build query
-    const query = buildSearchQuery(req.query);
+    const query = await buildSearchQuery(req.query);
 
     // Build sort object
     const sort = {};
