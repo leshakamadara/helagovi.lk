@@ -1,8 +1,8 @@
-const User = require('../models/User');
-const { validationResult } = require('express-validator');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+import User from '../models/User.js';
+import { validationResult } from 'express-validator';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -30,7 +30,7 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-exports.upload = multer({
+export const upload = multer({
   storage: storage,
   limits: {
     fileSize: 5 * 1024 * 1024 // 5MB limit
@@ -41,7 +41,7 @@ exports.upload = multer({
 // @desc    Get user profile
 // @route   GET /api/profile
 // @access  Private
-exports.getProfile = async (req, res, next) => {
+export const getProfile = async (req, res, next) => {
   try {
     res.status(200).json({
       success: true,
@@ -57,7 +57,7 @@ exports.getProfile = async (req, res, next) => {
 // @desc    Update user profile
 // @route   PUT /api/profile
 // @access  Private
-exports.updateProfile = async (req, res, next) => {
+export const updateProfile = async (req, res, next) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -96,7 +96,7 @@ exports.updateProfile = async (req, res, next) => {
 // @desc    Upload profile picture
 // @route   POST /api/profile/upload-picture
 // @access  Private
-exports.uploadProfilePicture = async (req, res, next) => {
+export const uploadProfilePicture = async (req, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -135,7 +135,7 @@ exports.uploadProfilePicture = async (req, res, next) => {
 // @desc    Delete profile picture
 // @route   DELETE /api/profile/remove-picture
 // @access  Private
-exports.removeProfilePicture = async (req, res, next) => {
+export const removeProfilePicture = async (req, res, next) => {
   try {
     if (req.user.profilePicture) {
       // Delete the file
@@ -171,7 +171,7 @@ exports.removeProfilePicture = async (req, res, next) => {
 // @desc    Deactivate account
 // @route   PUT /api/profile/deactivate
 // @access  Private
-exports.deactivateAccount = async (req, res, next) => {
+export const deactivateAccount = async (req, res, next) => {
   try {
     await User.findByIdAndUpdate(
       req.user.id,
@@ -190,7 +190,7 @@ exports.deactivateAccount = async (req, res, next) => {
 // @desc    Delete account
 // @route   DELETE /api/profile
 // @access  Private
-exports.deleteAccount = async (req, res, next) => {
+export const deleteAccount = async (req, res, next) => {
   try {
     // Delete profile picture if exists
     if (req.user.profilePicture) {

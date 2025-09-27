@@ -81,6 +81,20 @@ const productSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: 'User',
     index: true
+  },
+  // Review fields
+  averageRating: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 5,
+    index: true
+  },
+  totalReviews: {
+    type: Number,
+    default: 0,
+    min: 0,
+    index: true
   }
 }, {
   timestamps: true,

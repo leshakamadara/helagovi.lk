@@ -284,6 +284,21 @@ const FarmerWallet = () => {
         <P className="text-gray-600">Manage your earnings and withdrawal requests</P>
       </div>
 
+      {/* Banner Image */}
+      <div className="mb-6 relative overflow-hidden rounded-lg shadow-lg">
+        <img 
+          src="https://res.cloudinary.com/dckoipgrs/image/upload/v1758904379/Gemini_Generated_Image_e1mjze1mjze1mjze_fmldic.jpg"
+          alt="Farm earnings and wallet banner"
+          className="w-full h-48 md:h-56 lg:h-64 object-cover"
+        />
+        <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+          <div className="text-center text-white">
+            <H2 className="text-white mb-0 pb-0 border-b-0">Track Your Earnings</H2>
+            <P className="text-white/90 mt-1">Monitor your farm income and manage withdrawals</P>
+          </div>
+        </div>
+      </div>
+
       {/* Balance Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">

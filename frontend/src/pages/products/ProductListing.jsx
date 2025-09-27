@@ -28,7 +28,7 @@ const banners = [
     title: "Fresh Organic Vegetables",
     subtitle: "Farm to Table Freshness",
     description: "Discover premium quality organic vegetables directly from local farmers",
-    image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2084&q=80",
+    image: "https://res.cloudinary.com/dckoipgrs/image/upload/v1758904379/Gemini_Generated_Image_e1mjze1mjze1mjze_fmldic.jpg",
     buttonText: "Shop Vegetables",
     buttonLink: "/marketplace?category=vegetables"
   },
@@ -37,7 +37,7 @@ const banners = [
     title: "Tropical Fruits Collection",
     subtitle: "Sweet & Nutritious",
     description: "Fresh tropical fruits picked at perfect ripeness from Sri Lankan orchards",
-    image: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+    image: "https://res.cloudinary.com/dckoipgrs/image/upload/v1758904378/Gemini_Generated_Image_mx88rxmx88rxmx88_koa9fr.jpg",
     buttonText: "Shop Fruits",
     buttonLink: "/marketplace?category=fruits"
   },
@@ -46,7 +46,7 @@ const banners = [
     title: "Premium Rice & Grains",
     subtitle: "Traditional Quality",
     description: "Authentic Sri Lankan rice varieties and grains from heritage farms",
-    image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+    image: "https://res.cloudinary.com/dckoipgrs/image/upload/v1758904379/Gemini_Generated_Image_dyk20cdyk20cdyk2_vx2cjh.jpg",
     buttonText: "Shop Grains",
     buttonLink: "/marketplace?category=grains"
   },
@@ -55,7 +55,7 @@ const banners = [
     title: "Fresh Herbs & Spices",
     subtitle: "Aromatic Excellence",
     description: "Handpicked herbs and spices that add authentic flavors to your cooking",
-    image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+    image: "https://res.cloudinary.com/dckoipgrs/image/upload/v1758905664/Gemini_Generated_Image_o0fllyo0fllyo0fl_bj5laj.jpg",
     buttonText: "Shop Spices",
     buttonLink: "/marketplace?category=spices"
   },
@@ -64,7 +64,7 @@ const banners = [
     title: "Organic Coconut Products",
     subtitle: "Island's Treasure",
     description: "Pure coconut oil, fresh coconuts, and coconut-based products",
-    image: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+    image: "https://res.cloudinary.com/dckoipgrs/image/upload/v1758904379/Gemini_Generated_Image_e1mjze1mjze1mjze_fmldic.jpg",
     buttonText: "Shop Coconut",
     buttonLink: "/marketplace?category=coconut"
   },
@@ -73,7 +73,7 @@ const banners = [
     title: "Seasonal Farm Specials",
     subtitle: "Limited Time Offers",
     description: "Special seasonal produce with unbeatable prices directly from farmers",
-    image: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2069&q=80",
+    image: "https://res.cloudinary.com/dckoipgrs/image/upload/v1758904377/Gemini_Generated_Image_7x804o7x804o7x80_jekooc.jpg",
     buttonText: "View Specials",
     buttonLink: "/marketplace?special=seasonal"
   }
@@ -95,7 +95,7 @@ const ProductListing = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('All Districts');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 1000 });
+  const [priceRange, setPriceRange] = useState({ min: 0, max: 10000 });
   const [organicOnly, setOrganicOnly] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
@@ -135,9 +135,38 @@ const ProductListing = () => {
       const params = new URLSearchParams({
         page: currentPage,
         limit: itemsPerPage,
-        sortBy: sortBy === 'newest' ? 'createdAt' : sortBy.replace('-', ''),
-        sortOrder: sortBy.includes('asc') ? 'asc' : 'desc'
       });
+
+      // Handle sorting logic properly
+      let sortField = 'createdAt';
+      let sortOrder = 'desc';
+      
+      switch (sortBy) {
+        case 'newest':
+          sortField = 'createdAt';
+          sortOrder = 'desc';
+          break;
+        case 'price-asc':
+          sortField = 'price';
+          sortOrder = 'asc';
+          break;
+        case 'price-desc':
+          sortField = 'price';
+          sortOrder = 'desc';
+          break;
+        case 'rating':
+          sortField = 'averageRating';
+          sortOrder = 'desc';
+          break;
+        default:
+          sortField = 'createdAt';
+          sortOrder = 'desc';
+      }
+      
+      params.append('sortBy', sortField);
+      params.append('sortOrder', sortOrder);
+
+      console.log('Sorting by:', sortField, 'Order:', sortOrder, 'Original sortBy:', sortBy);
 
       if (searchQuery) params.append('search', searchQuery);
       if (selectedDistrict !== 'All Districts') params.append('district', selectedDistrict);
@@ -149,7 +178,7 @@ const ProductListing = () => {
         }
       }
       if (priceRange.min > 0) params.append('minPrice', priceRange.min);
-      if (priceRange.max < 1000) params.append('maxPrice', priceRange.max);
+      if (priceRange.max < 10000) params.append('maxPrice', priceRange.max);
       if (organicOnly) params.append('isOrganic', 'true');
       
       const response = await api.get(`/products?${params.toString()}`);
@@ -280,7 +309,10 @@ const ProductListing = () => {
             <div className="flex items-center gap-1">
               <Star className="w-3 h-3 text-yellow-400 fill-current" />
               <span className="text-xs text-muted-foreground">
-                {product.qualityScore || 4}.0
+                {product.averageRating ? product.averageRating.toFixed(1) : '0.0'} 
+                {product.totalReviews > 0 && (
+                  <span className="ml-1">({product.totalReviews})</span>
+                )}
               </span>
             </div>
           </div>
@@ -517,18 +549,21 @@ const ProductListing = () => {
                   <label className="text-sm font-semibold">Price Range</label>
                   <div className="space-y-3">
                     <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>Rs. {priceRange.min}</span>
-                      <span>Rs. {priceRange.max}</span>
+                      <span>Rs. {priceRange.min.toLocaleString()}</span>
+                      <span>Rs. {priceRange.max.toLocaleString()}</span>
                     </div>
                     <div className="space-y-3">
                       <div className="space-y-1">
                         <label className="text-xs text-muted-foreground">Minimum</label>
                         <Slider
                           value={[priceRange.min]}
-                          onValueChange={([value]) => setPriceRange(prev => ({ ...prev, min: value }))}
-                          max={1000}
+                          onValueChange={([value]) => setPriceRange(prev => ({ 
+                            ...prev, 
+                            min: Math.min(value, prev.max - 100) // Ensure min is at least 100 less than max
+                          }))}
+                          max={9900} // Max for min slider to leave room for max
                           min={0}
-                          step={50}
+                          step={100}
                           className="w-full"
                         />
                       </div>
@@ -536,10 +571,13 @@ const ProductListing = () => {
                         <label className="text-xs text-muted-foreground">Maximum</label>
                         <Slider
                           value={[priceRange.max]}
-                          onValueChange={([value]) => setPriceRange(prev => ({ ...prev, max: value }))}
-                          max={1000}
-                          min={0}
-                          step={50}
+                          onValueChange={([value]) => setPriceRange(prev => ({ 
+                            ...prev, 
+                            max: Math.max(value, prev.min + 100) // Ensure max is at least 100 more than min
+                          }))}
+                          max={10000}
+                          min={100} // Min for max slider to leave room for min
+                          step={100}
                           className="w-full"
                         />
                       </div>
@@ -590,7 +628,7 @@ const ProductListing = () => {
                     setSearchQuery('');
                     setSelectedDistrict('All Districts');
                     setSelectedCategory('All Categories');
-                    setPriceRange({ min: 0, max: 1000 });
+                    setPriceRange({ min: 0, max: 10000 });
                     setOrganicOnly(false);
                     setSortBy('newest');
                   }}

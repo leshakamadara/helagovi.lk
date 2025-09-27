@@ -164,8 +164,12 @@ const Navbar = () => {
             {/* Logo */}
             <div className="flex items-center">
               <Link to="/" className="flex-shrink-0 flex items-center">
-                <Sprout className="h-8 w-8 text-emerald-600" />
-                <span className="ml-2 text-xl font-bold text-gray-800">HeleGovi</span>
+                <img 
+                  src="https://framerusercontent.com/images/tQEEeKRa0oOBXHoksVNKvgBJZc.png" 
+                  alt="Helagovi.lk Logo" 
+                  className="h-8 w-8 object-contain"
+                />
+                <span className="ml-2 text-xl font-bold text-gray-800">Helagovi.lk</span>
               </Link>
             </div>
 
@@ -265,8 +269,12 @@ const Navbar = () => {
                 <SheetContent side="right" className="w-[300px]">
                   <SheetHeader>
                     <SheetTitle className="flex items-center gap-2">
-                      <Sprout className="h-6 w-6 text-emerald-600" />
-                      HeleGovi
+                      <img 
+                        src="https://framerusercontent.com/images/tQEEeKRa0oOBXHoksVNKvgBJZc.png" 
+                        alt="Helagovi.lk Logo" 
+                        className="h-6 w-6 object-contain"
+                      />
+                      Helagovi.lk
                     </SheetTitle>
                   </SheetHeader>
                   <div className="mt-6 space-y-4">

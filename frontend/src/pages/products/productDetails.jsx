@@ -9,6 +9,7 @@ import { Card, CardContent } from '../../components/ui/card';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { Badge } from '../../components/ui/badge';
 import LoginModal from '../../components/LoginModal';
+import ReviewsSection from '../../components/ReviewsSection';
 
 import { 
   MapPin, 
@@ -583,6 +584,11 @@ const ProductDetails = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Reviews Section */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <ReviewsSection productId={productId} />
         </div>
       </div>
 

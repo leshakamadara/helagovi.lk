@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../context/AuthContext';
-import { Eye, EyeOff, Mail, Lock, Loader2 } from 'lucide-react';
+import { Mail, Lock } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -119,10 +119,10 @@ const LoginModal = ({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-gray-100"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 px-2 py-1 text-xs hover:bg-gray-100"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? 'Hide' : 'Show'}
                 </Button>
               </div>
               {errors.password && (
@@ -163,14 +163,7 @@ const LoginModal = ({
               className="w-full bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500 text-white font-medium"
               onClick={handleSubmit(onSubmit)}
             >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                'Sign in'
-              )}
+              {loading ? 'Signing in...' : 'Sign in'}
             </Button>
           </div>
           

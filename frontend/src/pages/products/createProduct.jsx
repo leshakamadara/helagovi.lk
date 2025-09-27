@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Upload, X, Calendar, MapPin, Package, DollarSign, FileText, Tag, Loader2, CheckCircle, AlertCircle, Leaf, CalendarIcon } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -23,6 +24,7 @@ import imageService from '../../services/imageService';
 
 const ProductCreationForm = () => {  
   const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
     title: '',
@@ -360,16 +362,10 @@ const ProductCreationForm = () => {
         message: response.data.message || 'Product created successfully!' 
       });
       
-      // Reset form after successful submission
+      // Navigate to farmer dashboard after successful submission
       setTimeout(() => {
-        setFormData({
-          title: '', description: '', price: '', unit: '', district: '',
-          city: '', coordinates: { type: 'Point', coordinates: [80.0, 7.0] }, 
-          category: '', qualityScore: 3, isOrganic: false,
-          harvestDate: '', initialQuantity: '', availableQuantity: '', images: []
-        });
-        setSubmitStatus(null);
-      }, 3000);
+        navigate('/farmer-dashboard');
+      }, 2000);
 
     } catch (error) {
       console.error('Product creation error:', error);
@@ -453,8 +449,8 @@ const ProductCreationForm = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb Navigation */}
         <div className="mb-6">
           <Breadcrumb>
@@ -474,14 +470,29 @@ const ProductCreationForm = () => {
           </Breadcrumb>
         </div>
 
+        {/* Page Heading */}
+        <div className="mb-8">
+          <H1 className="text-gray-900">Add Product Listing</H1>
+          <P className="text-gray-600 mt-2">Create and list your farm products to reach more buyers</P>
+        </div>
+
+        {/* Banner Image */}
+        <div className="mb-6 relative overflow-hidden rounded-lg shadow-lg">
+          <img 
+            src="https://res.cloudinary.com/dckoipgrs/image/upload/v1758904379/Gemini_Generated_Image_e1mjze1mjze1mjze_fmldic.jpg"
+            alt="Fresh farm products banner"
+            className="w-full h-48 md:h-56 lg:h-64 object-cover"
+          />
+          <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+            <div className="text-center text-white">
+              <H2 className="text-white mb-0 pb-0 border-b-0">Share Your Fresh Harvest</H2>
+              <P className="text-white/90 mt-1">Connect directly with buyers and grow your farming business</P>
+            </div>
+          </div>
+        </div>
+
         <Card className="shadow-lg">
-          <CardHeader className="bg-emerald-600 text-white">
-            <CardTitle className="text-2xl flex items-center gap-2">
-              <Package className="h-6 w-6" />
-              List New Product
-            </CardTitle>
-            <p className="text-emerald-100 mt-1">Add your farm products to reach more buyers</p>
-          </CardHeader>
+        
 
           <CardContent className="p-6 space-y-8">
             {/* Status Messages */}
@@ -668,13 +679,13 @@ const ProductCreationForm = () => {
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {formData.harvestDate ? format(new Date(formData.harvestDate), "PPP") : <span>Pick a date</span>}
+                          {formData.harvestDate ? format(new Date(formData.harvestDate + 'T00:00:00'), "PPP") : <span>Pick a date</span>}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0">
                         <CalendarComponent
                           mode="single"
-                          selected={formData.harvestDate ? new Date(formData.harvestDate) : undefined}
+                          selected={formData.harvestDate ? new Date(formData.harvestDate + 'T00:00:00') : undefined}
                           onSelect={(date) => {
                             if (date) {
                               // Only allow past dates
@@ -692,7 +703,12 @@ const ProductCreationForm = () => {
                                 return;
                               }
                               
-                              const formattedDate = date.toISOString().split('T')[0];
+                              // Format date without timezone issues
+                              const year = date.getFullYear();
+                              const month = String(date.getMonth() + 1).padStart(2, '0');
+                              const day = String(date.getDate()).padStart(2, '0');
+                              const formattedDate = `${year}-${month}-${day}`;
+                              
                               handleInputChange({ target: { name: 'harvestDate', value: formattedDate } });
                             }
                           }}
