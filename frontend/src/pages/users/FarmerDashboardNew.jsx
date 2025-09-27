@@ -402,46 +402,63 @@ const FarmerDashboard = () => {
                       </Link>
                     </div>
                   ) : (
-                    recentProducts.map((product) => (
-                      <div key={product._id} className="flex items-center space-x-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2">
-                            <H3 className="font-medium">{product.title}</H3>
-                            {product.isOrganic && (
-                              <Badge variant="outline" className="text-green-600 border-green-600">
-                                <Sprout className="h-3 w-3 mr-1" />
-                                Organic
-                              </Badge>
-                            )}
+                    recentProducts.map((product) => {
+                      const primaryImage = product.images?.find(img => img.isPrimary) || product.images?.[0];
+                      const imageUrl = primaryImage?.url || 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg';
+                      
+                      return (
+                        <div key={product._id} className="flex items-center space-x-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                          {/* Product Image */}
+                          <div className="flex-shrink-0">
+                            <img
+                              src={imageUrl}
+                              alt={product.title}
+                              className="w-16 h-16 object-cover rounded-lg"
+                              onError={(e) => {
+                                e.target.src = 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg';
+                              }}
+                            />
                           </div>
-                          <div className="flex items-center space-x-4 mt-1 text-sm text-gray-500">
-                            <span>{formatCurrency(product.price)} per {product.unit}</span>
-                            <span className="flex items-center">
-                              {getStatusIcon(product.status)}
-                              <span className="ml-1 capitalize">{product.status}</span>
-                            </span>
-                            <span>{product.availableQuantity || 0}/{product.initialQuantity || 0} {product.unit}</span>
-                            <span className="flex items-center">
-                              <MapPin className="h-3 w-3 mr-1" />
-                              {product.district || 'Not set'}
-                            </span>
-                            <span className="text-xs">{formatDate(product.createdAt)}</span>
+                          
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2">
+                              <h4 className="text-sm font-bold text-gray-900">{product.title}</h4>
+                              {product.isOrganic && (
+                                <Badge variant="outline" className="text-green-600 border-green-600">
+                                  <Sprout className="h-3 w-3 mr-1" />
+                                  Organic
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-4 mt-1 text-sm text-gray-500">
+                              <span>{formatCurrency(product.price)} per {product.unit}</span>
+                              <span className="flex items-center">
+                                {getStatusIcon(product.status)}
+                                <span className="ml-1 capitalize">{product.status}</span>
+                              </span>
+                              <span>{product.availableQuantity || 0}/{product.initialQuantity || 0} {product.unit}</span>
+                              <span className="flex items-center">
+                                <MapPin className="h-3 w-3 mr-1" />
+                                {product.district || 'Not set'}
+                              </span>
+                              <span className="text-xs">{formatDate(product.createdAt)}</span>
+                            </div>
+                          </div>
+                          <div className="flex space-x-2">
+                            <Link to={`/product-details?id=${product._id}`}>
+                              <Button variant="outline" size="sm" title="View Product">
+                                View
+                              </Button>
+                            </Link>
+                            <Link to={`/edit-product?id=${product._id}`}>
+                              <Button variant="outline" size="sm" title="Edit Product">
+                                Edit
+                              </Button>
+                            </Link>
                           </div>
                         </div>
-                        <div className="flex space-x-2">
-                          <Link to={`/product-details?id=${product._id}`}>
-                            <Button variant="outline" size="sm" title="View Product">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                          <Link to={`/edit-product?id=${product._id}`}>
-                            <Button variant="outline" size="sm" title="Edit Product">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                        </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </CardContent>

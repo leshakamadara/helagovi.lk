@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus } from 'lucide-react';
 import api from '../../lib/axios';
+import { Button } from '../../components/ui/button';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb';
 import { H1, H2, H3, P, Muted, Large } from '../../components/ui/typography';
 
@@ -135,13 +135,26 @@ const MyProducts = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <H1 className="text-gray-900">My Products</H1>
-          <Link 
-            to="/create-product" 
-            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 flex items-center transition-colors"
-          >
-            <Plus className="h-5 w-5 mr-2" />
-            Add Product
-          </Link>
+          <Button asChild>
+            <Link to="/create-product">
+              Add Product
+            </Link>
+          </Button>
+        </div>
+
+        {/* Banner Image */}
+        <div className="mb-6 relative overflow-hidden rounded-lg shadow-lg">
+          <img 
+            src="https://res.cloudinary.com/dckoipgrs/image/upload/v1758904379/Gemini_Generated_Image_e1mjze1mjze1mjze_fmldic.jpg"
+            alt="Fresh farm products banner"
+            className="w-full h-48 md:h-56 lg:h-64 object-cover"
+          />
+          <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+            <div className="text-center text-white">
+              <H2 className="text-white mb-0 pb-0 border-b-0">Manage Your Products</H2>
+              <P className="text-white/90 mt-1">Track sales, update listings, and grow your farm business</P>
+            </div>
+          </div>
         </div>
 
         {/* Error Message */}
@@ -151,12 +164,14 @@ const MyProducts = () => {
               <div>
                 <strong>API Error:</strong> {error}
               </div>
-              <button 
+              <Button 
                 onClick={fetchMyProducts}
-                className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 ml-4"
+                variant="destructive"
+                size="sm"
+                className="ml-4"
               >
                 Retry
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -164,7 +179,7 @@ const MyProducts = () => {
         {/* Status Message */}
         {!error && products.length > 0 && (
           <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
-            <strong>✅ Success!</strong> Loaded {products.length} products from the database.
+            <strong> Success!</strong> Loaded {products.length} products from the database.
           </div>
         )}
 
@@ -175,20 +190,18 @@ const MyProducts = () => {
               <div className="text-6xl mb-4">🌾</div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">No products yet</h3>
               <p className="text-gray-600 mb-6">Start building your agricultural marketplace by adding your first product.</p>
-              <Link 
-                to="/create-product" 
-                className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 inline-flex items-center text-lg"
-              >
-                <Plus className="h-6 w-6 mr-2" />
-                Create Your First Product
-              </Link>
+              <Button asChild size="lg">
+                <Link to="/create-product">
+                  Create Your First Product
+                </Link>
+              </Button>
             </div>
           </div>
         )}
 
         {/* Products Grid */}
         {products.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {products.map((product) => {
               const soldPercentage = product.initialQuantity > 0 
                 ? Math.round(((product.initialQuantity - product.availableQuantity) / product.initialQuantity) * 100)
@@ -199,30 +212,30 @@ const MyProducts = () => {
                   <img
                     src={product.images?.[0]?.url || 'https://via.placeholder.com/300x200?text=No+Image'}
                     alt={product.title}
-                    className="w-full h-48 object-cover"
+                    className="w-full h-32 object-cover"
                     onError={(e) => {
                       e.target.src = 'https://via.placeholder.com/300x200?text=Product+Image';
                     }}
                   />
-                  <div className="p-4">
+                  <div className="p-3">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900 truncate">
+                      <h3 className="text-sm font-semibold text-gray-900 truncate">
                         {getDisplayText(product.title, 'Product')}
                       </h3>
                       {product.isOrganic && (
-                        <span className="text-green-600 text-sm">🌱 Organic</span>
+                        <span className="text-green-600 text-xs">🌱</span>
                       )}
                     </div>
                     
-                    <p className="text-gray-600 text-sm mb-3">
+                    <p className="text-gray-600 text-xs mb-2">
                       {getDisplayText(product.category?.name, 'No Category')}
                     </p>
                     
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xl font-bold text-green-600">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-bold text-green-600">
                         Rs. {(product.price || 0).toLocaleString()}/{product.unit || 'unit'}
                       </span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      <span className={`px-1 py-0.5 rounded text-xs font-medium ${
                         product.status === 'active' 
                           ? 'bg-green-100 text-green-800' 
                           : product.status === 'sold'
@@ -233,14 +246,14 @@ const MyProducts = () => {
                       </span>
                     </div>
                     
-                    <div className="mb-4">
-                      <div className="flex justify-between text-sm text-gray-600 mb-1">
-                        <span>Stock: {product.availableQuantity || 0}/{product.initialQuantity || 0} {product.unit}</span>
+                    <div className="mb-3">
+                      <div className="flex justify-between text-xs text-gray-600 mb-1">
+                        <span>Stock: {product.availableQuantity || 0}/{product.initialQuantity || 0}</span>
                         <span>{soldPercentage}% sold</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-gray-200 rounded-full h-1.5">
                         <div 
-                          className={`h-2 rounded-full transition-all ${
+                          className={`h-1.5 rounded-full transition-all ${
                             soldPercentage >= 80 ? 'bg-red-500' : 
                             soldPercentage >= 50 ? 'bg-yellow-500' : 
                             'bg-green-600'
@@ -251,19 +264,24 @@ const MyProducts = () => {
                     </div>
                     
                     <div className="flex space-x-2">
-                      <Link 
-                        to={`/edit-product?id=${product._id}`}
-                        className="flex-1 text-center bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition-colors text-sm"
+                      <Button 
+                        asChild
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 text-xs"
                       >
-                        ✏️ Edit
-                      </Link>
-                      <button 
-                        onClick={() => handleDelete(product._id, product.title)} 
-                        className="flex-1 bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 transition-colors text-sm"
-                        title="Delete product"
+                        <Link to={`/edit-product?id=${product._id}`}>
+                          Edit
+                        </Link>
+                      </Button>
+                      <Button 
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDelete(product._id, product.title)}
+                        className="flex-1 text-xs"
                       >
-                        🗑️ Delete
-                      </button>
+                        Delete
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -277,13 +295,11 @@ const MyProducts = () => {
           <div className="text-center mt-12 p-8 bg-white rounded-lg shadow-sm">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Ready to expand your offerings?</h3>
             <p className="text-gray-600 mb-4">Add more products to reach more customers</p>
-            <Link 
-              to="/create-product" 
-              className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 inline-flex items-center"
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              Add Another Product
-            </Link>
+            <Button asChild>
+              <Link to="/create-product">
+                Add Another Product
+              </Link>
+            </Button>
           </div>
         )}
       </div>

@@ -14,16 +14,21 @@ import orderRoutes from "./routes/orderRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
+import reviewRoutes from "./routes/reviewRoutes.js";
+import profileRoutes from "./routes/profile.js";
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5002;
+const PORT = process.env.PORT || 5001;
 
 // Middleware
 app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json());
 // app.use(ratelimiter); // optional
+
+// Serve static files for uploads
+app.use('/uploads', express.static('uploads'));
 
 
 // Health check endpoint (route to check health , and monitor)
@@ -43,6 +48,8 @@ app.use('/api/categories', categoryRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/profile", profileRoutes);
 
 
 // Test endpoint

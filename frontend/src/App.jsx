@@ -47,8 +47,12 @@ function App() {
                   <div className="flex justify-between h-16">
                     <div className="flex items-center">
                       <Link to="/" className="flex-shrink-0 flex items-center">
-                        <Sprout className="h-8 w-8 text-emerald-600" />
-                        <span className="ml-2 text-xl font-bold text-gray-800">HeleGovi</span>
+                        <img 
+                          src="https://framerusercontent.com/images/tQEEeKRa0oOBXHoksVNKvgBJZc.png" 
+                          alt="Helagovi.lk Logo" 
+                          className="h-8 w-8 object-contain"
+                        />
+                        <span className="ml-2 text-xl font-bold text-gray-800">Helagovi.lk</span>
                       </Link>
                     </div>
                     <div className="flex items-center">
@@ -72,8 +76,12 @@ function App() {
                   <div className="flex justify-between h-16">
                     <div className="flex items-center">
                       <Link to="/" className="flex-shrink-0 flex items-center">
-                        <Sprout className="h-8 w-8 text-emerald-600" />
-                        <span className="ml-2 text-xl font-bold text-gray-800">HeleGovi</span>
+                        <img 
+                          src="https://framerusercontent.com/images/tQEEeKRa0oOBXHoksVNKvgBJZc.png" 
+                          alt="Helagovi.lk Logo" 
+                          className="h-8 w-8 object-contain"
+                        />
+                        <span className="ml-2 text-xl font-bold text-gray-800">Helagovi.lk</span>
                       </Link>
                     </div>
                     <div className="flex items-center">

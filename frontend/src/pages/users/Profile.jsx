@@ -6,6 +6,7 @@ import { api } from '../../lib/axios'
 import toast from 'react-hot-toast'
 import { Button } from '../../components/ui/button'
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb'
+import { Avatar, AvatarImage, AvatarFallback } from '../../components/ui/avatar'
 import { H1, H2, H3, P, Muted, Large } from '../../components/ui/typography'
 
 const Profile = () => {
@@ -105,27 +106,24 @@ const Profile = () => {
 
       <div className="bg-white shadow rounded-lg overflow-hidden">
         {/* Profile Header */}
-        <div className="px-6 py-8 bg-gradient-to-r from-primary-500 to-primary-600 text-white">
+        <div className="px-6 py-8 bg-gradient-to-r from-primary to-primary text-white">
           <div className="flex items-center space-x-6">
             <div className="relative">
-              <div className="h-24 w-24 rounded-full bg-white flex items-center justify-center overflow-hidden">
+              <Avatar className="h-24 w-24">
                 {user.profilePicture ? (
-                  <img
-                    src={`http://localhost:5000/${user.profilePicture}`}
-                    alt="Profile"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <User className="h-12 w-12 text-primary-600" />
-                )}
-              </div>
+                  <AvatarImage src={`http://localhost:5001/${user.profilePicture}`} alt="Profile" />
+                ) : null}
+                <AvatarFallback className="text-gray-500 font-semibold text-4xl">
+                  {user.firstName?.charAt(0)?.toUpperCase()}{user.lastName?.charAt(0)?.toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
               {editMode && (
                 <>
                   <label
                     htmlFor="profile-picture"
                     className="absolute bottom-0 right-0 bg-white rounded-full p-2 cursor-pointer shadow-md"
                   >
-                    <Camera className="h-4 w-4 text-primary-600" />
+                    <Camera className="h-4 w-4 text-primary" />
                     <input
                       id="profile-picture"
                       type="file"
@@ -148,11 +146,11 @@ const Profile = () => {
               )}
             </div>
             <div>
-              <H2>
+              <H2 className="text-white border-0">
                 {user.firstName} {user.lastName}
               </H2>
-              <P className="text-primary-100 capitalize">{user.role}</P>
-              <P className="text-primary-100">{user.email}</P>
+              <div className="text-white/80 capitalize text-sm mb-2">{user.role}</div>
+              <div className="text-white/80 text-sm">{user.email}</div>
             </div>
           </div>
         </div>
@@ -162,14 +160,14 @@ const Profile = () => {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-900 mb-1">
                   First Name
                 </label>
                 <input
                   {...register('firstName', { required: 'First name is required' })}
                   type="text"
                   disabled={!editMode}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-gray-100 text-gray-900"
                 />
                 {errors.firstName && (
                   <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>
@@ -177,14 +175,14 @@ const Profile = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-900 mb-1">
                   Last Name
                 </label>
                 <input
                   {...register('lastName', { required: 'Last name is required' })}
                   type="text"
                   disabled={!editMode}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-gray-100 text-gray-900"
                 />
                 {errors.lastName && (
                   <p className="mt-1 text-sm text-red-600">{errors.lastName.message}</p>
@@ -193,17 +191,17 @@ const Profile = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-900 mb-1">
                 Email Address
               </label>
               <div className="flex items-center space-x-2">
                 <Mail className="h-5 w-5 text-gray-400" />
-                <span className="text-gray-600">{user.email}</span>
+                <span className="text-gray-900">{user.email}</span>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-900 mb-1">
                 Phone Number
               </label>
               <div className="flex items-center space-x-2">
@@ -218,7 +216,7 @@ const Profile = () => {
                   })}
                   type="tel"
                   disabled={!editMode}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-gray-100 text-gray-900"
                 />
               </div>
               {errors.phone && (
@@ -239,7 +237,6 @@ const Profile = () => {
                   <Button
                     type="submit"
                   >
-                    <Save className="h-4 w-4 mr-2" />
                     Save Changes
                   </Button>
                 </>
@@ -256,7 +253,7 @@ const Profile = () => {
 
           {/* Account Actions */}
           <div className="mt-8 pt-8 border-t border-gray-200">
-            <H2 className="mb-4">Account Actions</H2>
+            <H2 className="mb-4 text-gray-900">Account Actions</H2>
             
             {/* Email Verification Section */}
             <div className="mb-6">

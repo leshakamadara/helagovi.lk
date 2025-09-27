@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from '../../components/ui/button';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb';
+import api from '../../lib/axios';
 
 const EditProduct = () => {
-  const { id } = useParams(); // product ID from URL
+  const [searchParams] = useSearchParams();
+  const id = searchParams.get('id'); // product ID from query params
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -16,28 +18,40 @@ const EditProduct = () => {
       try {
         setLoading(true);
         
-        // Direct API call to get single product
-        const response = await fetch(`/api/products/${id}`, {
+        if (!id) {
+          throw new Error('Product ID is required');
+        }
+        
+        console.log('Fetching product with ID:', id);
+        
+        // Check if token exists
+        const token = localStorage.getItem('token');
+        console.log('Token exists:', !!token);
+        
+        if (!token) {
+          throw new Error('No authentication token found. Please login first.');
+        }
+        
+        // API call to get single product using axios instance
+        const response = await api.get(`/products/${id}`, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
+            'Authorization': `Bearer ${token}`
           }
         });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
         
-        if (data.success) {
-          setProduct(data.data);
+        if (response.data.success) {
+          console.log('Product data received:', response.data.data);
+          setProduct(response.data.data);
         } else {
-          throw new Error(data.message || 'Product not found');
+          throw new Error(response.data.message || 'Product not found');
         }
       } catch (err) {
         console.error("Failed to load product:", err);
-        setError(err.message);
+        console.error("Error response:", err.response?.data);
+        console.error("Error status:", err.response?.status);
+        
+        const errorMessage = err.response?.data?.message || err.message || 'Failed to load product';
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -61,46 +75,75 @@ const EditProduct = () => {
     
     try {
       setLoading(true);
-
-      // Direct API call to update product
-      const response = await fetch(`/api/products/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          title: product.title,
-          description: product.description,
-          price: parseFloat(product.price),
-          availableQuantity: parseFloat(product.availableQuantity),
-          // Add other fields as needed
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found. Please login first.');
       }
 
-      const data = await response.json();
+      // API call to update product using axios instance
+      const response = await api.put(`/products/${id}`, {
+        title: product.title,
+        description: product.description,
+        price: parseFloat(product.price),
+        availableQuantity: parseFloat(product.availableQuantity),
+        // Add other fields as needed
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       
-      if (data.success) {
+      if (response.data.success) {
         alert("Product updated successfully!");
-        navigate("/farmer-dashboard");
+        navigate("/my-products");
       } else {
-        throw new Error(data.message || 'Update failed');
+        throw new Error(response.data.message || 'Update failed');
       }
     } catch (err) {
       console.error("Update failed:", err);
-      alert(`Update failed: ${err.message}`);
+      console.error("Update error response:", err.response?.data);
+      console.error("Update error status:", err.response?.status);
+      
+      const errorMessage = err.response?.data?.message || err.message || 'Update failed';
+      alert(`Update failed: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error: {error}</p>;
-  if (!product) return <p>Product not found.</p>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading product details...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Error: {error}</p>
+          <Button onClick={() => window.history.back()}>Go Back</Button>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">Product not found.</p>
+          <Button onClick={() => navigate('/my-products')}>Back to My Products</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
@@ -208,7 +251,7 @@ const EditProduct = () => {
           <Button
             type="button"
             variant="outline"
-            onClick={() => navigate("/farmer-dashboard")}
+            onClick={() => navigate("/my-products")}
           >
             Cancel
           </Button>
