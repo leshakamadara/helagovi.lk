@@ -1,0 +1,649 @@
+import Order from '../models/Order.js';
+import Product from '../models/Product.js';
+import User from '../models/User.js';
+import mongoose from 'mongoose';
+
+/**
+ * Create a new order
+ */
+export const createOrder = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { items, deliveryAddress, paymentMethod, notes } = req.body;
+    const buyerId = req.user.id;
+
+    // Validate required fields
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Order items are required'
+      });
+    }
+
+    if (!deliveryAddress) {
+      return res.status(400).json({
+        success: false,
+        message: 'Delivery address is required'
+      });
+    }
+
+    // Validate and process order items
+    const processedItems = [];
+    let totalAmount = 0;
+    const productIds = items.map(item => item.productId);
+    
+    // Get all products in one query
+    const products = await Product.find({
+      _id: { $in: productIds },
+      status: 'active'
+    }).populate('farmer', 'firstName lastName phone email').session(session);
+
+    if (products.length !== productIds.length) {
+      throw new Error('One or more products are not available');
+    }
+
+    // Process each item
+    for (const item of items) {
+      const product = products.find(p => p._id.toString() === item.productId);
+      
+      if (!product) {
+        throw new Error(`Product with ID ${item.productId} not found`);
+      }
+
+      if (product.availableQuantity < item.quantity) {
+        throw new Error(`Insufficient quantity for ${product.title}. Available: ${product.availableQuantity}, Requested: ${item.quantity}`);
+      }
+
+      const subtotal = product.price * item.quantity;
+      totalAmount += subtotal;
+
+      processedItems.push({
+        product: product._id,
+        productSnapshot: {
+          title: product.title,
+          price: product.price,
+          unit: product.unit,
+          image: {
+            url: product.primaryImage?.url || product.images[0]?.url || '',
+            alt: product.primaryImage?.alt || product.images[0]?.alt || product.title
+          },
+          farmer: {
+            id: product.farmer._id,
+            name: `${product.farmer.firstName} ${product.farmer.lastName}`,
+            phone: product.farmer.phone
+          }
+        },
+        quantity: item.quantity,
+        priceAtTime: product.price,
+        subtotal: subtotal,
+        status: 'pending'
+      });
+    }
+
+    // Calculate delivery fee (temporary, will be calculated properly after order creation)
+    const estimatedDeliveryFee = 250; // Default delivery fee
+    const subtotal = totalAmount;
+    const total = subtotal + estimatedDeliveryFee;
+
+    // Generate order number
+    const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+
+    // Get unique farmers from items
+    const farmerIds = [...new Set(products.map(p => p.farmer._id))];
+
+    // Create order object
+    const orderData = {
+      orderNumber,
+      buyer: buyerId,
+      farmers: farmerIds,
+      items: processedItems,
+      subtotal,
+      deliveryFee: estimatedDeliveryFee,
+      total,
+      deliveryAddress,
+      paymentInfo: {
+        method: paymentMethod || 'cash_on_delivery',
+        status: 'pending',
+        amount: total
+      },
+      notes,
+      status: 'pending',
+      statusHistory: [{
+        status: 'pending',
+        timestamp: new Date(),
+        note: 'Order created',
+        updatedBy: buyerId
+      }]
+    };
+
+    // Create and save the order
+    const [order] = await Order.create([orderData], { session });
+
+    // Update product quantities
+    for (const item of processedItems) {
+      await Product.findByIdAndUpdate(
+        item.product,
+        { $inc: { availableQuantity: -item.quantity } },
+        { session }
+      );
+    }
+
+    await session.commitTransaction();
+
+    // Populate the saved order for response
+    const populatedOrder = await Order.findById(order._id)
+      .populate('buyer', 'firstName lastName email phone')
+      .populate('farmers', 'firstName lastName email phone')
+      .populate('items.product', 'title images unit');
+
+    res.status(201).json({
+      success: true,
+      message: 'Order created successfully',
+      data: {
+        order: populatedOrder
+      }
+    });
+
+  } catch (error) {
+    await session.abortTransaction();
+    console.error('Create order error:', error);
+    
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Failed to create order',
+      error: process.env.NODE_ENV === 'development' ? error : undefined
+    });
+  } finally {
+    session.endSession();
+  }
+};
+
+/**
+ * Get orders for the current user (buyer or farmer)
+ */
+export const getMyOrders = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    const { status, page = 1, limit = 10 } = req.query;
+
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    let orders;
+    let totalOrders;
+
+    if (userRole === 'buyer') {
+      orders = await Order.findByBuyer(userId, status)
+        .skip(skip)
+        .limit(limitNum);
+      
+      totalOrders = await Order.countDocuments({
+        buyer: userId,
+        ...(status && { status })
+      });
+    } else if (userRole === 'farmer') {
+      orders = await Order.findByFarmer(userId, status)
+        .skip(skip)
+        .limit(limitNum);
+      
+      totalOrders = await Order.countDocuments({
+        farmers: userId,
+        ...(status && { status })
+      });
+    } else {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
+
+    const totalPages = Math.ceil(totalOrders / limitNum);
+
+    res.json({
+      success: true,
+      data: {
+        orders,
+        pagination: {
+          currentPage: pageNum,
+          totalPages,
+          totalOrders,
+          hasNextPage: pageNum < totalPages,
+          hasPrevPage: pageNum > 1
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Get my orders error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch orders',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+/**
+ * Get a specific order by ID
+ */
+export const getOrderById = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    const order = await Order.findById(orderId)
+      .populate('buyer', 'firstName lastName email phone')
+      .populate('farmers', 'firstName lastName email phone')
+      .populate('items.product', 'title images unit farmer')
+      .populate('statusHistory.updatedBy', 'firstName lastName role');
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    // Check access permissions
+    const isBuyer = order.buyer._id.toString() === userId;
+    const isFarmer = order.farmers.some(farmer => farmer._id.toString() === userId);
+    const isAdmin = userRole === 'admin';
+
+    if (!isBuyer && !isFarmer && !isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        order
+      }
+    });
+
+  } catch (error) {
+    console.error('Get order by ID error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch order',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+/**
+ * Get order by order number
+ */
+export const getOrderByNumber = async (req, res) => {
+  try {
+    const { orderNumber } = req.params;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    const order = await Order.findByOrderNumber(orderNumber);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    // Check access permissions
+    const isBuyer = order.buyer._id.toString() === userId;
+    const isFarmer = order.farmers.some(farmer => farmer._id.toString() === userId);
+    const isAdmin = userRole === 'admin';
+
+    if (!isBuyer && !isFarmer && !isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        order
+      }
+    });
+
+  } catch (error) {
+    console.error('Get order by number error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch order',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+/**
+ * Update order status
+ */
+export const updateOrderStatus = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status, note } = req.body;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    const order = await Order.findById(orderId)
+      .populate('buyer', 'firstName lastName')
+      .populate('farmers', 'firstName lastName');
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    // Check permissions for status updates
+    const isBuyer = order.buyer._id.toString() === userId;
+    const isFarmer = order.farmers.some(farmer => farmer._id.toString() === userId);
+    const isAdmin = userRole === 'admin';
+
+    // Define allowed status updates by role
+    const allowedStatusUpdates = {
+      buyer: ['cancelled'], // Buyers can only cancel
+      farmer: ['confirmed', 'preparing', 'shipped', 'cancelled'], // Farmers can update most statuses
+      admin: ['pending', 'confirmed', 'preparing', 'shipped', 'delivered', 'cancelled', 'refunded'] // Admins can update any status
+    };
+
+    let canUpdate = false;
+    let allowedStatuses = [];
+
+    if (isAdmin) {
+      canUpdate = true;
+      allowedStatuses = allowedStatusUpdates.admin;
+    } else if (isFarmer) {
+      canUpdate = true;
+      allowedStatuses = allowedStatusUpdates.farmer;
+    } else if (isBuyer && status === 'cancelled') {
+      canUpdate = true;
+      allowedStatuses = allowedStatusUpdates.buyer;
+    }
+
+    if (!canUpdate) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to update this order'
+      });
+    }
+
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `You cannot update the order to ${status} status`
+      });
+    }
+
+    // Update the order status
+    await order.updateStatus(status, note, userId);
+
+    // Re-fetch the updated order with populated fields
+    const updatedOrder = await Order.findById(orderId)
+      .populate('buyer', 'firstName lastName email phone')
+      .populate('farmers', 'firstName lastName email phone')
+      .populate('items.product', 'title images unit')
+      .populate('statusHistory.updatedBy', 'firstName lastName role');
+
+    res.json({
+      success: true,
+      message: 'Order status updated successfully',
+      data: {
+        order: updatedOrder
+      }
+    });
+
+  } catch (error) {
+    console.error('Update order status error:', error);
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Failed to update order status',
+      error: process.env.NODE_ENV === 'development' ? error : undefined
+    });
+  }
+};
+
+/**
+ * Cancel an order
+ */
+export const cancelOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { reason } = req.body;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    // Check permissions
+    const isBuyer = order.buyer._id.toString() === userId;
+    const isFarmer = order.farmers.some(farmer => farmer._id.toString() === userId);
+    const isAdmin = userRole === 'admin';
+
+    if (!isBuyer && !isFarmer && !isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to cancel this order'
+      });
+    }
+
+    // Cancel the order
+    await order.cancel(reason || 'Cancelled by user', userId);
+
+    // Re-fetch the updated order with populated fields
+    const updatedOrder = await Order.findById(orderId)
+      .populate('buyer', 'firstName lastName email phone')
+      .populate('farmers', 'firstName lastName email phone')
+      .populate('items.product', 'title images unit')
+      .populate('statusHistory.updatedBy', 'firstName lastName role');
+
+    res.json({
+      success: true,
+      message: 'Order cancelled successfully',
+      data: {
+        order: updatedOrder
+      }
+    });
+
+  } catch (error) {
+    console.error('Cancel order error:', error);
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Failed to cancel order',
+      error: process.env.NODE_ENV === 'development' ? error : undefined
+    });
+  }
+};
+
+/**
+ * Get all orders (Admin only)
+ */
+export const getAllOrders = async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin role required.'
+      });
+    }
+
+    const { 
+      status, 
+      buyerId, 
+      farmerId, 
+      dateFrom, 
+      dateTo, 
+      page = 1, 
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Build query
+    const query = {};
+    if (status) query.status = status;
+    if (buyerId) query.buyer = buyerId;
+    if (farmerId) query.farmers = farmerId;
+    if (dateFrom || dateTo) {
+      query.createdAt = {};
+      if (dateFrom) query.createdAt.$gte = new Date(dateFrom);
+      if (dateTo) query.createdAt.$lte = new Date(dateTo);
+    }
+
+    // Build sort object
+    const sort = {};
+    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+    const orders = await Order.find(query)
+      .populate('buyer', 'firstName lastName email phone')
+      .populate('farmers', 'firstName lastName email phone')
+      .populate('items.product', 'title images unit')
+      .sort(sort)
+      .skip(skip)
+      .limit(limitNum);
+
+    const totalOrders = await Order.countDocuments(query);
+    const totalPages = Math.ceil(totalOrders / limitNum);
+
+    res.json({
+      success: true,
+      data: {
+        orders,
+        pagination: {
+          currentPage: pageNum,
+          totalPages,
+          totalOrders,
+          hasNextPage: pageNum < totalPages,
+          hasPrevPage: pageNum > 1
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Get all orders error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch orders',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+/**
+ * Get order analytics/statistics (Admin only)
+ */
+export const getOrderAnalytics = async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin role required.'
+      });
+    }
+
+    const { dateFrom, dateTo } = req.query;
+
+    // Build date filter
+    const dateFilter = {};
+    if (dateFrom || dateTo) {
+      dateFilter.createdAt = {};
+      if (dateFrom) dateFilter.createdAt.$gte = new Date(dateFrom);
+      if (dateTo) dateFilter.createdAt.$lte = new Date(dateTo);
+    }
+
+    // Get order statistics
+    const [
+      totalOrders,
+      ordersByStatus,
+      revenueStats,
+      topBuyers,
+      topFarmers
+    ] = await Promise.all([
+      // Total orders
+      Order.countDocuments(dateFilter),
+      
+      // Orders by status
+      Order.aggregate([
+        { $match: dateFilter },
+        { $group: { _id: '$status', count: { $sum: 1 }, totalRevenue: { $sum: '$total' } } }
+      ]),
+      
+      // Revenue statistics
+      Order.aggregate([
+        { $match: { ...dateFilter, status: { $in: ['delivered', 'shipped'] } } },
+        {
+          $group: {
+            _id: null,
+            totalRevenue: { $sum: '$total' },
+            avgOrderValue: { $avg: '$total' },
+            orderCount: { $sum: 1 }
+          }
+        }
+      ]),
+      
+      // Top buyers
+      Order.aggregate([
+        { $match: dateFilter },
+        { $group: { _id: '$buyer', orderCount: { $sum: 1 }, totalSpent: { $sum: '$total' } } },
+        { $sort: { totalSpent: -1 } },
+        { $limit: 10 },
+        { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'buyer' } },
+        { $unwind: '$buyer' },
+        { $project: { buyerName: { $concat: ['$buyer.firstName', ' ', '$buyer.lastName'] }, orderCount: 1, totalSpent: 1 } }
+      ]),
+      
+      // Top farmers
+      Order.aggregate([
+        { $match: dateFilter },
+        { $unwind: '$farmers' },
+        { $group: { _id: '$farmers', orderCount: { $sum: 1 }, totalRevenue: { $sum: '$total' } } },
+        { $sort: { totalRevenue: -1 } },
+        { $limit: 10 },
+        { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'farmer' } },
+        { $unwind: '$farmer' },
+        { $project: { farmerName: { $concat: ['$farmer.firstName', ' ', '$farmer.lastName'] }, orderCount: 1, totalRevenue: 1 } }
+      ])
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        totalOrders,
+        ordersByStatus,
+        revenue: revenueStats[0] || { totalRevenue: 0, avgOrderValue: 0, orderCount: 0 },
+        topBuyers,
+        topFarmers
+      }
+    });
+
+  } catch (error) {
+    console.error('Get order analytics error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch order analytics',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
