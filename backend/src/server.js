@@ -16,6 +16,7 @@ import categoryRoutes from "./routes/categoryRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import profileRoutes from "./routes/profile.js";
+import { seedCategories } from "./lib/seedCategories.js";
 
 dotenv.config();
 
@@ -39,12 +40,34 @@ app.use('/uploads', express.static('uploads'));
 
 
 // Health check endpoint (route to check health , and monitor)
-app.get("/health", (req, res) => {
-  res.json({
-    status: "OK",
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || "development"
+// Health check route (before other routes)
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ 
+    status: "OK", 
+    message: "Server is running",
+    timestamp: new Date().toISOString()
   });
+});
+
+// Database seeding route (for production deployment)
+app.get("/api/seed-database", async (req, res) => {
+  try {
+    console.log("Starting database seeding...");
+    await seedCategories();
+    res.status(200).json({ 
+      success: true, 
+      message: "Database seeded successfully with categories",
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error("Database seeding failed:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Database seeding failed",
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Routes
