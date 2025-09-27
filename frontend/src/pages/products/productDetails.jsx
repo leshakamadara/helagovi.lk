@@ -32,8 +32,11 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 
 const ProductDetails = () => {
   const [searchParams] = useSearchParams();
-  const productId = searchParams.get('id') || "507f1f77bcf86cd799439011";
+  const productId = searchParams.get('id');
   const { user } = useAuth();
+  
+  console.log('ProductDetails component loaded with productId:', productId);
+  console.log('Search params:', Object.fromEntries(searchParams));
   
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -82,25 +85,46 @@ const ProductDetails = () => {
   const fetchProduct = async () => {
     try {
       setLoading(true);
+      setError(null);
       
-      // Try to fetch from API first
-      try {
-        const response = await api.get(`/products/${productId}`);
-        if (response.data?.success && response.data?.data) {
-          console.log('Successfully fetched product from API:', response.data.data);
-          setProduct(response.data.data);
-          return;
-        }
-      } catch (apiError) {
-        console.log('API not available, using mock data:', apiError.message);
+      console.log('Fetching product with ID:', productId);
+      
+      // Validate product ID
+      if (!productId || productId === "507f1f77bcf86cd799439011") {
+        setError('Invalid product ID');
+        setProduct(null);
+        return;
       }
       
-      // Product not found
-      setError('Product not found');
-      setProduct(null);
+      // Try to fetch from API
+      const response = await api.get(`/products/${productId}`);
+      
+      console.log('API Response:', response.data);
+      
+      if (response.data?.success && response.data?.data) {
+        console.log('Successfully fetched product from API:', response.data.data);
+        setProduct(response.data.data);
+      } else {
+        console.error('Invalid API response structure:', response.data);
+        setError('Invalid product data received');
+        setProduct(null);
+      }
+      
     } catch (err) {
-      console.error('Error in fetchProduct:', err);
-      setError(err.message || 'Failed to fetch product');
+      console.error('Error fetching product:', err);
+      
+      // More specific error handling
+      if (err.response?.status === 404) {
+        setError('Product not found');
+      } else if (err.response?.status === 400) {
+        setError('Invalid product ID');
+      } else if (err.code === 'ERR_NETWORK') {
+        setError('Network error. Please check your internet connection.');
+      } else {
+        setError(err.response?.data?.message || err.message || 'Failed to fetch product');
+      }
+      
+      setProduct(null);
     } finally {
       setLoading(false);
     }
