@@ -91,11 +91,14 @@ const ProductListing = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [totalProducts, setTotalProducts] = useState(0);
   
+  // Price range state
+  const [priceStats, setPriceStats] = useState({ minPrice: 0, maxPrice: 10000, avgPrice: 1000 });
+  const [priceRange, setPriceRange] = useState({ min: 0, max: 10000 });
+  
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('All Districts');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 10000 });
   const [organicOnly, setOrganicOnly] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
@@ -104,6 +107,22 @@ const ProductListing = () => {
   const [activeBanner, setActiveBanner] = useState(0);
 
   const itemsPerPage = 12;
+
+  // Fetch price statistics from API
+  const fetchPriceStats = useCallback(async () => {
+    try {
+      const response = await api.get('/products/price-stats');
+      const stats = response.data.data;
+      setPriceStats(stats);
+      // Update initial price range to match actual data
+      setPriceRange({ min: stats.minPrice, max: stats.maxPrice });
+    } catch (error) {
+      console.error('Error fetching price stats:', error);
+      // Use defaults if API fails
+      setPriceStats({ minPrice: 0, maxPrice: 10000, avgPrice: 1000 });
+      setPriceRange({ min: 0, max: 10000 });
+    }
+  }, []);
 
   // Fetch categories from API
   const fetchCategories = useCallback(async () => {
@@ -177,8 +196,8 @@ const ProductListing = () => {
           params.append('categoryRoot', categoryId);
         }
       }
-      if (priceRange.min > 0) params.append('minPrice', priceRange.min);
-      if (priceRange.max < 10000) params.append('maxPrice', priceRange.max);
+      if (priceRange.min > priceStats.minPrice) params.append('minPrice', priceRange.min);
+      if (priceRange.max < priceStats.maxPrice) params.append('maxPrice', priceRange.max);
       if (organicOnly) params.append('isOrganic', 'true');
       
       const response = await api.get(`/products?${params.toString()}`);
@@ -194,10 +213,11 @@ const ProductListing = () => {
     }
   }, [currentPage, searchQuery, selectedDistrict, selectedCategory, priceRange, organicOnly, sortBy, categories]);
 
-  // Load categories and initial products
+  // Load price stats, categories and initial products  
   useEffect(() => {
+    fetchPriceStats();
     fetchCategories();
-  }, [fetchCategories]);
+  }, [fetchPriceStats, fetchCategories]);
 
   useEffect(() => {
     if (categories.length > 0) {
@@ -552,6 +572,9 @@ const ProductListing = () => {
                       <span>Rs. {priceRange.min.toLocaleString()}</span>
                       <span>Rs. {priceRange.max.toLocaleString()}</span>
                     </div>
+                    <div className="text-xs text-muted-foreground text-center mb-2">
+                      Available range: Rs. {priceStats.minPrice.toLocaleString()} - Rs. {priceStats.maxPrice.toLocaleString()}
+                    </div>
                     <div className="space-y-3">
                       <div className="space-y-1">
                         <label className="text-xs text-muted-foreground">Minimum</label>
@@ -561,8 +584,8 @@ const ProductListing = () => {
                             ...prev, 
                             min: Math.min(value, prev.max - 100) // Ensure min is at least 100 less than max
                           }))}
-                          max={9900} // Max for min slider to leave room for max
-                          min={0}
+                          max={priceStats.maxPrice - 100} // Max for min slider to leave room for max
+                          min={priceStats.minPrice}
                           step={100}
                           className="w-full"
                         />
@@ -575,8 +598,8 @@ const ProductListing = () => {
                             ...prev, 
                             max: Math.max(value, prev.min + 100) // Ensure max is at least 100 more than min
                           }))}
-                          max={10000}
-                          min={100} // Min for max slider to leave room for min
+                          max={priceStats.maxPrice}
+                          min={priceStats.minPrice + 100} // Min for max slider to leave room for min
                           step={100}
                           className="w-full"
                         />
@@ -628,7 +651,7 @@ const ProductListing = () => {
                     setSearchQuery('');
                     setSelectedDistrict('All Districts');
                     setSelectedCategory('All Categories');
-                    setPriceRange({ min: 0, max: 10000 });
+                    setPriceRange({ min: priceStats.minPrice, max: priceStats.maxPrice });
                     setOrganicOnly(false);
                     setSortBy('newest');
                   }}
@@ -683,7 +706,7 @@ const ProductListing = () => {
                       setSearchQuery('');
                       setSelectedDistrict('All Districts');
                       setSelectedCategory('All Categories');
-                      setPriceRange({ min: 0, max: 1000 });
+                      setPriceRange({ min: priceStats.minPrice, max: priceStats.maxPrice });
                       setOrganicOnly(false);
                     }}
                   >
