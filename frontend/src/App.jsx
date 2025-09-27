@@ -18,7 +18,7 @@ import AdminDashboard from './pages/users/AdminDashboard'
 
 import ProductCreationForm from "./pages/products/createProduct";
 import ProductDetails from "./pages/products/productDetails";
-import ProductListing from "./pages/products/productListing";
+import ProductListing from "./pages/products/ProductListing";
 import MyProducts from "./pages/products/myProducts";
 import EditProduct from "./pages/products/editProduct";
 import BuyerOrders from "./pages/orders/BuyerOrders";
