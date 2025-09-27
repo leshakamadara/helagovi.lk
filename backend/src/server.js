@@ -72,6 +72,56 @@ app.get("/api/seed-database", async (req, res) => {
   }
 });
 
+// Get price range statistics for filtering
+app.get("/api/products/price-stats", async (req, res) => {
+  try {
+    const Product = (await import("./models/Product.js")).default;
+    
+    const stats = await Product.aggregate([
+      {
+        $match: {
+          status: 'active',
+          availableQuantity: { $gt: 0 },
+          price: { $exists: true, $gt: 0 }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          minPrice: { $min: "$price" },
+          maxPrice: { $max: "$price" },
+          avgPrice: { $avg: "$price" },
+          totalProducts: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const result = stats[0] || {
+      minPrice: 0,
+      maxPrice: 10000,
+      avgPrice: 1000,
+      totalProducts: 0
+    };
+
+    res.status(200).json({
+      success: true,
+      data: {
+        minPrice: Math.floor(result.minPrice),
+        maxPrice: Math.ceil(result.maxPrice),
+        avgPrice: Math.round(result.avgPrice),
+        totalProducts: result.totalProducts
+      }
+    });
+  } catch (error) {
+    console.error("Get price stats error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch price statistics",
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
