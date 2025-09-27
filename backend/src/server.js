@@ -173,6 +173,14 @@ app.use("/api/users", userRoutes);
 // Products with caching and invalidation
 app.use("/api/products", (req, res, next) => {
   if (req.method === 'GET' && req.originalUrl !== '/api/products/price-stats') {
+    // Skip caching for authenticated endpoints that are user-specific
+    const isUserSpecificEndpoint = req.url.startsWith('/my/') || req.url.includes('/farmer/');
+    
+    if (isUserSpecificEndpoint) {
+      console.log(`Skipping cache for user-specific endpoint: ${req.originalUrl}`);
+      return next();
+    }
+    
     // Check if this is an individual product request (/api/products/:id)
     const isIndividualProduct = req.url.match(/^\/[a-fA-F0-9]{24}$/);
     
