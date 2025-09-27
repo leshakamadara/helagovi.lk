@@ -578,6 +578,9 @@ export const updateProductStatus = async (req, res) => {
 // Get products by farmer (for farmer dashboard)
 export const getMyProducts = async (req, res) => {
   try {
+    console.log('=== GET MY PRODUCTS DEBUG ===');
+    console.log('User:', req.user?.email, 'ID:', req.user?.id);
+    
     const {
       page = 1,
       limit = 10,
@@ -588,6 +591,8 @@ export const getMyProducts = async (req, res) => {
 
     const query = { farmer: req.user.id };
     if (status) query.status = status;
+    
+    console.log('Query:', query);
 
     const sort = {};
     sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
@@ -607,7 +612,9 @@ export const getMyProducts = async (req, res) => {
 
     const totalPages = Math.ceil(totalProducts / limitNum);
 
-    res.status(200).json({
+    console.log(`Found ${products.length} products for user ${req.user.id}`);
+    
+    const response = {
       success: true,
       data: products,
       pagination: {
@@ -618,7 +625,10 @@ export const getMyProducts = async (req, res) => {
         hasNextPage: pageNum < totalPages,
         hasPrevPage: pageNum > 1
       }
-    });
+    };
+    
+    console.log('Sending response:', JSON.stringify({...response, data: `[${products.length} products]`}));
+    res.status(200).json(response);
 
   } catch (error) {
     console.error('Get my products error:', error);

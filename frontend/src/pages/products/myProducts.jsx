@@ -44,12 +44,16 @@ const MyProducts = () => {
       });
       
       console.log('API Response:', response.data);
+      console.log('Response data type:', typeof response.data);
+      console.log('Response data structure:', Object.keys(response.data || {}));
       
       if (response.data?.success && Array.isArray(response.data?.data)) {
         setProducts(response.data.data);
         console.log(`Successfully loaded ${response.data.data.length} products from API`);
       } else {
-        throw new Error('Invalid response format from API');
+        console.error('Invalid response format. Expected: { success: true, data: [] }');
+        console.error('Actual response:', response.data);
+        throw new Error(`Invalid response format from API. Got: ${JSON.stringify(response.data)}`);
       }
       
     } catch (err) {
