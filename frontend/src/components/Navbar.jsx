@@ -337,21 +337,26 @@ const Navbar = () => {
                         </Button>
                       )
                     ) : (
-                      <div className="space-y-2">
-                        <Link
-                          to="/login"
-                          className="block px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                      <div className="space-y-3">
+                        <Button
+                          asChild
+                          variant="outline"
+                          className="w-full justify-center border-emerald-600 text-emerald-600 hover:bg-emerald-50 font-medium"
                           onClick={() => setIsOpen(false)}
                         >
-                          <span className="font-medium">Login</span>
-                        </Link>
-                        <Link
-                          to="/register"
-                          className="block px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-center"
+                          <Link to="/login">
+                            Login
+                          </Link>
+                        </Button>
+                        <Button
+                          asChild
+                          className="w-full justify-center bg-emerald-600 text-white hover:bg-emerald-700 font-medium"
                           onClick={() => setIsOpen(false)}
                         >
-                          <span className="font-medium">Register</span>
-                        </Link>
+                          <Link to="/register">
+                            Register
+                          </Link>
+                        </Button>
                       </div>
                     )}
                   </div>
