@@ -665,18 +665,7 @@ const ProductListing = () => {
           {/* Products Grid */}
           <div className="flex-1">
             {/* Results Summary */}
-            <Card className="mb-6">
-              <CardContent className="p-4">
-                <div className="text-muted-foreground">
-                  <span className="font-semibold text-foreground">{totalProducts}</span> fresh products found
-                  {searchQuery && (
-                    <span className="ml-2 text-sm">
-                      for "<span className="font-medium text-primary">{searchQuery}</span>"
-                    </span>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+    
 
             {/* Loading State */}
             {loading && (
