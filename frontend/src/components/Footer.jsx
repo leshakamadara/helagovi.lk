@@ -5,7 +5,7 @@ export default function Footer() {
         
         {/* Left - Branding */}
         <p className="text-sm">
-           {new Date().getFullYear()} <span className="font-semibold">Helagovi.lk</span> Batch 8 Group 190 IT Project 2025
+            <span className="font-semibold">Helagovi.lk</span> |  Batch 8 Group 190 IT Project {new Date().getFullYear()}
         </p>
 
         {/* Right - Links */}

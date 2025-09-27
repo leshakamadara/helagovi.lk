@@ -17,6 +17,8 @@ import uploadRoutes from "./routes/uploadRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import profileRoutes from "./routes/profile.js";
 import { seedCategories } from "./lib/seedCategories.js";
+import { cache, CACHE_DURATION, cacheKeys } from "./lib/cache.js";
+import { cacheMiddleware, cacheInvalidationMiddleware } from "./middleware/cache.js";
 
 dotenv.config();
 
@@ -43,11 +45,14 @@ app.use('/uploads', express.static('uploads'));
 
 // Health check endpoint (route to check health , and monitor)
 // Health check route (before other routes)
-app.get("/api/health", (req, res) => {
+app.get("/api/health", async (req, res) => {
+  const cacheInfo = await cache.getInfo();
+  
   res.status(200).json({ 
     status: "OK", 
     message: "Server is running",
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    cache: cacheInfo
   });
 });
 
@@ -72,52 +77,91 @@ app.get("/api/seed-database", async (req, res) => {
   }
 });
 
-// Get price range statistics for filtering
-app.get("/api/products/price-stats", async (req, res) => {
+// Get price range statistics for filtering (with caching)
+app.get("/api/products/price-stats", 
+  cacheMiddleware(cacheKeys.priceStats, CACHE_DURATION.MEDIUM),
+  async (req, res) => {
+    try {
+      const Product = (await import("./models/Product.js")).default;
+      
+      const stats = await Product.aggregate([
+        {
+          $match: {
+            status: 'active',
+            availableQuantity: { $gt: 0 },
+            price: { $exists: true, $gt: 0 }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            minPrice: { $min: "$price" },
+            maxPrice: { $max: "$price" },
+            avgPrice: { $avg: "$price" },
+            totalProducts: { $sum: 1 }
+          }
+        }
+      ]);
+
+      const result = stats[0] || {
+        minPrice: 0,
+        maxPrice: 10000,
+        avgPrice: 1000,
+        totalProducts: 0
+      };
+
+      res.status(200).json({
+        success: true,
+        data: {
+          minPrice: Math.floor(result.minPrice),
+          maxPrice: Math.ceil(result.maxPrice),
+          avgPrice: Math.round(result.avgPrice),
+          totalProducts: result.totalProducts
+        }
+      });
+    } catch (error) {
+      console.error("Get price stats error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch price statistics",
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
+  }
+);
+
+// Cache management endpoint (for debugging)
+app.get("/api/cache/info", async (req, res) => {
   try {
-    const Product = (await import("./models/Product.js")).default;
-    
-    const stats = await Product.aggregate([
-      {
-        $match: {
-          status: 'active',
-          availableQuantity: { $gt: 0 },
-          price: { $exists: true, $gt: 0 }
-        }
-      },
-      {
-        $group: {
-          _id: null,
-          minPrice: { $min: "$price" },
-          maxPrice: { $max: "$price" },
-          avgPrice: { $avg: "$price" },
-          totalProducts: { $sum: 1 }
-        }
-      }
-    ]);
-
-    const result = stats[0] || {
-      minPrice: 0,
-      maxPrice: 10000,
-      avgPrice: 1000,
-      totalProducts: 0
-    };
-
+    const info = await cache.getInfo();
     res.status(200).json({
       success: true,
-      data: {
-        minPrice: Math.floor(result.minPrice),
-        maxPrice: Math.ceil(result.maxPrice),
-        avgPrice: Math.round(result.avgPrice),
-        totalProducts: result.totalProducts
-      }
+      data: info
     });
   } catch (error) {
-    console.error("Get price stats error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to fetch price statistics",
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      message: "Failed to get cache info",
+      error: error.message
+    });
+  }
+});
+
+// Clear cache endpoint (for debugging - remove in production)
+app.delete("/api/cache/clear/:pattern?", async (req, res) => {
+  try {
+    const pattern = req.params.pattern || '*';
+    const result = await cache.clearPattern(pattern);
+    res.status(200).json({
+      success: true,
+      message: `Cache cleared for pattern: ${pattern}`,
+      result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to clear cache",
+      error: error.message
     });
   }
 });
@@ -125,13 +169,71 @@ app.get("/api/products/price-stats", async (req, res) => {
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
-app.use("/api/products", productRoutes);
-app.use('/api/categories', categoryRoutes);
+
+// Products with caching and invalidation
+app.use("/api/products", (req, res, next) => {
+  if (req.method === 'GET' && req.originalUrl !== '/api/products/price-stats') {
+    // Cache GET requests (except price-stats which has its own caching)
+    const cacheKey = cacheKeys.products(
+      req.query.page,
+      req.query.limit,
+      {
+        category: req.query.category || req.query.categoryRoot,
+        search: req.query.search,
+        district: req.query.district,
+        minPrice: req.query.minPrice,
+        maxPrice: req.query.maxPrice,
+        isOrganic: req.query.isOrganic,
+        sortBy: req.query.sortBy
+      }
+    );
+    return cacheMiddleware(() => cacheKey, CACHE_DURATION.SHORT)(req, res, next);
+  } else if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
+    // Invalidate cache for write operations
+    return cacheInvalidationMiddleware([
+      'products:*',
+      'price-stats'
+    ])(req, res, next);
+  }
+  next();
+}, productRoutes);
+
+// Categories with caching (cache for 1 hour since categories don't change often)
+app.use('/api/categories', (req, res, next) => {
+  if (req.method === 'GET') {
+    return cacheMiddleware(
+      () => `categories:${req.originalUrl}`,
+      CACHE_DURATION.LONG
+    )(req, res, next);
+  } else if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
+    // Invalidate categories cache for write operations
+    return cacheInvalidationMiddleware([
+      'categories:*'
+    ])(req, res, next);
+  }
+  next();
+}, categoryRoutes);
+
 app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/reviews", reviewRoutes);
-app.use("/api/profile", profileRoutes);
+
+// Profile with caching
+app.use("/api/profile", (req, res, next) => {
+  if (req.method === 'GET' && req.user) {
+    return cacheMiddleware(
+      () => cacheKeys.userProfile(req.user.id),
+      CACHE_DURATION.SHORT
+    )(req, res, next);
+  } else if (['PUT', 'PATCH', 'DELETE'].includes(req.method) && req.user) {
+    // Invalidate user cache on profile updates
+    return cacheInvalidationMiddleware([
+      `user:${req.user.id}:*`
+    ])(req, res, next);
+  }
+  next();
+}, profileRoutes);
 
 
 // Test endpoint
