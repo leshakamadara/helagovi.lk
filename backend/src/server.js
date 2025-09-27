@@ -173,26 +173,39 @@ app.use("/api/users", userRoutes);
 // Products with caching and invalidation
 app.use("/api/products", (req, res, next) => {
   if (req.method === 'GET' && req.originalUrl !== '/api/products/price-stats') {
-    // Cache GET requests (except price-stats which has its own caching)
-    const cacheKey = cacheKeys.products(
-      req.query.page,
-      req.query.limit,
-      {
-        category: req.query.category || req.query.categoryRoot,
-        search: req.query.search,
-        district: req.query.district,
-        minPrice: req.query.minPrice,
-        maxPrice: req.query.maxPrice,
-        isOrganic: req.query.isOrganic,
-        sortBy: req.query.sortBy
-      }
-    );
+    // Check if this is an individual product request (/api/products/:id)
+    const isIndividualProduct = req.url.match(/^\/[a-fA-F0-9]{24}$/);
+    
+    let cacheKey;
+    if (isIndividualProduct) {
+      // Individual product: /api/products/:id
+      const productId = req.url.substring(1); // Remove leading slash
+      cacheKey = cacheKeys.productDetails(productId);
+    } else {
+      // Product listing: /api/products with query params
+      cacheKey = cacheKeys.products(
+        req.query.page,
+        req.query.limit,
+        {
+          category: req.query.category || req.query.categoryRoot,
+          search: req.query.search,
+          district: req.query.district,
+          minPrice: req.query.minPrice,
+          maxPrice: req.query.maxPrice,
+          isOrganic: req.query.isOrganic,
+          sortBy: req.query.sortBy
+        }
+      );
+    }
+    
+    console.log(`Caching products request: ${req.originalUrl} with key: ${cacheKey}`);
     return cacheMiddleware(() => cacheKey, CACHE_DURATION.SHORT)(req, res, next);
   } else if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
     // Invalidate cache for write operations
     return cacheInvalidationMiddleware([
       'products:*',
-      'price-stats'
+      'price-stats',
+      'product:*' // Also clear individual product caches
     ])(req, res, next);
   }
   next();
