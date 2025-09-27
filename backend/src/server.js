@@ -23,7 +23,14 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 
 // Middleware
-app.use(cors({ origin: "http://localhost:5173" }));
+app.use(cors({ 
+  origin: [
+    "http://localhost:5173",
+    "https://helagovi-lk-1.onrender.com",
+    "https://helagovi-lk.onrender.com"
+  ],
+  credentials: true
+}));
 app.use(express.json());
 // app.use(ratelimiter); // optional
 
