@@ -1,21 +1,39 @@
 import React, { useState, useEffect } from "react";
 import { Check } from "lucide-react";
 import jsPDF from "jspdf";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const PaymentSuccessPage = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+
+  const paymentData = location.state || {};
+
+  
+  const {
+    order = {
+      orderNumber: "N/A",
+      summary: { items: [], tax: 0, total: 0 },
+      buyer: { firstName: "", lastName: "" },
+    },
+    transactionDetails = {}, 
+  } = paymentData;
+
   const [transactionId, setTransactionId] = useState("");
 
-  const orderSummary = {
-    subtotal: 299.99,
-    tax: 24.0,
-    total: 323.99,
-    items: [{ name: "Premium Subscription", price: 299.99 }],
-  };
-
   useEffect(() => {
-    // Generate a fake transaction ID on load
-    setTransactionId(`TXN-${Date.now()}`);
-  }, []);
+    
+    setTransactionId(`TSN-${Date.now()}`);
+
+    
+    if (!order || !order.summary) {
+      navigate("/", { replace: true });
+    }
+  }, [order, navigate]);
+
+ 
+  const subtotal = order.summary.items.reduce((sum, item) => sum + item.price, 0);
 
   const generatePDF = () => {
     const doc = new jsPDF();
@@ -25,80 +43,91 @@ const PaymentSuccessPage = () => {
 
     doc.setFontSize(12);
     doc.text(`Transaction ID: ${transactionId}`, 20, 40);
-    doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 50);
+    doc.text(`Order Number: ${order.orderNumber}`, 20, 50);
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 60);
 
-    let yOffset = 70;
-    orderSummary.items.forEach((item, index) => {
+    let yOffset = 80;
+    order.summary.items.forEach((item, index) => {
       doc.text(`${index + 1}. ${item.name}`, 20, yOffset);
-      doc.text(`$${item.price}`, 160, yOffset, { align: "right" });
+      doc.text(`LKR ${item.price.toFixed(2)}`, 160, yOffset, { align: "right" });
       yOffset += 10;
     });
 
-    doc.text(`Subtotal: $${orderSummary.subtotal}`, 160, yOffset, { align: "right" });
+    doc.text(`Subtotal: LKR ${subtotal.toFixed(2)}`, 160, yOffset, { align: "right" });
     yOffset += 10;
-    doc.text(`Tax: $${orderSummary.tax}`, 160, yOffset, { align: "right" });
+    doc.text(`Tax: LKR ${order.summary.tax.toFixed(2)}`, 160, yOffset, { align: "right" });
     yOffset += 10;
-    doc.text(`Total: $${orderSummary.total}`, 160, yOffset, { align: "right" });
+    doc.text(`Total: LKR ${order.summary.total.toFixed(2)}`, 160, yOffset, { align: "right" });
 
     doc.save(`Invoice-${transactionId}.pdf`);
   };
 
+
+  const navigateHome = () => {
+    if (!window.confirm("Are you sure you want to go Home page?")) return;
+    window.location.href = `/homepage`; 
+  };
+
+
+
   return (
-    <div className="min-h-screen bg-base-200 flex items-center justify-center p-4">
-      <div className="card w-full max-w-md bg-base-100 shadow-xl">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#D3D3D3' }}>
+      <div className="card w-full max-w-md shadow-xl" style={{ backgroundColor: 'white' }}>
         <div className="card-body items-center text-center">
           {/* Success Icon */}
-          <div className="w-16 h-16 bg-success rounded-full flex items-center justify-center mb-4">
-            <Check className="w-8 h-8 text-success-content" />
+          <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: '#22c55e' }}>
+            <Check className="w-8 h-8 text-white" />
           </div>
 
           {/* Success Message */}
-          <h2 className="card-title text-2xl mb-2">Payment Successful!</h2>
-          <p className="text-base-content/70 mb-6">
-            Your transaction has been processed successfully.
+          <h2 className="card-title text-2xl mb-2" style={{ color: 'black' }}>Payment Successful!</h2>
+          <p className="mb-6" style={{ color: 'black' }}>
+            Thank you {order.buyer.firstName} {order.buyer.lastName}, your transaction has been processed successfully.
           </p>
 
           {/* Transaction ID */}
-          <div className="bg-base-200 rounded-lg p-4 mb-6 w-full">
-            <p className="text-sm text-base-content/60">Transaction ID</p>
-            <p className="font-mono text-base-content">{transactionId}</p>
+          <div className="rounded-lg p-4 mb-6 w-full" style={{ backgroundColor: '#D3D3D3' }}>
+            <p className="text-sm" style={{ color: 'black' }}>Transaction ID</p>
+            <p className="font-mono" style={{ color: 'black' }}>{transactionId}</p>
           </div>
 
           {/* Order Summary */}
-          <div className="card bg-base-100 shadow rounded-lg p-4 w-full mb-6">
-            <h3 className="font-semibold mb-2">Order Summary</h3>
-            {orderSummary.items.map((item, index) => (
+          <div className="card shadow rounded-lg p-4 w-full mb-6" style={{ backgroundColor: 'white' }}>
+            <h3 className="font-semibold mb-2" style={{ color: 'black' }}>Order Summary</h3>
+            {order.summary.items.map((item, index) => (
               <div key={index} className="flex justify-between">
-                <span className="text-base-content/70">{item.name}</span>
-                <span className="font-medium">${item.price}</span>
+                <span style={{ color: 'black' }}>{item.name}</span>
+                <span className="font-medium" style={{ color: 'black' }}>LKR {item.price.toFixed(2)}</span>
               </div>
             ))}
             <div className="divider"></div>
             <div className="flex justify-between text-sm">
-              <span className="text-base-content/70">Subtotal</span>
-              <span>${orderSummary.subtotal}</span>
+              <span style={{ color: 'black' }}>Subtotal</span>
+              <span style={{ color: 'black' }}>LKR {subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-base-content/70">Tax</span>
-              <span>${orderSummary.tax}</span>
+              <span style={{ color: 'black' }}>Tax</span>
+              <span style={{ color: 'black' }}>LKR {order.summary.tax.toFixed(2)}</span>
             </div>
             <div className="divider"></div>
             <div className="flex justify-between text-lg font-semibold">
-              <span>Total</span>
-              <span className="text-success">${orderSummary.total}</span>
+              <span style={{ color: 'black' }}>Total</span>
+              <span style={{ color: '#22c55e' }}>LKR {order.summary.total.toFixed(2)}</span>
             </div>
           </div>
 
           {/* Actions */}
           <div className="card-actions w-full flex flex-col gap-2">
             <button
-              className="btn btn-primary w-full"
-              onClick={() => window.location.href = "/"}
+              className="btn w-full text-white"
+              style={{ backgroundColor: '#22c55e' }}
+              onClick={navigateHome}
             >
               Continue
             </button>
             <button
-              className="btn btn-outline w-full"
+              className="btn w-full"
+              style={{ backgroundColor: 'white', color: '#22c55e', border: '1px solid #22c55e' }}
               onClick={generatePDF}
             >
               Download Invoice (PDF)
