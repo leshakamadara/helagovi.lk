@@ -566,43 +566,63 @@ const ProductDetails = () => {
           </div>
 
           {/* Farmer Information */}
-          <div className="border-t bg-gray-50 p-6">
+          <div className="border-t bg-gray-50 p-4 sm:p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Farmer Information</h3>
-            <div className="flex items-start space-x-4">
-              <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center">
-                <User className="h-8 w-8 text-white" />
-              </div>
-              <div className="flex-1">
-                <h4 className="text-lg font-medium text-gray-900">
-                  {product.farmer.firstName && product.farmer.lastName 
-                    ? `${product.farmer.firstName} ${product.farmer.lastName}`
-                    : 'Farmer Profile'
-                  }
-                </h4>
-                <div className="mt-2 space-y-1">
-                  {product.farmer.phone && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Phone className="h-4 w-4 mr-2" />
-                      <a href={`tel:${product.farmer.phone}`} className="hover:text-green-600 transition-colors">
-                        {product.farmer.phone}
-                      </a>
-                    </div>
-                  )}
-                  {product.farmer.email && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Mail className="h-4 w-4 mr-2" />
-                      <a href={`mailto:${product.farmer.email}`} className="hover:text-green-600 transition-colors">
-                        {product.farmer.email}
-                      </a>
-                    </div>
-                  )}
+            
+            {/* Mobile-first responsive layout */}
+            <div className="flex flex-col sm:flex-row sm:items-start space-y-4 sm:space-y-0 sm:space-x-4">
+              {/* Farmer Avatar and Info */}
+              <div className="flex items-start space-x-3 sm:space-x-4 flex-1">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <User className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-base sm:text-lg font-medium text-gray-900 truncate">
+                    {product.farmer.firstName && product.farmer.lastName 
+                      ? `${product.farmer.firstName} ${product.farmer.lastName}`
+                      : 'Farmer Profile'
+                    }
+                  </h4>
+                  <div className="mt-2 space-y-2">
+                    {product.farmer.phone && (
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Phone className="h-4 w-4 mr-2 flex-shrink-0" />
+                        <a 
+                          href={`tel:${product.farmer.phone}`} 
+                          className="hover:text-green-600 transition-colors truncate"
+                        >
+                          {product.farmer.phone}
+                        </a>
+                      </div>
+                    )}
+                    {product.farmer.email && (
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Mail className="h-4 w-4 mr-2 flex-shrink-0" />
+                        <a 
+                          href={`mailto:${product.farmer.email}`} 
+                          className="hover:text-green-600 transition-colors truncate"
+                        >
+                          {product.farmer.email}
+                        </a>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="space-y-2">
-                <Button className="w-full">
+              
+              {/* Action Buttons */}
+              <div className="flex flex-row sm:flex-col space-x-3 sm:space-x-0 sm:space-y-2 sm:w-auto w-full">
+                <Button 
+                  className="flex-1 sm:flex-none sm:w-32 text-sm sm:text-base h-9 sm:h-10"
+                  size="sm"
+                >
                   Contact Farmer
                 </Button>
-                <Button variant="outline" className="w-full">
+                <Button 
+                  variant="outline" 
+                  className="flex-1 sm:flex-none sm:w-32 text-sm sm:text-base h-9 sm:h-10"
+                  size="sm"
+                >
                   View Profile
                 </Button>
               </div>
