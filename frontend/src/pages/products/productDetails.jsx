@@ -28,12 +28,16 @@ import {
   Plus,
   Minus
 } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb';
 
 const ProductDetails = () => {
   const [searchParams] = useSearchParams();
-  const productId = searchParams.get('id') || "507f1f77bcf86cd799439011";
+  const productId = searchParams.get('id');
   const { user } = useAuth();
+  
+  console.log('ProductDetails component loaded with productId:', productId);
+  console.log('Search params:', Object.fromEntries(searchParams));
   
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -82,25 +86,46 @@ const ProductDetails = () => {
   const fetchProduct = async () => {
     try {
       setLoading(true);
+      setError(null);
       
-      // Try to fetch from API first
-      try {
-        const response = await api.get(`/products/${productId}`);
-        if (response.data?.success && response.data?.data) {
-          console.log('Successfully fetched product from API:', response.data.data);
-          setProduct(response.data.data);
-          return;
-        }
-      } catch (apiError) {
-        console.log('API not available, using mock data:', apiError.message);
+      console.log('Fetching product with ID:', productId);
+      
+      // Validate product ID
+      if (!productId || productId === "507f1f77bcf86cd799439011") {
+        setError('Invalid product ID');
+        setProduct(null);
+        return;
       }
       
-      // Product not found
-      setError('Product not found');
-      setProduct(null);
+      // Try to fetch from API
+      const response = await api.get(`/products/${productId}`);
+      
+      console.log('API Response:', response.data);
+      
+      if (response.data?.success && response.data?.data) {
+        console.log('Successfully fetched product from API:', response.data.data);
+        setProduct(response.data.data);
+      } else {
+        console.error('Invalid API response structure:', response.data);
+        setError('Invalid product data received');
+        setProduct(null);
+      }
+      
     } catch (err) {
-      console.error('Error in fetchProduct:', err);
-      setError(err.message || 'Failed to fetch product');
+      console.error('Error fetching product:', err);
+      
+      // More specific error handling
+      if (err.response?.status === 404) {
+        setError('Product not found');
+      } else if (err.response?.status === 400) {
+        setError('Invalid product ID');
+      } else if (err.code === 'ERR_NETWORK') {
+        setError('Network error. Please check your internet connection.');
+      } else {
+        setError(err.response?.data?.message || err.message || 'Failed to fetch product');
+      }
+      
+      setProduct(null);
     } finally {
       setLoading(false);
     }
@@ -542,43 +567,78 @@ const ProductDetails = () => {
           </div>
 
           {/* Farmer Information */}
-          <div className="border-t bg-gray-50 p-6">
+          <div className="border-t bg-gray-50 p-4 sm:p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Farmer Information</h3>
-            <div className="flex items-start space-x-4">
-              <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center">
-                <User className="h-8 w-8 text-white" />
-              </div>
-              <div className="flex-1">
-                <h4 className="text-lg font-medium text-gray-900">
-                  {product.farmer.firstName && product.farmer.lastName 
-                    ? `${product.farmer.firstName} ${product.farmer.lastName}`
-                    : 'Farmer Profile'
-                  }
-                </h4>
-                <div className="mt-2 space-y-1">
-                  {product.farmer.phone && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Phone className="h-4 w-4 mr-2" />
-                      <a href={`tel:${product.farmer.phone}`} className="hover:text-green-600 transition-colors">
-                        {product.farmer.phone}
-                      </a>
-                    </div>
-                  )}
-                  {product.farmer.email && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Mail className="h-4 w-4 mr-2" />
-                      <a href={`mailto:${product.farmer.email}`} className="hover:text-green-600 transition-colors">
-                        {product.farmer.email}
-                      </a>
-                    </div>
-                  )}
+            
+            {/* Mobile-first responsive layout */}
+            <div className="flex flex-col sm:flex-row sm:items-start space-y-4 sm:space-y-0 sm:space-x-4">
+              {/* Farmer Avatar and Info */}
+              <div className="flex items-start space-x-3 sm:space-x-4 flex-1">
+                <Avatar className="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0">
+                  <AvatarImage src={product.farmer.profilePicture} alt={`${product.farmer.firstName} ${product.farmer.lastName}`} />
+                  <AvatarFallback className="bg-green-600 text-white text-sm sm:text-lg font-semibold">
+                    {product.farmer.firstName && product.farmer.lastName 
+                      ? `${product.farmer.firstName[0]}${product.farmer.lastName[0]}`.toUpperCase()
+                      : product.farmer.firstName 
+                        ? product.farmer.firstName[0].toUpperCase()
+                        : product.farmer.lastName 
+                          ? product.farmer.lastName[0].toUpperCase()
+                          : 'F'
+                    }
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-base sm:text-lg font-medium text-gray-900 truncate">
+                    {product.farmer.firstName && product.farmer.lastName 
+                      ? `${product.farmer.firstName} ${product.farmer.lastName}`
+                      : product.farmer.firstName 
+                        ? product.farmer.firstName
+                        : product.farmer.lastName 
+                          ? product.farmer.lastName
+                          : 'Farmer Profile'
+                    }
+                  </h4>
+                
+                  <div className="mt-2 space-y-2">
+                    {product.farmer.phone && (
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Phone className="h-4 w-4 mr-2 flex-shrink-0" />
+                        <a 
+                          href={`tel:${product.farmer.phone}`} 
+                          className="hover:text-green-600 transition-colors truncate"
+                        >
+                          {product.farmer.phone}
+                        </a>
+                      </div>
+                    )}
+                    {product.farmer.email && (
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Mail className="h-4 w-4 mr-2 flex-shrink-0" />
+                        <a 
+                          href={`mailto:${product.farmer.email}`} 
+                          className="hover:text-green-600 transition-colors truncate"
+                        >
+                          {product.farmer.email}
+                        </a>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="space-y-2">
-                <Button className="w-full">
+              
+              {/* Action Buttons */}
+              <div className="flex flex-row sm:flex-col space-x-3 sm:space-x-0 sm:space-y-2 sm:w-auto w-full">
+                <Button 
+                  className="flex-1 sm:flex-none sm:w-32 text-sm sm:text-base h-9 sm:h-10"
+                  size="sm"
+                >
                   Contact Farmer
                 </Button>
-                <Button variant="outline" className="w-full">
+                <Button 
+                  variant="outline" 
+                  className="flex-1 sm:flex-none sm:w-32 text-sm sm:text-base h-9 sm:h-10"
+                  size="sm"
+                >
                   View Profile
                 </Button>
               </div>

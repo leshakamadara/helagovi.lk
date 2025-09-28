@@ -39,7 +39,7 @@ const Login = () => {
             Sign in to your account
           </H2>
           <Muted className="mt-2">
-            Welcome back to HeleGovi
+            Welcome back to HelaGovi
           </Muted>
         </div>
 

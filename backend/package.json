@@ -8,6 +8,7 @@
     "start": "node src/server.js",
     "lint": "eslint . --fix",
     "format": "prettier --write .",
+    "seed": "node src/lib/seedCategories.js",
     "seed:categories": "node src/lib/seedCategories.js"
   },
   "keywords": [
