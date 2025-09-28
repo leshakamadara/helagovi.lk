@@ -164,6 +164,38 @@ function App() {
             }
           />
           <Route
+            path="/products"
+            element={
+              <MainLayout>
+                <ProductListing />
+              </MainLayout>
+            }
+          />
+          <Route
+            path="/organic-products"
+            element={
+              <MainLayout>
+                <ProductListing />
+              </MainLayout>
+            }
+          />
+          <Route
+            path="/exclusives"
+            element={
+              <MainLayout>
+                <ProductListing />
+              </MainLayout>
+            }
+          />
+          <Route
+            path="/promotions"
+            element={
+              <MainLayout>
+                <ProductListing />
+              </MainLayout>
+            }
+          />
+          <Route
             path="/create-product"
             element={
               <ProtectedRoute allowedRoles={['farmer', 'admin']}>

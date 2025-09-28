@@ -28,6 +28,7 @@ import {
   Plus,
   Minus
 } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb';
 
 const ProductDetails = () => {
@@ -573,16 +574,31 @@ const ProductDetails = () => {
             <div className="flex flex-col sm:flex-row sm:items-start space-y-4 sm:space-y-0 sm:space-x-4">
               {/* Farmer Avatar and Info */}
               <div className="flex items-start space-x-3 sm:space-x-4 flex-1">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0">
-                  <User className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
-                </div>
+                <Avatar className="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0">
+                  <AvatarImage src={product.farmer.profilePicture} alt={`${product.farmer.firstName} ${product.farmer.lastName}`} />
+                  <AvatarFallback className="bg-green-600 text-white text-sm sm:text-lg font-semibold">
+                    {product.farmer.firstName && product.farmer.lastName 
+                      ? `${product.farmer.firstName[0]}${product.farmer.lastName[0]}`.toUpperCase()
+                      : product.farmer.firstName 
+                        ? product.farmer.firstName[0].toUpperCase()
+                        : product.farmer.lastName 
+                          ? product.farmer.lastName[0].toUpperCase()
+                          : 'F'
+                    }
+                  </AvatarFallback>
+                </Avatar>
                 <div className="flex-1 min-w-0">
                   <h4 className="text-base sm:text-lg font-medium text-gray-900 truncate">
                     {product.farmer.firstName && product.farmer.lastName 
                       ? `${product.farmer.firstName} ${product.farmer.lastName}`
-                      : 'Farmer Profile'
+                      : product.farmer.firstName 
+                        ? product.farmer.firstName
+                        : product.farmer.lastName 
+                          ? product.farmer.lastName
+                          : 'Farmer Profile'
                     }
                   </h4>
+                
                   <div className="mt-2 space-y-2">
                     {product.farmer.phone && (
                       <div className="flex items-center text-sm text-gray-600">
