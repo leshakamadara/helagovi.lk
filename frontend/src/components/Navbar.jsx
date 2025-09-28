@@ -35,7 +35,7 @@ const SearchIcon = () => (
   </svg>
 );
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import {
@@ -56,7 +56,9 @@ import {
   ChevronDown,
   Star,
   Gift,
-  Home
+  Home,
+  MapPin,
+  Leaf
 } from 'lucide-react'
 import { Button } from './ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet'
@@ -68,15 +70,22 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from './ui/dropdown-menu'
-
+import { Badge } from './ui/badge'
 import { Input } from './ui/input'
+import api from '../lib/axios'
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [isSearching, setIsSearching] = useState(false)
+  const [selectedIndex, setSelectedIndex] = useState(-1)
   const { isAuthenticated, user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const searchRef = useRef(null)
+  const suggestionsRef = useRef(null)
 
   // Placeholder cart data - replace with actual cart context/state
   const cartCount = 3
@@ -88,13 +97,117 @@ const Navbar = () => {
     setIsOpen(false)
   }
 
-  const handleSearch = () => {
-    // Handle search functionality - redirect to marketplace with search query
-    if (searchQuery.trim()) {
-      navigate(`/marketplace?search=${encodeURIComponent(searchQuery.trim())}`)
-    } else {
-      navigate('/marketplace')
+  // Search functionality
+  const searchProducts = async (query) => {
+    if (!query || query.length < 2) {
+      setSearchResults([])
+      setShowSuggestions(false)
+      return
     }
+
+    try {
+      setIsSearching(true)
+      const response = await api.get(`/products?search=${encodeURIComponent(query)}&limit=8`)
+      const products = response.data.data || []
+      setSearchResults(products)
+      setShowSuggestions(products.length > 0)
+    } catch (error) {
+      console.error('Search error:', error)
+      setSearchResults([])
+      setShowSuggestions(false)
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  // Debounced search
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      searchProducts(searchQuery)
+    }, 300)
+
+    return () => clearTimeout(debounceTimer)
+  }, [searchQuery])
+
+  const handleSearchInputChange = (e) => {
+    const value = e.target.value
+    setSearchQuery(value)
+    setSelectedIndex(-1)
+  }
+
+  const handleProductSelect = (product) => {
+    setSearchQuery('')
+    setShowSuggestions(false)
+    setSelectedIndex(-1)
+    navigate(`/product-details?id=${product._id}`)
+  }
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault()
+    
+    if (selectedIndex >= 0 && searchResults[selectedIndex]) {
+      handleProductSelect(searchResults[selectedIndex])
+      return
+    }
+
+    if (searchQuery.trim()) {
+      setShowSuggestions(false)
+      navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`)
+    } else {
+      navigate('/products')
+    }
+  }
+
+  const handleKeyDown = (e) => {
+    if (!showSuggestions || searchResults.length === 0) return
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault()
+        setSelectedIndex(prev => 
+          prev < searchResults.length - 1 ? prev + 1 : prev
+        )
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        setSelectedIndex(prev => prev > 0 ? prev - 1 : -1)
+        break
+      case 'Escape':
+        setShowSuggestions(false)
+        setSelectedIndex(-1)
+        searchRef.current?.blur()
+        break
+      case 'Enter':
+        e.preventDefault()
+        handleSearchSubmit(e)
+        break
+    }
+  }
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        searchRef.current && 
+        !searchRef.current.contains(event.target) &&
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target)
+      ) {
+        setShowSuggestions(false)
+        setSelectedIndex(-1)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('en-LK', {
+      style: 'currency',
+      currency: 'LKR',
+      minimumFractionDigits: 0
+    }).format(price)
   }
 
 
@@ -374,22 +487,138 @@ const Navbar = () => {
         <div className="relative z-40">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center h-6 py-1">
-              <div className="w-full">
-                <div className="flex items-center bg-white shadow-lg overflow-hidden h-12 border border-green-500 relative z-50 transform translate-y-3" style={{borderRadius: '0 1.875rem 0 1.875rem'}}>
-                  
-                  {/* Search Input */}
-                  <input
-                    type="text"
-                    placeholder="Search for products..."
-                    className="w-full px-6 py-2 text-base text-gray-700 focus:outline-none"
-                  />
-                  
-                  {/* Search Button */}
-                  <button className="flex items-center justify-center bg-green-500 hover:bg-green-600 px-6 h-full transition-colors" style={{borderRadius: '0 0 0 1.875rem'}}>
-                    <span className="text-white font-semibold text-base whitespace-nowrap">Search Products</span>
-                    <SearchIcon />
-                  </button>
-                </div>
+              <div className="w-full relative">
+                <form onSubmit={handleSearchSubmit}>
+                  <div className="flex items-center bg-white shadow-lg overflow-hidden h-12 border border-green-500 relative z-50 transform translate-y-3" style={{borderRadius: '0 1.875rem 0 1.875rem'}}>
+                    
+                    {/* Search Input */}
+                    <input
+                      ref={searchRef}
+                      type="text"
+                      value={searchQuery}
+                      onChange={handleSearchInputChange}
+                      onKeyDown={handleKeyDown}
+                      onFocus={() => searchQuery.length >= 2 && setShowSuggestions(searchResults.length > 0)}
+                      placeholder="Search for products..."
+                      className="w-full px-6 py-2 text-base text-gray-700 focus:outline-none"
+                      autoComplete="off"
+                    />
+                    
+                    {/* Loading indicator */}
+                    {isSearching && (
+                      <div className="px-3">
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-green-500 border-t-transparent"></div>
+                      </div>
+                    )}
+                    
+                    {/* Search Button */}
+                    <button 
+                      type="submit"
+                      className="flex items-center justify-center bg-green-500 hover:bg-green-600 px-6 h-full transition-colors" 
+                      style={{borderRadius: '0 0 0 1.875rem'}}
+                    >
+                      <span className="text-white font-semibold text-base whitespace-nowrap">Search Products</span>
+                      <SearchIcon />
+                    </button>
+                  </div>
+                </form>
+
+                {/* Search Suggestions Dropdown */}
+                {showSuggestions && searchResults.length > 0 && (
+                  <div 
+                    ref={suggestionsRef}
+                    className="absolute top-full left-0 right-0 bg-white shadow-xl border border-gray-200 rounded-lg mt-1 max-h-96 overflow-y-auto z-50 mx-2 sm:mx-0"
+                    style={{ transform: 'translateY(3px)' }}
+                  >
+                    <div className="py-2">
+                      {searchResults.map((product, index) => (
+                        <div
+                          key={product._id}
+                          onClick={() => handleProductSelect(product)}
+                          className={`px-4 py-3 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0 ${
+                            selectedIndex === index 
+                              ? 'bg-green-50 border-l-4 border-l-green-500' 
+                              : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-3">
+                            {/* Product Image */}
+                            <div className="flex-shrink-0">
+                              <img
+                                src={product.images?.[0]?.url || 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg'}
+                                alt={product.title}
+                                className="w-10 h-10 rounded-lg object-cover"
+                                onError={(e) => {
+                                  e.target.src = 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg'
+                                }}
+                              />
+                            </div>
+                            
+                            {/* Product Info */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="text-sm font-medium text-gray-900 truncate">
+                                    {product.title}
+                                  </h4>
+                                  <div className="flex items-center space-x-2 mt-1">
+                                    <span className="text-sm font-semibold text-green-600">
+                                      {formatPrice(product.price)}/{product.unit}
+                                    </span>
+                                    {product.isOrganic && (
+                                      <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs px-1 py-0">
+                                        <Leaf className="w-3 h-3 mr-1" />
+                                        Organic
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center text-xs text-gray-500 mt-1">
+                                    <MapPin className="w-3 h-3 mr-1" />
+                                    <span>{product.city}, {product.district}</span>
+                                    {product.farmer && (
+                                      <>
+                                        <span className="mx-1">•</span>
+                                        <span>
+                                          {product.farmer.firstName && product.farmer.lastName 
+                                            ? `${product.farmer.firstName} ${product.farmer.lastName}`
+                                            : product.farmer.firstName || product.farmer.lastName || 'Farmer'
+                                          }
+                                        </span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                {/* Availability */}
+                                <div className="flex-shrink-0 ml-2">
+                                  <Badge 
+                                    variant={product.status === 'active' && product.availableQuantity > 0 ? "default" : "destructive"} 
+                                    className="text-xs"
+                                  >
+                                    {product.status === 'active' && product.availableQuantity > 0 ? 'Available' : 'Sold Out'}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {/* View All Results Link */}
+                      <div className="px-4 py-3 border-t border-gray-200 bg-gray-50">
+                        <button
+                          onClick={() => {
+                            setShowSuggestions(false)
+                            navigate(`/products?search=${encodeURIComponent(searchQuery)}`)
+                          }}
+                          className="w-full text-left text-sm text-green-600 hover:text-green-700 font-medium"
+                        >
+                          View all results for "{searchQuery}" →
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -280,7 +280,12 @@ const OrderDetails = () => {
                     <div className="flex-1">
                       <h4 className="font-medium text-gray-900">{item.productSnapshot.title}</h4>
                       <p className="text-sm text-gray-600">
-                        Farmer: {item.productSnapshot.farmer.name}
+                        Farmer: {item.productSnapshot.farmer?.name || 
+                                (item.productSnapshot.farmer?.firstName && item.productSnapshot.farmer?.lastName 
+                                  ? `${item.productSnapshot.farmer.firstName} ${item.productSnapshot.farmer.lastName}`
+                                  : item.productSnapshot.farmer?.firstName || 
+                                    item.productSnapshot.farmer?.lastName || 
+                                    'Unknown Farmer')}
                       </p>
                       <p className="text-sm text-gray-500">
                         {item.quantity} {item.productSnapshot.unit} × {formatCurrency(item.priceAtTime)}

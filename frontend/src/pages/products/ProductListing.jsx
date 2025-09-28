@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { Search, Filter, MapPin, Leaf, Star, ChevronLeft, ChevronRight, Grid, List, Heart, ShoppingCart, Truck } from 'lucide-react';
 import api from '../../lib/axios';
 
@@ -81,6 +81,8 @@ const banners = [
 
 const ProductListing = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   
   // State management
   const [products, setProducts] = useState([]);
@@ -107,6 +109,65 @@ const ProductListing = () => {
   const [activeBanner, setActiveBanner] = useState(0);
 
   const itemsPerPage = 12;
+
+  // Initialize filters based on URL path and parameters
+  useEffect(() => {
+    const urlSearchQuery = searchParams.get('search');
+    if (urlSearchQuery) {
+      setSearchQuery(urlSearchQuery);
+    }
+    
+    // Apply filters based on the current route
+    switch (location.pathname) {
+      case '/organic-products':
+        setOrganicOnly(true);
+        break;
+      case '/exclusives':
+        // Could filter by a special "exclusive" flag if you have it in your data
+        // For now, just show all products
+        break;
+      case '/promotions':
+        // Could filter by promotion/discount flag if you have it
+        // For now, just show all products
+        break;
+      default:
+        // For /marketplace and /products, show all products
+        break;
+    }
+  }, [searchParams, location.pathname]);
+
+  // Get page title based on current route
+  const getPageTitle = () => {
+    switch (location.pathname) {
+      case '/organic-products':
+        return 'Organic Products';
+      case '/exclusives':
+        return 'Exclusive Deals';
+      case '/promotions':
+        return 'Promotions & Offers';
+      case '/marketplace':
+        return 'Marketplace';
+      default:
+        return searchQuery ? `Search Results` : 'All Products';
+    }
+  };
+
+  const getPageDescription = () => {
+    switch (location.pathname) {
+      case '/organic-products':
+        return 'Certified organic products from verified farmers';
+      case '/exclusives':
+        return 'Premium and exclusive agricultural products';
+      case '/promotions':
+        return 'Best deals and promotional offers';
+      case '/marketplace':
+        return 'Fresh agricultural products directly from farmers';
+      default:
+        return searchQuery 
+          ? `Showing results for "${searchQuery}"`
+          : 'Fresh products from local farmers across Sri Lanka';
+    }
+  };
 
   // Fetch price statistics from API
   const fetchPriceStats = useCallback(async () => {
@@ -316,12 +377,23 @@ const ProductListing = () => {
           <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
             <div className="flex items-center gap-2">
               <Avatar className="w-6 h-6">
+                <AvatarImage 
+                  src={product.farmer?.profilePicture} 
+                  alt={`${product.farmer?.firstName || 'Farmer'} ${product.farmer?.lastName || ''}`}
+                />
                 <AvatarFallback className="bg-muted text-xs">
-                  {(product.farmer?.name || product.farmer?.firstName || 'F')[0].toUpperCase()}
+                  {(product.farmer?.firstName || product.farmer?.lastName || 'F')[0].toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <span className="text-xs text-muted-foreground font-medium">
-                {product.farmer?.name || `${product.farmer?.firstName} ${product.farmer?.lastName}` || 'Farmer'}
+                {product.farmer?.firstName && product.farmer?.lastName 
+                  ? `${product.farmer.firstName} ${product.farmer.lastName}`
+                  : product.farmer?.firstName 
+                    ? product.farmer.firstName
+                    : product.farmer?.lastName 
+                      ? product.farmer.lastName
+                      : 'Farmer'
+                }
               </span>
             </div>
             
@@ -493,10 +565,16 @@ const ProductListing = () => {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>Products</BreadcrumbPage>
+                <BreadcrumbPage>{getPageTitle()}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
+        </div>
+
+        {/* Page Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">{getPageTitle()}</h1>
+          <p className="text-gray-600">{getPageDescription()}</p>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
@@ -521,6 +599,23 @@ const ProductListing = () => {
               </CardHeader>
 
               <CardContent className={`space-y-6 ${showFilters ? 'block' : 'hidden lg:block'}`}>
+                {/* Search Input */}
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold flex items-center gap-2">
+                    <Search size={16} className="text-emerald-600" />
+                    Search Products
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="Search for products..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+
+                <Separator />
+
                 {/* District Filter */}
                 <div className="space-y-2">
                   <label className="text-sm font-semibold flex items-center gap-2">
@@ -664,8 +759,33 @@ const ProductListing = () => {
 
           {/* Products Grid */}
           <div className="flex-1">
-            {/* Results Summary */}
-    
+            {/* Results Header */}
+            {searchQuery && (
+              <Card className="mb-6">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h1 className="text-xl font-semibold">
+                        Search results for "{searchQuery}"
+                      </h1>
+                      <p className="text-muted-foreground text-sm mt-1">
+                        {totalProducts} {totalProducts === 1 ? 'product' : 'products'} found
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSearchQuery('');
+                        setSearchParams({});
+                      }}
+                    >
+                      Clear search
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Loading State */}
             {loading && (

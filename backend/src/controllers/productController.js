@@ -167,7 +167,7 @@ export const createProduct = async (req, res) => {
     // Populate references before sending response
     await product.populate([
       { path: 'category', select: 'name slug' },
-      { path: 'farmer', select: 'name email phone' }
+      { path: 'farmer', select: 'firstName lastName email phone profilePicture' }
     ]);
 
     res.status(201).json({
@@ -213,11 +213,6 @@ export const getAllProducts = async (req, res) => {
     const sort = {};
     sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
-    // Add text score for text search results
-    if (req.query.search) {
-      sort.score = { $meta: 'textScore' };
-    }
-
     // Calculate pagination
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
@@ -247,9 +242,16 @@ export const getAllProducts = async (req, res) => {
       'category.name': 1,
       'category.slug': 1,
       'farmer._id': 1,
-      'farmer.name': 1,
-      'farmer.phone': 1
+      'farmer.firstName': 1,
+      'farmer.lastName': 1,
+      'farmer.phone': 1,
+      'farmer.profilePicture': 1
     };
+
+    // Add text score for text search results
+    if (req.query.search) {
+      projection.score = { $meta: 'textScore' };
+    }
 
     // Add custom fields if specified
     if (fields) {
@@ -261,43 +263,62 @@ export const getAllProducts = async (req, res) => {
 
     // Build aggregation pipeline for better performance
     const pipeline = [
-      { $match: query },
-      { $sort: sort },
-      {
-        $facet: {
-          data: [
-            { $skip: skip },
-            { $limit: limitNum },
-            {
-              $lookup: {
-                from: 'categories',
-                localField: 'category',
-                foreignField: '_id',
-                as: 'category'
-              }
-            },
-            {
-              $lookup: {
-                from: 'users',
-                localField: 'farmer',
-                foreignField: '_id',
-                as: 'farmer'
-              }
-            },
-            {
-              $unwind: '$category'
-            },
-            {
-              $unwind: '$farmer'
-            },
-            {
-              $project: projection
-            }
-          ],
-          totalCount: [{ $count: 'count' }]
-        }
-      }
+      { $match: query }
     ];
+
+    // Add text score calculation stage if searching
+    if (req.query.search) {
+      pipeline.push({
+        $addFields: {
+          score: { $meta: 'textScore' }
+        }
+      });
+    }
+
+    // Add sort stage
+    pipeline.push({ $sort: sort });
+
+    // Add facet stage for pagination and data processing
+    pipeline.push({
+      $facet: {
+        data: [
+          { $skip: skip },
+          { $limit: limitNum },
+          {
+            $lookup: {
+              from: 'categories',
+              localField: 'category',
+              foreignField: '_id',
+              as: 'category'
+            }
+          },
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'farmer',
+              foreignField: '_id',
+              as: 'farmer'
+            }
+          },
+          {
+            $unwind: {
+              path: '$category',
+              preserveNullAndEmptyArrays: true
+            }
+          },
+          {
+            $unwind: {
+              path: '$farmer',
+              preserveNullAndEmptyArrays: true
+            }
+          },
+          {
+            $project: projection
+          }
+        ],
+        totalCount: [{ $count: 'count' }]
+      }
+    });
 
     const [result] = await Product.aggregate(pipeline);
     const products = result.data;
@@ -352,7 +373,7 @@ export const getProductById = async (req, res) => {
 
     const product = await Product.findById(id)
       .populate('category', 'name slug description')
-      .populate('farmer', 'name email phone district city');
+      .populate('farmer', 'firstName lastName email phone district city profilePicture');
 
     if (!product) {
       return res.status(404).json({
@@ -438,7 +459,7 @@ export const updateProduct = async (req, res) => {
       }
     ).populate([
       { path: 'category', select: 'name slug' },
-      { path: 'farmer', select: 'name email phone' }
+      { path: 'farmer', select: 'firstName lastName email phone profilePicture' }
     ]);
 
     res.status(200).json({
