@@ -20,6 +20,8 @@ import { seedCategories } from "./lib/seedCategories.js";
 import { cache, CACHE_DURATION, cacheKeys } from "./lib/cache.js";
 import { cacheMiddleware, cacheInvalidationMiddleware } from "./middleware/cache.js";
 
+
+
 dotenv.config();
 
 const app = express();
@@ -37,6 +39,8 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // app.use(ratelimiter); // optional
 
 // Serve static files for uploads
@@ -255,6 +259,8 @@ app.use("/api/profile", (req, res, next) => {
   }
   next();
 }, profileRoutes);
+
+
 
 
 // Test endpoint
