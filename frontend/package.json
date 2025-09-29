@@ -61,13 +61,13 @@
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
-    "vite": "^7.0.3"
+    "vite": "^7.0.3",
+    "daisyui": "^4.12.24"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
-    "daisyui": "^4.12.24",
     "eslint": "^8.57.1",
     "eslint-config-airbnb": "^19.0.4",
     "eslint-config-prettier": "^10.1.8",
