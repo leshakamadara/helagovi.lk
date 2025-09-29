@@ -357,6 +357,30 @@ router.get('/:orderId',
 ); 
 
 /**
+ * PATCH /api/orders/:orderId/status
+ * Update order status
+ * Access: Order participants and admin
+ */
+router.patch('/:orderId/status', 
+  protect,
+  updateStatusValidation,
+  handleValidationErrors,
+  updateOrderStatus
+);
+
+/**
+ * PATCH /api/orders/:orderId/cancel
+ * Cancel an order
+ * Access: Order participants and admin
+ */
+router.patch('/:orderId/cancel', 
+  protect,
+  cancelOrderValidation,
+  handleValidationErrors,
+  cancelOrder
+); 
+
+/**
  * Export orders to CSV
  * Access: Farmers and admin
  */
