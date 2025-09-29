@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://framerusercontent.com/images/tQEEeKRa0oOBXHoksVNKvgBJZc.png" alt="Helagovi.lk Logo" width="200"/>
+  <img src="https://res.cloudinary.com/dckoipgrs/image/upload/v1759143086/Logo_uf3yae.png" alt="Helagovi.lk Logo" width="300"/>
 </div>
 
 ---
