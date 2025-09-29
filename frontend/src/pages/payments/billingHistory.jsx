@@ -130,25 +130,35 @@ const PaymentPage = () => {
         
         try {
           // Prepare order data for backend
+          const deliveryAddress = {
+            recipientName: `${orderData.deliveryInfo.firstName} ${orderData.deliveryInfo.lastName}`.trim(),
+            phone: orderData.deliveryInfo.phone.replace(/\s+/g, ''), // Remove spaces
+            street: orderData.deliveryInfo.addressLine1 + (orderData.deliveryInfo.addressLine2 ? ', ' + orderData.deliveryInfo.addressLine2 : ''),
+            city: orderData.deliveryInfo.city.trim(),
+            district: orderData.deliveryInfo.district,
+            postalCode: orderData.deliveryInfo.postalCode.toString().padStart(5, '0'), // Ensure 5 digits
+            specialInstructions: orderData.deliveryInfo.deliveryInstructions || ''
+          };
+
+          // Validate required fields
+          if (!deliveryAddress.recipientName || !deliveryAddress.phone || !deliveryAddress.street || 
+              !deliveryAddress.city || !deliveryAddress.district || !deliveryAddress.postalCode) {
+            throw new Error('Missing required delivery address fields');
+          }
+
           const orderDataPayload = {
             items: orderData.items.map(item => ({
               productId: item.productId,
               quantity: item.quantity
             })),
-            deliveryAddress: {
-              recipientName: `${orderData.deliveryInfo.firstName} ${orderData.deliveryInfo.lastName}`,
-              phone: orderData.deliveryInfo.phone,
-              street: orderData.deliveryInfo.addressLine1 + (orderData.deliveryInfo.addressLine2 ? ', ' + orderData.deliveryInfo.addressLine2 : ''),
-              city: orderData.deliveryInfo.city,
-              district: orderData.deliveryInfo.district,
-              postalCode: orderData.deliveryInfo.postalCode,
-              specialInstructions: orderData.deliveryInfo.deliveryInstructions || ''
-            },
-            paymentMethod: 'payhere',
+            deliveryAddress,
+            paymentMethod: 'credit_card', // Map PayHere to credit_card
             paymentStatus: 'paid',
             transactionId: orderId,
             notes: orderData.deliveryInfo.deliveryInstructions || ''
           };
+
+          console.log('Validated order data:', orderDataPayload);
 
           console.log('Creating order with data:', orderDataPayload);
           

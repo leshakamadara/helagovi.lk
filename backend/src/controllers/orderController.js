@@ -37,14 +37,23 @@ export const createOrder = async (req, res) => {
     let totalAmount = 0;
     const productIds = items.map(item => item.productId);
     
+    console.log('Creating order for buyer:', buyerId);
+    console.log('Product IDs:', productIds);
+    console.log('Items:', items);
+    
     // Get all products in one query
     const products = await Product.find({
       _id: { $in: productIds },
       status: 'active'
     }).populate('farmer', 'firstName lastName phone email').session(session);
 
+    console.log('Found products:', products.length, 'Expected:', productIds.length);
+    
     if (products.length !== productIds.length) {
-      throw new Error('One or more products are not available');
+      const foundIds = products.map(p => p._id.toString());
+      const missingIds = productIds.filter(id => !foundIds.includes(id));
+      console.error('Missing products:', missingIds);
+      throw new Error(`One or more products are not available: ${missingIds.join(', ')}`);
     }
 
     // Process each item
@@ -151,10 +160,25 @@ export const createOrder = async (req, res) => {
     await session.abortTransaction();
     console.error('Create order error:', error);
     
+    // Log detailed validation errors
+    if (error.name === 'ValidationError') {
+      console.error('Validation errors:', Object.keys(error.errors).map(key => ({
+        field: key,
+        message: error.errors[key].message,
+        value: error.errors[key].value
+      })));
+    }
+    
     res.status(400).json({
       success: false,
       message: error.message || 'Failed to create order',
-      error: process.env.NODE_ENV === 'development' ? error : undefined
+      error: process.env.NODE_ENV === 'development' ? error : undefined,
+      details: process.env.NODE_ENV === 'development' && error.name === 'ValidationError' 
+        ? Object.keys(error.errors).map(key => ({
+            field: key,
+            message: error.errors[key].message
+          }))
+        : undefined
     });
   } finally {
     session.endSession();
