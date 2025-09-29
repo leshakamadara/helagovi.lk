@@ -74,7 +74,9 @@ const PaymentPage = () => {
 
   useEffect(() => {
     const script = document.createElement('script');
-    script.src = 'https://www.payhere.lk/lib/payhere.js';
+    script.src = import.meta.env.PROD 
+      ? 'https://www.payhere.lk/lib/payhere.js' 
+      : 'https://www.payhere.lk/lib/payhere.js'; // PayHere uses same script for both environments
     script.async = true;
     document.body.appendChild(script);
     return () => document.body.removeChild(script);
@@ -101,7 +103,7 @@ const PaymentPage = () => {
       const data = res.data;
 
       const paymentData = {
-        sandbox: true,
+        sandbox: import.meta.env.PROD ? false : true, // Use sandbox only in development
         merchant_id: data.merchant_id,
         hash: data.hash,
         return_url: `${PUBLIC_URL}/payment-success`,

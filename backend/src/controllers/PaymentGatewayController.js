@@ -12,6 +12,11 @@ const PAYHERE_APP_SECRET = process.env.PAYHERE_APP_SECRET;
 const PUBLIC_URL = process.env.PUBLIC_URL || process.env.FRONTEND_URL || "https://www.helagovi.lk";
 const BACKEND_WEBHOOK_URL = process.env.BACKEND_WEBHOOK_URL || process.env.BACKEND_URL || "https://helagovi-lk.onrender.com";
 
+// PayHere environment detection
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const PAYHERE_BASE_URL = IS_PRODUCTION ? 'https://www.payhere.lk' : 'https://sandbox.payhere.lk';
+const PAYHERE_MERCHANT_BASE_URL = IS_PRODUCTION ? 'https://www.payhere.lk/merchant/v1' : 'https://sandbox.payhere.lk/merchant/v1';
+
 
 function verifyMd5(params) {
   const localMd5 = crypto
@@ -80,7 +85,7 @@ export async function preapprove(req,res){
       custom_1: userId
     };
 
-    res.json({ url: "https://sandbox.payhere.lk/pay/preapprove", params });
+    res.json({ url: `${PAYHERE_BASE_URL}/pay/preapprove`, params });
   } catch (err) {
     console.error("Preapprove error:", err.message);
     res.status(500).json({ message: "Preapproval init failed" });
@@ -170,7 +175,7 @@ export async function charge(req,res){
     // 2. 🔑 Fetch a fresh access token
     const auth = Buffer.from(`${PAYHERE_APP_ID}:${PAYHERE_APP_SECRET}`).toString("base64");
     const tokenRes = await axios.post(
-      "https://sandbox.payhere.lk/merchant/v1/oauth/token",
+      `${PAYHERE_MERCHANT_BASE_URL}/oauth/token`,
       "grant_type=client_credentials",
       {
         headers: {
@@ -203,7 +208,7 @@ export async function charge(req,res){
 
     // 4. Call PayHere charge API
     const response = await axios.post(
-      "https://sandbox.payhere.lk/merchant/v1/payment/charge",
+      `${PAYHERE_MERCHANT_BASE_URL}/payment/charge`,
       body,
       {
         headers: {
