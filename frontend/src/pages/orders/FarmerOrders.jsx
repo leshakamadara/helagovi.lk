@@ -583,10 +583,18 @@ const FarmerOrders = () => {
                       {order.items.map((item, index) => (
                         <div key={index} className="flex items-center space-x-3">
                           <img
-                            src={item.product?.primaryImage?.url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjI1IiB5PSIyNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgdGV4dC1iYXNlPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5OTk5OSI+UHJvZHVjdDwvdGV4dD4KPHN2Zz4='}
+                            src={'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg'}
                             alt={item.product?.title || 'Product'}
                             className="h-12 w-12 rounded-lg object-cover"
-                            onError={(e) => e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjI1IiB5PSIyNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgdGV4dC1iYXNlPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5OTk5OSI+UHJvZHVjdDwvdGV4dD4KPHN2Zz4='}
+                            onLoad={(e) => {
+                              // Only try to load actual image if we have a valid URL
+                              const actualImageUrl = item.product?.primaryImage?.url;
+                              if (actualImageUrl && actualImageUrl.startsWith('http') && !actualImageUrl.includes('undefined')) {
+                                const img = new Image();
+                                img.onload = () => e.target.src = actualImageUrl;
+                                img.src = actualImageUrl;
+                              }
+                            }}
                           />
                           <div className="flex-1 min-w-0">
                             <h5 className="font-medium text-gray-900 text-sm truncate">{item.product?.title || 'Unknown Product'}</h5>
