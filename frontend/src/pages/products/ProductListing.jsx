@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { Search, Filter, MapPin, Leaf, Star, ChevronLeft, ChevronRight, Grid, List, Heart, ShoppingCart, Truck } from 'lucide-react';
 import api from '../../lib/axios';
+import Lottie from 'lottie-react';
+import animationData from '../../assets/Logo-1-[remix]-2.json';
 
 // shadcn/ui imports
 import { Button } from '../../components/ui/button';
@@ -792,7 +794,15 @@ const ProductListing = () => {
               <Card className="p-20">
                 <div className="flex items-center justify-center">
                   <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mx-auto mb-4"></div>
+                    <div className="w-full max-w-sm mx-auto mb-4">
+                      <Lottie
+                        animationData={animationData}
+                        loop
+                        autoplay
+                        background="transparent"
+                        style={{ width: '100%', height: 'auto' }}
+                      />
+                    </div>
                     <p className="text-muted-foreground">Loading fresh products...</p>
                   </div>
                 </div>

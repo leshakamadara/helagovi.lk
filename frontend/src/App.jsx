@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate, Link } from 'react-router-dom'
 import { Sprout } from 'lucide-react'
 import { AuthProvider } from './context/AuthContext'
+import { CartProvider } from './context/CartContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import ErrorBoundary from './components/ErrorBoundary'
 import RoleBasedHome from './components/RoleBasedHome'
@@ -27,6 +28,7 @@ import Favorites from "./pages/buyers/Favorites";
 import Cart from "./pages/buyers/Cart";
 import FarmerWallet from "./pages/farmers/Wallet";
 import Debug from "./pages/Debug";
+import AnimationDemo from './pages/AnimationDemo';
 
 // Payment routes
 import BillingHistory from './pages/payments/addCard.jsx'
@@ -35,6 +37,12 @@ import SuccessPage from './pages/payments/SuccessPage'
 import ChargePage from './pages/payments/ChargePage'
 import CardManagementPage from './pages/payments/CardManagementPage'
 import PaymentPage from './pages/payments/billingHistory'
+import PaymentHistoryPage from './pages/payments/PaymentHistoryPage'
+import CardPreapprovalSuccess from './pages/payments/CardPreapprovalSuccess'
+import CardPreapprovalCancel from './pages/payments/CardPreapprovalCancel'
+
+// Checkout routes
+import DeliveryInformation from './pages/checkout/DeliveryInformation'
 
 import MainLayout from "./layouts/MainLayout";
 import { Toaster } from 'sonner';
@@ -42,7 +50,8 @@ import { Toaster } from 'sonner';
 function App() {
   return (
     <AuthProvider>
-      <div className="min-h-screen bg-gray-50">
+      <CartProvider>
+        <div className="min-h-screen bg-gray-50">
         <Routes>
           {/* Main Page - Role-based Home */}
           <Route path="/" element={<RoleBasedHome />} />
@@ -127,6 +136,10 @@ function App() {
 
           {/* Debug Route */}
           <Route path="/debug" element={<Debug />} />
+
+          {/* Animation Demo Route */}
+          <Route path="/animation-demo" element={<AnimationDemo />} />
+          <Route path="/animation-demo" element={<AnimationDemo />} />
 
           {/* Protected Routes - with individual navbar */}
           <Route path="/profile" element={
@@ -318,6 +331,15 @@ function App() {
             }
           />
 
+          {/* Checkout Routes */}
+          <Route path="/checkout/delivery" element={
+            <ProtectedRoute allowedRoles={['buyer']}>
+              <MainLayout>
+                <DeliveryInformation />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
+
           {/* Payment Routes */}
           <Route path="/saveCard" element={
             <ProtectedRoute>
@@ -328,6 +350,8 @@ function App() {
           } />
           <Route path="/processing" element={<ProcessingPage />} />
           <Route path="/success" element={<SuccessPage />} />
+          <Route path="/card-preapproval-success" element={<CardPreapprovalSuccess />} />
+          <Route path="/card-preapproval-cancel" element={<CardPreapprovalCancel />} />
           <Route path="/ChargePage" element={
             <ProtectedRoute>
               <MainLayout>
@@ -339,6 +363,13 @@ function App() {
             <ProtectedRoute>
               <MainLayout>
                 <CardManagementPage />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/payment-history" element={
+            <ProtectedRoute>
+              <MainLayout>
+                <PaymentHistoryPage />
               </MainLayout>
             </ProtectedRoute>
           } />
@@ -356,7 +387,8 @@ function App() {
           richColors
           closeButton
         />
-      </div>
+        </div>
+      </CartProvider>
     </AuthProvider>
   )
 }

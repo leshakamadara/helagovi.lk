@@ -11,7 +11,7 @@ export class NotificationService {
   constructor(server) {
     this.io = new Server(server, {
       cors: {
-        origin: process.env.FRONTEND_URL || "http://localhost:5173",
+        origin: process.env.FRONTEND_URL || "https://www.helagovi.lk",
         methods: ["GET", "POST"]
       }
     });
@@ -387,7 +387,7 @@ export class OrderStatusManager {
         <p><strong>Action Required:</strong> Please log in to your farmer dashboard immediately to confirm or cancel this order.</p>
         
         <div style="margin: 30px 0; text-align: center;">
-          <a href="${process.env.FRONTEND_URL}/farmer/orders" 
+          <a href="${process.env.FRONTEND_URL || 'https://www.helagovi.lk'}/farmer/orders" 
              style="background-color: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
             Confirm Order Now
           </a>

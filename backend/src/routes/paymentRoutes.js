@@ -1,5 +1,5 @@
 import express from "express";
-import { createTransaction, deleteTransaction, getAllTransaction, updateTransaction } from "../controllers/paymentController.js";
+import { createTransaction, deleteTransaction, getAllTransaction, updateTransaction, getUserTransactions } from "../controllers/paymentController.js";
 import {preapprove,notify,charge,createPayment} from "../controllers/PaymentGatewayController.js"
 import {updateCardData,deleteCardData,getCardData} from "../controllers/PaymentCardController.js"
 
@@ -9,6 +9,7 @@ const router = express.Router();
 
 
 router.get("/Createtransaction", getAllTransaction);
+router.get("/transactions/:userId", getUserTransactions);
 router.post("/CreateTransaction", createTransaction);
 router.put("/CreateTransaction/:id", updateTransaction);
 router.delete("/CreateTransaction/:id", deleteTransaction);

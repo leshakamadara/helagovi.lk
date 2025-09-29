@@ -21,6 +21,23 @@ export async function getAllTransaction(req,res){
 
 }
 
+export async function getUserTransactions(req, res) {
+    try {
+        const { userId } = req.params;
+
+        if (!userId) {
+            return res.status(400).json({ message: "User ID is required" });
+        }
+
+        const transactions = await Transaction.find({ userId }).sort({ createdAt: -1 });
+        res.status(200).json(transactions);
+
+    } catch (error) {
+        console.error("Error fetching user transactions:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+
 
 
 

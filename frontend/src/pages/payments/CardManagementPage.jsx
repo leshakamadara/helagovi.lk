@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Check, CreditCard, Wifi } from 'lucide-react';
 import api from "../../lib/axios";
 import EditCardForm from '../../components/EditCardModal.jsx';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb';
+import { H1, H2, H3, P, Muted, Large } from '../../components/ui/typography';
+import { Button } from '../../components/ui/button';
+import { Link } from 'react-router-dom';
 
 export default function CardManagerPage() {
   const [cards, setCards] = useState([]);
@@ -103,7 +107,7 @@ export default function CardManagerPage() {
     const cardMethod = method?.toUpperCase();
     switch (cardMethod) {
       case 'VISA': return 'bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900';
-      case 'MASTERCARD': return 'bg-gradient-to-br from-red-600 via-red-700 to-red-900';
+      case 'MASTER': return 'bg-gradient-to-br from-red-600 via-red-700 to-red-900';
       default: return 'bg-gradient-to-br from-gray-600 via-gray-700 to-gray-900';
     }
   };
@@ -113,50 +117,73 @@ export default function CardManagerPage() {
   const formatExpiry = (month, year) => month && year ? `${month}/${year.toString().slice(-2)}` : 'MM/YY';
 
   return (
-    <div className="min-h-screen bg-green-50 p-6 relative overflow-hidden">
+    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       {notification && (
         <div className={`alert fixed top-4 right-4 z-50 max-w-md shadow-lg rounded-lg p-4 ${
-          notification.type === 'error' ? 'bg-red-100 border border-red-400 text-red-700' : 'bg-green-100 border border-green-400 text-green-800'
+          notification.type === 'error' ? 'bg-gray-100 border border-gray-300 text-gray-800' : 'bg-gray-50 border border-gray-200 text-gray-700'
         }`}>
-          <Check className="w-5 h-5 mr-2 inline-block" />
+          <Check className="w-5 h-5 mr-2 inline-block text-black" />
           <span>{notification.message}</span>
         </div>
       )}
 
-      <div className="relative z-10">
-        <div className="flex justify-between items-center mb-8">
+      {/* Breadcrumbs */}
+      <div className="mb-6">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/">Home</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/buyer-dashboard">Dashboard</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Payment Cards</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
+
+      <div className="mb-8">
+        <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-4xl font-bold text-green-900 mb-2">Payment Cards</h1>
-            <p className="text-green-800/70">Manage your payment methods securely</p>
+            <H1 className="text-gray-900">Payment Cards</H1>
+            <P className="text-gray-600">Manage your saved payment methods securely and conveniently</P>
           </div>
-          <button 
-            className="btn bg-green-600 text-white hover:bg-green-700 gap-2 shadow-lg"
+          
+          <button
+            className="bg-black text-white hover:bg-gray-800 gap-2 shadow-lg px-4 py-2 rounded-lg flex items-center"
             onClick={() => handleOpenModal()}
             disabled={isLoading}
           >
             <Plus className="w-5 h-5" /> {isLoading ? 'Processing...' : 'Add Card'}
           </button>
         </div>
+      </div>
 
-        {isLoading && <div className="flex justify-center items-center py-12"><div className="loading loading-spinner loading-lg text-green-700"></div></div>}
+        {isLoading && <div className="flex justify-center items-center py-12"><div className="loading loading-spinner loading-lg text-black"></div></div>}
 
         {!isLoading && cards.length === 0 && (
           <div className="text-center py-12">
-            <CreditCard className="w-24 h-24 text-green-200 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-green-900 mb-2">No cards added yet</h3>
-            <p className="text-green-800/70 mb-6">Add your first payment card to get started</p>
-            <button className="btn bg-green-600 text-white hover:bg-green-700 gap-2" onClick={() => handleOpenModal()}>
+            <CreditCard className="w-24 h-24 text-gray-400 mx-auto mb-4" />
+            <H3 className="mb-2 text-gray-900">No cards added yet</H3>
+            <P className="text-gray-500 mb-6">
+              Add your first payment card to get started with secure checkout
+            </P>
+            <button className="bg-black text-white hover:bg-gray-800 gap-2 px-4 py-2 rounded-lg flex items-center mx-auto" onClick={() => handleOpenModal()}>
               <Plus className="w-5 h-5 mr-2" /> Add Your First Card
             </button>
           </div>
         )}
 
         {cards.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {cards.map(card => (
               <div key={card._id} className="relative group">
                 <div 
-                  className={`w-full h-56 rounded-2xl shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-3xl ${getCardGradient(card.method)}`}
+                  className={`w-96 h-60 rounded-2xl shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-3xl ${getCardGradient(card.method)}`}
                 >
                   <div className="p-6 text-white h-full flex flex-col justify-between">
                     <div className="flex justify-between items-start">
@@ -172,7 +199,7 @@ export default function CardManagerPage() {
                     <div className="flex justify-between text-sm">
                       <div className="flex-1">
                         <div className="text-xs opacity-70 mb-1">CARD HOLDER</div>
-                        <div className="font-medium">{formatCardName(card.card_name)}</div>
+                        <div className="font-medium">{formatCardName(card.card_holder_name)}</div>
                       </div>
                       <div className="text-right">
                         <div className="text-xs opacity-70 mb-1">EXPIRES</div>
@@ -183,8 +210,14 @@ export default function CardManagerPage() {
                 </div>
 
                 <div className="flex justify-center gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <button className="btn btn-sm bg-white/10 text-green-900 border border-green-300 hover:bg-green-200/20" onClick={() => handleOpenModal(card)}><Edit className="w-4 h-4" /></button>
-                  <button className="btn btn-sm bg-red-100 text-red-700 border border-red-300 hover:bg-red-200/30" onClick={() => deleteCard(card._id)}><Trash2 className="w-4 h-4" /></button>
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => handleOpenModal(card)}>
+                    <Edit className="w-4 h-4" />
+                    Edit
+                  </Button>
+                  <Button variant="destructive" size="sm" className="flex-1" onClick={() => deleteCard(card._id)}>
+                    <Trash2 className="w-4 h-4" />
+                    Delete
+                  </Button>
                 </div>
               </div>
             ))}
@@ -202,7 +235,6 @@ export default function CardManagerPage() {
             years={years}
           />
         )}
-      </div>
     </div>
   );
 }

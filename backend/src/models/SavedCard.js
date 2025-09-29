@@ -6,6 +6,7 @@ const savedCardSchema = new mongoose.Schema(
     token: { type: String, required: true, unique: true },
     orderId: { type: String},
     card_holder_name: { type: String, default: "" },
+    card_name: { type: String, default: "" }, // Custom name for the card
   
     card_no: { type: String, default: "" }, 
     method: { type: String, default: "" }, 

@@ -63,9 +63,8 @@ const PaymentSuccessPage = () => {
   };
 
 
-  const navigateHome = () => {
-    if (!window.confirm("Are you sure you want to go Home page?")) return;
-    window.location.href = `/homepage`; 
+  const navigateToOrders = () => {
+    navigate('/my-orders'); 
   };
 
 
@@ -121,9 +120,9 @@ const PaymentSuccessPage = () => {
             <button
               className="btn w-full text-white"
               style={{ backgroundColor: '#22c55e' }}
-              onClick={navigateHome}
+              onClick={navigateToOrders}
             >
-              Continue
+              View My Orders
             </button>
             <button
               className="btn w-full"

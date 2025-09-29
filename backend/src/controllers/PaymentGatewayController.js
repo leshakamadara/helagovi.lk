@@ -7,9 +7,10 @@ import SavedCard from "../models/SavedCard.js";
 const MERCHANT_ID = process.env.PAYHERE_MERCHANT_ID || "1232059";
 const MERCHANT_SECRET = process.env.PAYHERE_MERCHANT_SECRET || "MTUzNjMyNzg3NDMxNDAzNjE3MjgxMDU0MjM1MTI0Mzk2OTQzMDMw";
 
-const PAYHERE_APP_ID="4OVyIPKMqpM4JFnJsgjrNJ3D0"
-const PAYHERE_APP_SECRET="4OZppi0fGZp4eWcPgTbpva8Rjodd2AgzK8MPnQi7VTfA"
-const PUBLIC_URL ="https://coraline-plastery-sheba.ngrok-free.dev";
+const PAYHERE_APP_ID = process.env.PAYHERE_APP_ID || "4OVyIPKMqpM4JFnJsgjrNJ3D0";
+const PAYHERE_APP_SECRET = process.env.PAYHERE_APP_SECRET || "4OZppi0fGZp4eWcPgTbpva8Rjodd2AgzK8MPnQi7VTfA";
+const PUBLIC_URL = process.env.PUBLIC_URL || process.env.FRONTEND_URL || "https://www.helagovi.lk";
+const BACKEND_WEBHOOK_URL = process.env.BACKEND_WEBHOOK_URL || process.env.BACKEND_URL || "https://helagovi-lk.onrender.com";
 
 
 function verifyMd5(params) {
@@ -61,9 +62,9 @@ export async function preapprove(req,res){
 
     const params = {
       merchant_id: MERCHANT_ID,
-      return_url: `${PUBLIC_URL}/success`,
-      cancel_url: `${PUBLIC_URL}/cancel`,
-      notify_url: `${PUBLIC_URL}/api/payments/notify`,
+      return_url: `${PUBLIC_URL}/card-preapproval-success`,
+      cancel_url: `${PUBLIC_URL}/card-preapproval-cancel`,
+      notify_url: `${BACKEND_WEBHOOK_URL}/api/payments/notify`,
       order_id,
       items,
       currency,
@@ -124,12 +125,13 @@ export async function notify(req, res) {
           userId: body.custom_1,
           token: body.customer_token,
           orderId: body.order_id,
-          card_holder_name: body.card_holder_name || "",
+          card_holder_name: body.card_holder_name || "Unknown",
+          card_name: `Card ending ${body.card_no ? body.card_no.slice(-4) : Math.random().toString(36).substr(2, 4)}`,
           card_no: body.card_no || "", 
           method: body.method || "", 
           expiry_month: expiry_month || null,
           expiry_year: expiry_year || null,
-          
+          card_type: body.card_type || "Unknown"
         });
         console.log("Full card info saved successfully:", savedCard);
       } else {
@@ -188,7 +190,7 @@ export async function charge(req,res){
       amount,
       customer_token: savedCard.token,
       custom_1: userId,
-      notify_url: `${PUBLIC_URL}/api/payments/charge-notify`,
+      notify_url: `${BACKEND_WEBHOOK_URL}/api/payments/charge-notify`,
       itemList: [
         {
           name: items,

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
 import { formatDate, getStatusColor, getFreshnessColor } from '../../lib/utils';
 import api from '../../lib/axios';
 import { Button } from '../../components/ui/button';
@@ -10,6 +11,7 @@ import { Alert, AlertDescription } from '../../components/ui/alert';
 import { Badge } from '../../components/ui/badge';
 import LoginModal from '../../components/LoginModal';
 import ReviewsSection from '../../components/ReviewsSection';
+import { toast } from 'sonner';
 
 import { 
   MapPin, 
@@ -34,7 +36,9 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 const ProductDetails = () => {
   const [searchParams] = useSearchParams();
   const productId = searchParams.get('id');
+  const navigate = useNavigate();
   const { user } = useAuth();
+  const { addToCart } = useCart();
   
   console.log('ProductDetails component loaded with productId:', productId);
   console.log('Search params:', Object.fromEntries(searchParams));
@@ -132,6 +136,8 @@ const ProductDetails = () => {
   };
 
   const handleAddToCart = async (buyNow = false) => {
+    console.log('handleAddToCart called with buyNow:', buyNow);
+    
     if (!user) {
       // Set pending action and show login modal
       setPendingAction(buyNow ? 'buyNow' : 'addToCart');
@@ -140,38 +146,40 @@ const ProductDetails = () => {
     }
     
     if (user.role !== 'buyer') {
-      alert('Only buyers can add items to cart');
+      toast.error('Access Denied', {
+        description: 'Only buyers can add items to cart'
+      });
       return;
     }
     
     try {
       setAddingToCart(true);
       
-      // TODO: Implement cart API
-      // await apiCall('/api/cart/add', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-      //   },
-      //   body: JSON.stringify({
-      //     productId: product._id,
-      //     quantity: quantity
-      //   })
-      // });
-      
-      // Mock success
       if (buyNow) {
-        alert('Item added to cart! Redirecting to checkout...');
-        // Redirect to cart page after adding
-        setTimeout(() => {
-          window.location.href = '/cart';
-        }, 1000);
+        console.log('Buy Now: Navigating to checkout/delivery');
+        // For buy now, navigate directly to delivery page with product data
+        navigate('/checkout/delivery', {
+          state: {
+            product: product,
+            quantity: quantity
+          }
+        });
       } else {
-        alert('Added to cart successfully!');
+        console.log('Add to Cart: Adding product to cart');
+        // Add to cart using cart context
+        const result = await addToCart(product, quantity);
+        console.log('Cart addition result:', result);
+        // Show success toast
+        toast.success(result.message || 'Item added to cart successfully!', {
+          description: `${product.title} (${quantity} ${product.unit}) added to your cart`
+        });
+        setQuantity(1);
       }
-      setQuantity(1);
     } catch (err) {
-      alert(err.message || 'Failed to add to cart');
+      // Show error toast
+      toast.error('Failed to add to cart', {
+        description: err.message || 'Something went wrong'
+      });
     } finally {
       setAddingToCart(false);
     }
@@ -482,7 +490,10 @@ const ProductDetails = () => {
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <Button
-                        onClick={handleAddToCart}
+                        onClick={() => {
+                          console.log('Add to Cart button clicked');
+                          handleAddToCart();
+                        }}
                         disabled={addingToCart}
                         variant="outline"
                         size="lg"
@@ -499,7 +510,10 @@ const ProductDetails = () => {
                         )}
                       </Button>
                       <Button
-                        onClick={() => handleAddToCart(true)}
+                        onClick={() => {
+                          console.log('Buy Now button clicked');
+                          handleAddToCart(true);
+                        }}
                         disabled={addingToCart}
                         size="lg"
                         className="h-12 text-base font-medium bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
@@ -576,7 +590,7 @@ const ProductDetails = () => {
               <div className="flex items-start space-x-3 sm:space-x-4 flex-1">
                 <Avatar className="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0">
                   <AvatarImage src={product.farmer.profilePicture} alt={`${product.farmer.firstName} ${product.farmer.lastName}`} />
-                  <AvatarFallback className="bg-green-600 text-white text-sm sm:text-lg font-semibold">
+                  <AvatarFallback className="bg-[#35D399] text-white text-sm sm:text-lg font-semibold">
                     {product.farmer.firstName && product.farmer.lastName 
                       ? `${product.farmer.firstName[0]}${product.farmer.lastName[0]}`.toUpperCase()
                       : product.farmer.firstName 
@@ -627,7 +641,7 @@ const ProductDetails = () => {
               </div>
               
               {/* Action Buttons */}
-              <div className="flex flex-row sm:flex-col space-x-3 sm:space-x-0 sm:space-y-2 sm:w-auto w-full">
+              <div className="flex flex-row space-x-3 w-full sm:w-auto">
                 <Button 
                   className="flex-1 sm:flex-none sm:w-32 text-sm sm:text-base h-9 sm:h-10"
                   size="sm"
