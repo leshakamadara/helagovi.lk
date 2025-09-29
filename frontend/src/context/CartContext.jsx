@@ -93,7 +93,10 @@ export const CartProvider = ({ children }) => {
   // Load cart when user logs in
   useEffect(() => {
     if (isAuthenticated && user?.role === 'buyer') {
-      loadCart();
+      // Small delay to ensure auth header is set
+      setTimeout(() => {
+        loadCart();
+      }, 100);
     } else {
       dispatch({ type: CART_ACTIONS.CLEAR_CART });
     }
