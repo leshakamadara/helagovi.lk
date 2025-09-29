@@ -38,6 +38,7 @@ const SearchIcon = () => (
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useCart } from '../context/CartContext'
 import {
   Menu,
   X,
@@ -58,7 +59,9 @@ import {
   Gift,
   Home,
   MapPin,
-  Leaf
+  Leaf,
+  Trash2,
+  CreditCard
 } from 'lucide-react'
 import { Button } from './ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet'
@@ -82,14 +85,12 @@ const Navbar = () => {
   const [isSearching, setIsSearching] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const { isAuthenticated, user, logout } = useAuth()
+  const { items: cartItems, itemCount, total, removeFromCart, showDropdown, toggleCartDropdown } = useCart()
   const navigate = useNavigate()
   const location = useLocation()
   const searchRef = useRef(null)
   const suggestionsRef = useRef(null)
-
-  // Placeholder cart data - replace with actual cart context/state
-  const cartCount = 3
-  const totalBill = 2500.00
+  const cartRef = useRef(null)
 
   const handleLogout = () => {
     logout()
@@ -184,9 +185,10 @@ const Navbar = () => {
     }
   }
 
-  // Close suggestions when clicking outside
+  // Close suggestions and cart dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
+      // Close search suggestions
       if (
         searchRef.current && 
         !searchRef.current.contains(event.target) &&
@@ -196,11 +198,16 @@ const Navbar = () => {
         setShowSuggestions(false)
         setSelectedIndex(-1)
       }
+      
+      // Close cart dropdown
+      if (cartRef.current && !cartRef.current.contains(event.target)) {
+        toggleCartDropdown(false)
+      }
     }
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  }, [toggleCartDropdown])
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('en-LK', {
@@ -208,6 +215,23 @@ const Navbar = () => {
       currency: 'LKR',
       minimumFractionDigits: 0
     }).format(price)
+  }
+
+  const handleRemoveFromCart = async (itemId) => {
+    try {
+      await removeFromCart(itemId)
+      // Import toast dynamically to avoid import issues
+      import('sonner').then(({ toast }) => {
+        toast.success('Item removed from cart')
+      })
+    } catch (error) {
+      console.error('Error removing item from cart:', error)
+      import('sonner').then(({ toast }) => {
+        toast.error('Failed to remove item', {
+          description: error.message || 'Something went wrong'
+        })
+      })
+    }
   }
 
 
@@ -223,7 +247,10 @@ const Navbar = () => {
     { to: '/profile', label: 'Profile', icon: User },
     { to: '/my-orders', label: 'My Orders', icon: ShoppingBag },
     { to: '/favorites', label: 'Favorites', icon: Heart },
-    { to: '/buyer-dashboard', label: 'Dashboard', icon: BarChart3 }
+    { to: '/buyer-dashboard', label: 'Dashboard', icon: BarChart3 },
+    { divider: true },
+    { to: '/CardManagementPage', label: 'Manage Cards', icon: CreditCard },
+    { to: '/payment-history', label: 'Payment History', icon: Wallet }
   ]
 
   const getFarmerMenuItems = () => [
@@ -261,7 +288,7 @@ const Navbar = () => {
     
     // Hide search bar for buyers on profile pages
     if (user?.role === 'buyer') {
-      const profileRoutes = ['/profile', '/my-orders', '/favorites', '/buyer-dashboard']
+      const profileRoutes = ['/profile', '/my-orders', '/favorites', '/buyer-dashboard','/CardManagementPage','/payment-history']
       return profileRoutes.includes(location.pathname)
     }
     
@@ -305,22 +332,127 @@ const Navbar = () => {
             <div className="hidden md:flex items-center space-x-4">
               {isAuthenticated && user.role === 'buyer' && !isProfileRelatedPage() && (
                 // Cart for logged-in buyers (hide on profile pages)
-                <Link 
-                  to="/cart"
-                  className="flex items-center text-gray-700 hover:text-emerald-600"
-                >
-                  <div className="relative">
-                    <ShoppingCart className="h-5 w-5" />
-                    {cartCount > 0 && (
-                      <span className="absolute -top-2 -right-2 bg-emerald-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                        {cartCount}
-                      </span>
-                    )}
-                  </div>
-                  <span className="ml-4 text-sm font-medium">
-                    Rs. {totalBill.toFixed(2)}
-                  </span>
-                </Link>
+                <div className="relative" ref={cartRef}>
+                  <button
+                    onClick={() => toggleCartDropdown(!showDropdown)}
+                    className="flex items-center text-gray-700 hover:text-emerald-600 transition-colors"
+                  >
+                    <div className="relative">
+                      <ShoppingCart className="h-5 w-5" />
+                      {itemCount > 0 && (
+                        <span className="absolute -top-2 -right-2 bg-emerald-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                          {itemCount}
+                        </span>
+                      )}
+                    </div>
+                    <span className="ml-4 text-sm font-medium">
+                      Rs. {total.toFixed(2)}
+                    </span>
+                    <ChevronDown className="h-4 w-4 ml-1" />
+                  </button>
+
+                  {/* Cart Dropdown */}
+                  {showDropdown && (
+                    <div className="absolute right-0 top-full mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                      <div className="p-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold">Shopping Cart</h3>
+                          <span className="text-sm text-gray-500">
+                            {itemCount} {itemCount === 1 ? 'item' : 'items'}
+                          </span>
+                        </div>
+
+                        {cartItems.length > 0 ? (
+                          <>
+                            <div className="space-y-3 max-h-64 overflow-y-auto">
+                              {cartItems.map((item) => (
+                                <div key={item._id} className="flex items-center space-x-3">
+                                  <img
+                                    src={item.product.images?.[0]?.url || 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg'}
+                                    alt={item.product.title}
+                                    className="w-12 h-12 rounded-lg object-cover"
+                                    onError={(e) => {
+                                      e.target.src = 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg'
+                                    }}
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="text-sm font-medium truncate">
+                                      {item.product.title}
+                                    </h4>
+                                    <p className="text-sm text-gray-600">
+                                      {item.quantity} × Rs. {item.product.price}
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-sm font-medium">
+                                      Rs. {(item.product.price * item.quantity).toFixed(2)}
+                                    </span>
+                                    <Button
+                                      onClick={() => handleRemoveFromCart(item._id)}
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="border-t pt-3 mt-3">
+                              <div className="flex justify-between items-center mb-3">
+                                <span className="font-semibold">Total:</span>
+                                <span className="font-bold text-emerald-600">
+                                  Rs. {total.toFixed(2)}
+                                </span>
+                              </div>
+                              <div className="space-y-2">
+                                <Button
+                                  onClick={() => {
+                                    toggleCartDropdown(false)
+                                    navigate('/cart')
+                                  }}
+                                  variant="outline"
+                                  className="w-full"
+                                  size="sm"
+                                >
+                                  <ShoppingCart className="h-4 w-4 mr-2" />
+                                  View Cart
+                                </Button>
+                                <Button
+                                  onClick={() => {
+                                    toggleCartDropdown(false)
+                                    navigate('/checkout/delivery')
+                                  }}
+                                  className="w-full"
+                                  size="sm"
+                                >
+                                  <CreditCard className="h-4 w-4 mr-2" />
+                                  Checkout
+                                </Button>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-center py-6">
+                            <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                            <p className="text-gray-500 mb-3">Your cart is empty</p>
+                            <Button
+                              onClick={() => {
+                                toggleCartDropdown(false)
+                                navigate('/products')
+                              }}
+                              size="sm"
+                            >
+                              Start Shopping
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
               
               {isAuthenticated ? (
@@ -338,13 +470,17 @@ const Navbar = () => {
                       <ChevronDown className="h-4 w-4 text-gray-500" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-48" align="end">
-                      {(user.role === 'buyer' ? getBuyerMenuItems() : getFarmerMenuItems()).map((item) => (
-                        <DropdownMenuItem key={item.to} asChild>
-                          <Link to={item.to} className="flex items-center">
-                            <item.icon className="h-4 w-4 mr-2" />
-                            {item.label}
-                          </Link>
-                        </DropdownMenuItem>
+                      {(user.role === 'buyer' ? getBuyerMenuItems() : getFarmerMenuItems()).map((item, index) => (
+                        item.divider ? (
+                          <DropdownMenuSeparator key={`divider-${index}`} />
+                        ) : (
+                          <DropdownMenuItem key={item.to} asChild>
+                            <Link to={item.to} className="flex items-center">
+                              <item.icon className="h-4 w-4 mr-2" />
+                              {item.label}
+                            </Link>
+                          </DropdownMenuItem>
+                        )
                       ))}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={handleLogout}>

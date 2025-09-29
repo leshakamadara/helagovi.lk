@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate, Link } from 'react-router-dom'
 import { Sprout } from 'lucide-react'
 import { AuthProvider } from './context/AuthContext'
+import { CartProvider } from './context/CartContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import ErrorBoundary from './components/ErrorBoundary'
 import RoleBasedHome from './components/RoleBasedHome'
@@ -27,6 +28,21 @@ import Favorites from "./pages/buyers/Favorites";
 import Cart from "./pages/buyers/Cart";
 import FarmerWallet from "./pages/farmers/Wallet";
 import Debug from "./pages/Debug";
+import AnimationDemo from './pages/AnimationDemo';
+
+// Payment routes
+import BillingHistory from './pages/payments/addCard.jsx'
+import ProcessingPage from './pages/payments/ProcessingPage'
+import SuccessPage from './pages/payments/SuccessPage'
+import ChargePage from './pages/payments/ChargePage'
+import CardManagementPage from './pages/payments/CardManagementPage'
+import PaymentPage from './pages/payments/billingHistory'
+import PaymentHistoryPage from './pages/payments/PaymentHistoryPage'
+import CardPreapprovalSuccess from './pages/payments/CardPreapprovalSuccess'
+import CardPreapprovalCancel from './pages/payments/CardPreapprovalCancel'
+
+// Checkout routes
+import DeliveryInformation from './pages/checkout/DeliveryInformation'
 
 import MainLayout from "./layouts/MainLayout";
 import { Toaster } from 'sonner';
@@ -34,11 +50,12 @@ import { Toaster } from 'sonner';
 function App() {
   return (
     <AuthProvider>
-      <div className="min-h-screen bg-gray-50">
+      <CartProvider>
+        <div className="min-h-screen bg-gray-50">
         <Routes>
           {/* Main Page - Role-based Home */}
           <Route path="/" element={<RoleBasedHome />} />
-          
+
           {/* User / Auth Routes - with individual navbar */}
           <Route path="/register" element={
             <>
@@ -47,16 +64,16 @@ function App() {
                   <div className="flex justify-between h-16">
                     <div className="flex items-center">
                       <Link to="/" className="flex-shrink-0 flex items-center">
-                        <img 
-                          src="https://framerusercontent.com/images/tQEEeKRa0oOBXHoksVNKvgBJZc.png" 
-                          alt="Helagovi.lk Logo" 
+                        <img
+                          src="https://framerusercontent.com/images/tQEEeKRa0oOBXHoksVNKvgBJZc.png"
+                          alt="Helagovi.lk Logo"
                           className="h-8 w-8 object-contain"
                         />
                         <span className="ml-2 text-xl font-bold text-gray-800">Helagovi.lk</span>
                       </Link>
                     </div>
                     <div className="flex items-center">
-                      <Link 
+                      <Link
                         to="/login"
                         className="bg-emerald-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-emerald-700"
                       >
@@ -76,16 +93,16 @@ function App() {
                   <div className="flex justify-between h-16">
                     <div className="flex items-center">
                       <Link to="/" className="flex-shrink-0 flex items-center">
-                        <img 
-                          src="https://framerusercontent.com/images/tQEEeKRa0oOBXHoksVNKvgBJZc.png" 
-                          alt="Helagovi.lk Logo" 
+                        <img
+                          src="https://framerusercontent.com/images/tQEEeKRa0oOBXHoksVNKvgBJZc.png"
+                          alt="Helagovi.lk Logo"
                           className="h-8 w-8 object-contain"
                         />
                         <span className="ml-2 text-xl font-bold text-gray-800">Helagovi.lk</span>
                       </Link>
                     </div>
                     <div className="flex items-center">
-                      <Link 
+                      <Link
                         to="/register"
                         className="bg-emerald-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-emerald-700"
                       >
@@ -120,6 +137,10 @@ function App() {
           {/* Debug Route */}
           <Route path="/debug" element={<Debug />} />
 
+          {/* Animation Demo Route */}
+          <Route path="/animation-demo" element={<AnimationDemo />} />
+          <Route path="/animation-demo" element={<AnimationDemo />} />
+
           {/* Protected Routes - with individual navbar */}
           <Route path="/profile" element={
             <ProtectedRoute>
@@ -148,7 +169,6 @@ function App() {
           <Route path="/admin-dashboard" element={
             <ProtectedRoute allowedRoles={['admin']}>
               <>
-                <Navbar />
                 <AdminDashboard />
               </>
             </ProtectedRoute>
@@ -310,16 +330,66 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* Checkout Routes */}
+          <Route path="/checkout/delivery" element={
+            <ProtectedRoute allowedRoles={['buyer']}>
+              <MainLayout>
+                <DeliveryInformation />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
+
+          {/* Payment Routes */}
+          <Route path="/saveCard" element={
+            <ProtectedRoute>
+              <MainLayout>
+                <BillingHistory />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/processing" element={<ProcessingPage />} />
+          <Route path="/success" element={<SuccessPage />} />
+          <Route path="/card-preapproval-success" element={<CardPreapprovalSuccess />} />
+          <Route path="/card-preapproval-cancel" element={<CardPreapprovalCancel />} />
+          <Route path="/ChargePage" element={
+            <ProtectedRoute>
+              <MainLayout>
+                <ChargePage />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/CardManagementPage" element={
+            <ProtectedRoute>
+              <MainLayout>
+                <CardManagementPage />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/payment-history" element={
+            <ProtectedRoute>
+              <MainLayout>
+                <PaymentHistoryPage />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/PaymentPage" element={
+            <ProtectedRoute>
+              <MainLayout>
+                <PaymentPage />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
         </Routes>
-        <Toaster 
+        <Toaster
           position="top-right"
           expand={false}
           richColors
           closeButton
         />
-      </div>
+        </div>
+      </CartProvider>
     </AuthProvider>
   )
 }
-
 export default App

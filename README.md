@@ -203,9 +203,26 @@ git rebase dev   # or git merge dev
 
 ---
 
+## 🚀 Production Deployment
+
+### Live URLs
+- **Website:** https://www.helagovi.lk
+- **API:** https://helagovi-lk.onrender.com
+- **API Documentation:** https://helagovi-lk.onrender.com/api-docs
+
+### Payment Integration
+- **PayHere Gateway:** Integrated with live webhook URLs
+- **Production Webhook:** Set in PayHere dashboard to: `https://helagovi-lk.onrender.com/api/payments/notify`
+
+### Deployment Guide
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions.
+
+---
+
 ✅ **Summary Notes**
 
 1. **Clone repo → checkout dev → pull** to start fresh.
 2. **Create feature branch locally** → work → push → PR → merge to dev.
 3. **Dependencies:** Install **both frontend and backend** before starting.
 4. **Never commit directly to main** — always work on feature branch first.
+5. **Production:** Deployed on Render with PayHere payment integration.

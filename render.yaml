@@ -1,0 +1,39 @@
+# render.yaml
+services:
+  # Backend API Service
+  - type: web
+    name: helagovi-lk
+    env: node
+    region: singapore
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm start
+    rootDir: backend
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5001
+      # Add other environment variables in Render dashboard
+
+  # Frontend Static Site
+  - type: web
+    name: helagovi-lk-1
+    env: static
+    region: singapore
+    plan: starter
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    rootDir: frontend
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Add other environment variables in Render dashboard
+
+# Database (if using Render PostgreSQL - optional)
+# databases:
+#   - name: helagovi-db
+#     databaseName: helagovi
+#     user: helagovi_user
+#     region: singapore
+#     plan: starter

@@ -1,5 +1,9 @@
 // middleware/errorHandler.js
 
+// Async handler wrapper to catch async errors
+export const asyncHandler = (fn) => (req, res, next) =>
+  Promise.resolve(fn(req, res, next)).catch(next);
+
 const errorHandler = (err, req, res, next) => {
   console.error("Error:", err);
   

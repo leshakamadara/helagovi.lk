@@ -13,12 +13,15 @@ import productRoutes from "./routes/productRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
+import cartRoutes from "./routes/cartRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import profileRoutes from "./routes/profile.js";
 import { seedCategories } from "./lib/seedCategories.js";
 import { cache, CACHE_DURATION, cacheKeys } from "./lib/cache.js";
 import { cacheMiddleware, cacheInvalidationMiddleware } from "./middleware/cache.js";
+
+
 
 dotenv.config();
 
@@ -37,6 +40,8 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // app.use(ratelimiter); // optional
 
 // Serve static files for uploads
@@ -237,6 +242,7 @@ app.use('/api/categories', (req, res, next) => {
 
 app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/cart", cartRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/reviews", reviewRoutes);
 
@@ -255,6 +261,8 @@ app.use("/api/profile", (req, res, next) => {
   }
   next();
 }, profileRoutes);
+
+
 
 
 // Test endpoint
