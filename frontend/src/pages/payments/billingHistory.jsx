@@ -103,7 +103,7 @@ const PaymentPage = () => {
       const data = res.data;
 
       const paymentData = {
-        sandbox: import.meta.env.PROD ? false : true, // Use sandbox only in development
+        sandbox: true, // Always use sandbox for testing virtual payments
         merchant_id: data.merchant_id,
         hash: data.hash,
         return_url: `${PUBLIC_URL}/payment-success`,

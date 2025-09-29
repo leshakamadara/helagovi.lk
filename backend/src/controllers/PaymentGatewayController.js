@@ -12,10 +12,11 @@ const PAYHERE_APP_SECRET = process.env.PAYHERE_APP_SECRET;
 const PUBLIC_URL = process.env.PUBLIC_URL || process.env.FRONTEND_URL || "https://www.helagovi.lk";
 const BACKEND_WEBHOOK_URL = process.env.BACKEND_WEBHOOK_URL || process.env.BACKEND_URL || "https://helagovi-lk.onrender.com";
 
-// PayHere environment detection
+// PayHere environment detection - Force sandbox for testing virtual payments
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
-const PAYHERE_BASE_URL = IS_PRODUCTION ? 'https://www.payhere.lk' : 'https://sandbox.payhere.lk';
-const PAYHERE_MERCHANT_BASE_URL = IS_PRODUCTION ? 'https://www.payhere.lk/merchant/v1' : 'https://sandbox.payhere.lk/merchant/v1';
+const FORCE_SANDBOX_FOR_TESTING = process.env.FORCE_PAYHERE_SANDBOX === 'true';
+const PAYHERE_BASE_URL = (IS_PRODUCTION && !FORCE_SANDBOX_FOR_TESTING) ? 'https://www.payhere.lk' : 'https://sandbox.payhere.lk';
+const PAYHERE_MERCHANT_BASE_URL = (IS_PRODUCTION && !FORCE_SANDBOX_FOR_TESTING) ? 'https://www.payhere.lk/merchant/v1' : 'https://sandbox.payhere.lk/merchant/v1';
 
 
 function verifyMd5(params) {
@@ -243,6 +244,7 @@ export async function createPayment(req, res) {
     console.log("PayHere Environment Check:", {
       NODE_ENV: process.env.NODE_ENV,
       IS_PRODUCTION,
+      FORCE_SANDBOX_FOR_TESTING,
       MERCHANT_ID: MERCHANT_ID.substring(0, 4) + "***", // Log first 4 chars only for security
       PAYHERE_BASE_URL,
       PAYHERE_MERCHANT_BASE_URL
