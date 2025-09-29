@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { orderService } from '../../services/orderService'
 import {
   ShoppingBag,
   Clock,
@@ -13,175 +14,161 @@ import {
   Calendar,
   User,
   Phone,
-  Mail
+  Mail,
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react'
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb'
 import { H1, H2, H3, P, Muted, Large } from '../../components/ui/typography'
 
 const FarmerOrders = () => {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [filter, setFilter] = useState('all')
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalOrders: 0
+  })
+  const [refreshing, setRefreshing] = useState(false)
+  const [orderStats, setOrderStats] = useState({
+    all: 0,
+    pending: 0,
+    confirmed: 0,
+    preparing: 0,
+    shipped: 0,
+    delivered: 0,
+    cancelled: 0
+  })
 
   useEffect(() => {
     fetchOrders()
-  }, [filter])
+    fetchOrderStats()
+  }, [])
 
-  const fetchOrders = async () => {
+  useEffect(() => {
+    fetchOrders()
+  }, [filter, pagination.currentPage])
+
+  const fetchOrderStats = async () => {
     try {
-      setLoading(true)
-      
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/orders/farmer', {
-      //   headers: {
-      //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-      //   }
-      // })
-      
-      // Mock data for now
-      const mockOrders = [
-        {
-          _id: '1',
-          orderNumber: 'ORD-2024-001',
-          status: 'pending',
-          total: 2250,
-          createdAt: '2024-01-20T00:00:00.000Z',
-          buyer: {
-            firstName: 'Sarah',
-            lastName: 'Wilson',
-            email: 'sarah@example.com',
-            phone: '+94 77 111 2222'
-          },
-          items: [
-            {
-              product: {
-                _id: 'prod1',
-                title: 'Fresh Organic Tomatoes',
-                primaryImage: { url: 'https://images.unsplash.com/photo-1546470427-227e8e7dfde8?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80' },
-                unit: 'kg'
-              },
-              quantity: 5,
-              price: 450
-            }
-          ],
-          deliveryAddress: {
-            street: '123 Main Street',
-            city: 'Colombo',
-            district: 'Colombo',
-            postalCode: '00100'
-          },
-          paymentMethod: 'cash_on_delivery'
-        },
-        {
-          _id: '2',
-          orderNumber: 'ORD-2024-002',
-          status: 'confirmed',
-          total: 1800,
-          createdAt: '2024-01-18T00:00:00.000Z',
-          confirmedAt: '2024-01-18T12:00:00.000Z',
-          buyer: {
-            firstName: 'Mike',
-            lastName: 'Brown',
-            email: 'mike@example.com',
-            phone: '+94 77 333 4444'
-          },
-          items: [
-            {
-              product: {
-                _id: 'prod2',
-                title: 'Fresh Carrots',
-                primaryImage: { url: 'https://images.unsplash.com/photo-1445282768818-728615cc910a?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80' },
-                unit: 'kg'
-              },
-              quantity: 4,
-              price: 350
-            }
-          ],
-          deliveryAddress: {
-            street: '456 Garden Road',
-            city: 'Kandy',
-            district: 'Kandy',
-            postalCode: '20000'
-          },
-          paymentMethod: 'bank_transfer'
-        },
-        {
-          _id: '3',
-          orderNumber: 'ORD-2024-003',
-          status: 'delivered',
-          total: 3200,
-          createdAt: '2024-01-15T00:00:00.000Z',
-          confirmedAt: '2024-01-15T14:00:00.000Z',
-          shippedAt: '2024-01-16T10:00:00.000Z',
-          deliveredAt: '2024-01-17T16:00:00.000Z',
-          buyer: {
-            firstName: 'Emma',
-            lastName: 'Davis',
-            email: 'emma@example.com',
-            phone: '+94 77 555 6666'
-          },
-          items: [
-            {
-              product: {
-                _id: 'prod3',
-                title: 'Organic Lettuce',
-                primaryImage: { url: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80' },
-                unit: 'bunch'
-              },
-              quantity: 8,
-              price: 400
-            }
-          ],
-          deliveryAddress: {
-            street: '789 Hill Road',
-            city: 'Galle',
-            district: 'Galle',
-            postalCode: '80000'
-          },
-          paymentMethod: 'cash_on_delivery'
+      // Fetch all orders with a large limit to get accurate status counts
+      const response = await orderService.getMyOrders({ limit: 1000 }) // Large limit to get all orders
+      if (response.success && response.data.orders) {
+        const counts = {
+          all: response.data.pagination.totalOrders || 0,
+          pending: 0,
+          confirmed: 0,
+          preparing: 0,
+          shipped: 0,
+          delivered: 0,
+          cancelled: 0
         }
-      ]
-      
-      let filteredOrders = mockOrders
-      if (filter !== 'all') {
-        filteredOrders = mockOrders.filter(order => order.status === filter)
+        
+        // Count orders by status from all fetched orders
+        response.data.orders.forEach(order => {
+          if (counts[order.status] !== undefined) {
+            counts[order.status]++
+          }
+        })
+        
+        setOrderStats(counts)
+      }
+    } catch (error) {
+      // If API call fails, fall back to current page calculation
+      console.warn('Failed to fetch order statistics, using current page counts')
+      const currentPageCounts = {
+        all: pagination.totalOrders,
+        pending: 0,
+        confirmed: 0,
+        preparing: 0,
+        shipped: 0,
+        delivered: 0,
+        cancelled: 0
       }
       
-      setOrders(filteredOrders)
+      orders.forEach(order => {
+        if (currentPageCounts[order.status] !== undefined) {
+          currentPageCounts[order.status]++
+        }
+      })
+      
+      setOrderStats(currentPageCounts)
+    }
+  }
+
+  const fetchOrders = async (refresh = false) => {
+    try {
+      if (refresh) {
+        setRefreshing(true)
+        // Refresh stats when manually refreshing
+        await fetchOrderStats()
+      } else {
+        setLoading(true)
+      }
+      setError('')
+
+      const params = {
+        page: pagination.currentPage,
+        limit: 10
+      }
+      
+      if (filter !== 'all') {
+        params.status = filter
+      }
+
+      const response = await orderService.getMyOrders(params)
+      
+      if (response.success) {
+        setOrders(response.data.orders)
+        setPagination(response.data.pagination)
+      } else {
+        setError(response.message || 'Failed to fetch orders')
+      }
     } catch (error) {
-      console.error('Error fetching orders:', error)
+      setError(error.message || 'Failed to fetch orders')
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
+  }
+
+  const handlePageChange = (newPage) => {
+    setPagination(prev => ({ ...prev, currentPage: newPage }))
+  }
+
+  const handleFilterChange = (newFilter) => {
+    setFilter(newFilter)
+    setPagination(prev => ({ ...prev, currentPage: 1 }))
   }
 
   const handleStatusUpdate = async (orderId, newStatus) => {
     try {
-      // TODO: Replace with actual API call
-      // await fetch(`/api/orders/${orderId}/status`, {
-      //   method: 'PATCH',
-      //   headers: {
-      //     'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      //     'Content-Type': 'application/json'
-      //   },
-      //   body: JSON.stringify({ status: newStatus })
-      // })
+      const response = await orderService.updateOrderStatus(orderId, newStatus)
       
-      // Mock update
-      setOrders(prev => prev.map(order => 
-        order._id === orderId 
-          ? { 
-              ...order, 
-              status: newStatus,
-              [`${newStatus}At`]: new Date().toISOString()
-            }
-          : order
-      ))
-      
-      alert(`Order status updated to ${newStatus}`)
+      if (response.success) {
+        // Update the order in the local state
+        setOrders(prevOrders => 
+          prevOrders.map(order => 
+            order._id === orderId 
+              ? { ...order, status: newStatus, [`${newStatus}At`]: new Date().toISOString() }
+              : order
+          )
+        )
+        
+        // Refresh order statistics
+        await fetchOrderStats()
+        
+        // Show success message
+        toast.success(`Order status updated to ${newStatus}`)
+      } else {
+        toast.error(response.message || 'Failed to update order status')
+      }
     } catch (error) {
-      alert('Failed to update order status')
+      toast.error(error.message || 'Failed to update order status')
     }
   }
 
@@ -285,19 +272,46 @@ const FarmerOrders = () => {
       </div>
 
       <div className="mb-8">
-        <H1 className="text-gray-900">Order Management</H1>
-        <P className="text-gray-600">Manage orders for your products</P>
+        <div className="flex items-center justify-between">
+          <div>
+            <H1 className="text-gray-900">Order Management</H1>
+            <P className="text-gray-600">Manage orders for your products</P>
+          </div>
+          <button
+            onClick={() => fetchOrders(true)}
+            disabled={refreshing}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex">
+            <AlertCircle className="h-5 w-5 text-red-400" />
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Error</h3>
+              <div className="mt-2 text-sm text-red-700">{error}</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filter Tabs */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
             {[
-              { id: 'all', label: 'All Orders', count: 3 },
-              { id: 'pending', label: 'Pending', count: 1 },
-              { id: 'confirmed', label: 'Confirmed', count: 1 },
-              { id: 'delivered', label: 'Delivered', count: 1 },
+              { id: 'all', label: 'All Orders', count: orderStats.all },
+              { id: 'pending', label: 'Pending', count: orderStats.pending },
+              { id: 'confirmed', label: 'Confirmed', count: orderStats.confirmed },
+              { id: 'shipped', label: 'Shipped', count: orderStats.shipped },
+              { id: 'delivered', label: 'Delivered', count: orderStats.delivered },
+              { id: 'cancelled', label: 'Cancelled', count: orderStats.cancelled },
             ].map((tab) => (
               <button
                 key={tab.id}

@@ -210,85 +210,170 @@ const Cart = () => {
                 {/* Cart Items */}
                 <div className="divide-y divide-gray-200">
                   {cartItems.map((item) => (
-                    <div key={item._id} className={`p-6 ${selectedItems.has(item._id) ? 'bg-green-50 border-l-4 border-l-green-500' : ''}`}>
-                      <div className="flex items-center space-x-4">
-                        <div className="flex items-center space-x-4">
+                    <div key={item._id} className={`p-4 sm:p-6 ${selectedItems.has(item._id) ? 'bg-green-50 border-l-4 border-l-green-500' : ''}`}>
+                      {/* Mobile Layout */}
+                      <div className="block sm:hidden">
+                        <div className="flex items-start space-x-3 mb-3">
                           <Checkbox
-                            id={`item-${item._id}`}
+                            id={`item-mobile-${item._id}`}
                             checked={selectedItems.has(item._id)}
                             onCheckedChange={(checked) => handleSelectItem(item._id, checked)}
+                            className="mt-1"
                           />
                           <img
                             src={item.product.images?.[0]?.url || 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg'}
                             alt={item.product.title}
-                            className="h-20 w-20 rounded-lg object-cover"
+                            className="h-16 w-16 rounded-lg object-cover flex-shrink-0"
                             onError={(e) => e.target.src = 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg'}
                           />
-                        </div>
-                        <div className="flex-1">
-                          <H3 className="text-gray-900">{item.product.title}</H3>
-                          <div className="flex items-center space-x-2 text-sm text-gray-600 mt-1">
-                            <MapPin className="h-4 w-4" />
-                            <span>{item.product.city}, {item.product.district}</span>
-                            <span>•</span>
-                            <span>by {item.product.farmer?.firstName || ''} {item.product.farmer?.lastName || ''}</span>
-                          </div>
-                          <div className="flex items-center space-x-2 mt-2">
-                            {item.product.isOrganic && <Leaf className="h-4 w-4 text-green-600" />}
-                            <div className="flex items-center">
-                              <Star className="h-4 w-4 text-yellow-500" />
-                              <span className="text-sm text-gray-600 ml-1">{item.product.qualityScore}</span>
+                          <div className="flex-1 min-w-0">
+                            <H3 className="text-gray-900 text-sm font-medium truncate">{item.product.title}</H3>
+                            <div className="flex items-center space-x-2 text-xs text-gray-600 mt-1">
+                              <MapPin className="h-3 w-3" />
+                              <span className="truncate">{item.product.city}, {item.product.district}</span>
                             </div>
-                            <span className="text-sm text-gray-500">
+                            <div className="flex items-center space-x-2 mt-1">
+                              {item.product.isOrganic && <Leaf className="h-3 w-3 text-green-600" />}
+                              <div className="flex items-center">
+                                <Star className="h-3 w-3 text-yellow-500" />
+                                <span className="text-xs text-gray-600 ml-1">{item.product.qualityScore}</span>
+                              </div>
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
                               Added {formatDate(item.addedAt)}
-                            </span>
+                            </div>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-4">
-                          <div className="text-right">
-                            <div className="text-lg font-semibold text-gray-900">
+                        {/* Mobile Quantity and Actions */}
+                        <div className="flex items-center justify-between mt-3 pl-8">
+                          <div className="flex items-center space-x-3">
+                            <div className="text-sm font-semibold text-gray-900">
                               {formatCurrency(item.product.price)}/{item.product.unit}
                             </div>
-                            <div className="text-sm text-gray-500">
-                              Available: {item.product.availableQuantity}
+                            <div className="flex items-center border border-gray-300 rounded-md">
+                              <Button
+                                onClick={() => handleUpdateQuantity(item._id, item.quantity - 1)}
+                                disabled={updating || item.quantity <= 1}
+                                variant="ghost"
+                                size="sm"
+                                className="p-1 h-8 w-8"
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <span className="px-2 py-1 text-sm min-w-[2rem] text-center">
+                                {item.quantity}
+                              </span>
+                              <Button
+                                onClick={() => handleUpdateQuantity(item._id, item.quantity + 1)}
+                                disabled={updating || item.quantity >= item.product.availableQuantity}
+                                variant="ghost"
+                                size="sm"
+                                className="p-1 h-8 w-8"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
                             </div>
                           </div>
-                          <div className="flex items-center border border-gray-300 rounded-md">
-                            <Button
-                              onClick={() => handleUpdateQuantity(item._id, item.quantity - 1)}
-                              disabled={updating || item.quantity <= 1}
-                              variant="ghost"
-                              size="sm"
-                              className="p-2"
-                            >
-                              <Minus className="h-4 w-4" />
-                            </Button>
-                            <span className="px-4 py-2 border-l border-r border-gray-300 min-w-[3rem] text-center">
-                              {item.quantity}
-                            </span>
-                            <Button
-                              onClick={() => handleUpdateQuantity(item._id, item.quantity + 1)}
-                              disabled={updating || item.quantity >= item.product.availableQuantity}
-                              variant="ghost"
-                              size="sm"
-                              className="p-2"
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
+                          <Button
+                            onClick={() => handleRemoveItem(item._id)}
+                            variant="destructive"
+                            size="sm"
+                            className="h-8 px-2"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <div className="flex items-center justify-between mt-2 pl-8">
+                          <div className="text-xs text-gray-500">
+                            Available: {item.product.availableQuantity}
                           </div>
-                          <div className="text-right">
-                            <div className="text-lg font-bold text-green-600">
-                              {formatCurrency(item.product.price * item.quantity)}
+                          <div className="text-sm font-bold text-green-600">
+                            {formatCurrency(item.product.price * item.quantity)}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Desktop Layout */}
+                      <div className="hidden sm:block">
+                        <div className="flex items-center space-x-4">
+                          <div className="flex items-center space-x-4">
+                            <Checkbox
+                              id={`item-${item._id}`}
+                              checked={selectedItems.has(item._id)}
+                              onCheckedChange={(checked) => handleSelectItem(item._id, checked)}
+                            />
+                            <img
+                              src={item.product.images?.[0]?.url || 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg'}
+                              alt={item.product.title}
+                              className="h-20 w-20 rounded-lg object-cover"
+                              onError={(e) => e.target.src = 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg'}
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <H3 className="text-gray-900">{item.product.title}</H3>
+                            <div className="flex items-center space-x-2 text-sm text-gray-600 mt-1">
+                              <MapPin className="h-4 w-4" />
+                              <span>{item.product.city}, {item.product.district}</span>
+                              <span>•</span>
+                              <span>by {item.product.farmer?.firstName || ''} {item.product.farmer?.lastName || ''}</span>
                             </div>
-                            <Button
-                              onClick={() => handleRemoveItem(item._id)}
-                              variant="destructive"
-                              size="sm"
-                              className="mt-1"
-                            >
-                              <Trash2 className="h-4 w-4 mr-1" />
-                              Remove
-                            </Button>
+                            <div className="flex items-center space-x-2 mt-2">
+                              {item.product.isOrganic && <Leaf className="h-4 w-4 text-green-600" />}
+                              <div className="flex items-center">
+                                <Star className="h-4 w-4 text-yellow-500" />
+                                <span className="text-sm text-gray-600 ml-1">{item.product.qualityScore}</span>
+                              </div>
+                              <span className="text-sm text-gray-500">
+                                Added {formatDate(item.addedAt)}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-4">
+                            <div className="text-right">
+                              <div className="text-lg font-semibold text-gray-900">
+                                {formatCurrency(item.product.price)}/{item.product.unit}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                Available: {item.product.availableQuantity}
+                              </div>
+                            </div>
+                            <div className="flex items-center border border-gray-300 rounded-md">
+                              <Button
+                                onClick={() => handleUpdateQuantity(item._id, item.quantity - 1)}
+                                disabled={updating || item.quantity <= 1}
+                                variant="ghost"
+                                size="sm"
+                                className="p-2"
+                              >
+                                <Minus className="h-4 w-4" />
+                              </Button>
+                              <span className="px-4 py-2 border-l border-r border-gray-300 min-w-[3rem] text-center">
+                                {item.quantity}
+                              </span>
+                              <Button
+                                onClick={() => handleUpdateQuantity(item._id, item.quantity + 1)}
+                                disabled={updating || item.quantity >= item.product.availableQuantity}
+                                variant="ghost"
+                                size="sm"
+                                className="p-2"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg font-bold text-green-600">
+                                {formatCurrency(item.product.price * item.quantity)}
+                              </div>
+                              <Button
+                                onClick={() => handleRemoveItem(item._id)}
+                                variant="destructive"
+                                size="sm"
+                                className="mt-1"
+                              >
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Remove
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </div>

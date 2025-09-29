@@ -12,7 +12,7 @@ export const orderService = {
    */
   async createOrder(orderData) {
     try {
-      const response = await axios.post('/api/orders', orderData);
+      const response = await axios.post('/orders', orderData);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -26,7 +26,7 @@ export const orderService = {
    */
   async getMyOrders(params = {}) {
     try {
-      const response = await axios.get('/api/orders/my', { params });
+      const response = await axios.get('/orders/my', { params });
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -40,7 +40,7 @@ export const orderService = {
    */
   async getOrderById(orderId) {
     try {
-      const response = await axios.get(`/api/orders/${orderId}`);
+      const response = await axios.get(`/orders/${orderId}`);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -54,7 +54,7 @@ export const orderService = {
    */
   async getOrderByNumber(orderNumber) {
     try {
-      const response = await axios.get(`/api/orders/number/${orderNumber}`);
+      const response = await axios.get(`/orders/number/${orderNumber}`);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -70,7 +70,7 @@ export const orderService = {
    */
   async updateOrderStatus(orderId, status, note = '') {
     try {
-      const response = await axios.patch(`/api/orders/${orderId}/status`, {
+      const response = await axios.patch(`/orders/${orderId}/status`, {
         status,
         note
       });
@@ -88,7 +88,7 @@ export const orderService = {
    */
   async cancelOrder(orderId, reason = '') {
     try {
-      const response = await axios.patch(`/api/orders/${orderId}/cancel`, {
+      const response = await axios.patch(`/orders/${orderId}/cancel`, {
         reason
       });
       return response.data;
@@ -104,7 +104,7 @@ export const orderService = {
    */
   async getAllOrders(params = {}) {
     try {
-      const response = await axios.get('/api/orders/all', { params });
+      const response = await axios.get('/orders/all', { params });
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -118,7 +118,7 @@ export const orderService = {
    */
   async getOrderAnalytics(params = {}) {
     try {
-      const response = await axios.get('/api/orders/analytics', { params });
+      const response = await axios.get('/orders/analytics', { params });
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -132,7 +132,7 @@ export const orderService = {
    */
   async getOrderInsights(dateRange = 30) {
     try {
-      const response = await axios.get('/api/orders/insights', {
+      const response = await axios.get('/orders/insights', {
         params: { dateRange }
       });
       return response.data;
@@ -148,7 +148,7 @@ export const orderService = {
    */
   async searchOrders(searchParams) {
     try {
-      const response = await axios.get('/api/orders/search', {
+      const response = await axios.get('/orders/search', {
         params: searchParams
       });
       return response.data;
@@ -165,7 +165,7 @@ export const orderService = {
    */
   async getOrdersByStatus(status, params = {}) {
     try {
-      const response = await axios.get('/api/orders/my', {
+      const response = await axios.get('/orders/my', {
         params: { status, ...params }
       });
       return response.data;
@@ -180,7 +180,7 @@ export const orderService = {
    */
   async getOrderStatistics() {
     try {
-      const response = await axios.get('/api/orders/statistics');
+      const response = await axios.get('/orders/statistics');
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -194,7 +194,7 @@ export const orderService = {
    */
   async downloadOrderInvoice(orderId) {
     try {
-      const response = await axios.get(`/api/orders/${orderId}/invoice`, {
+      const response = await axios.get(`/orders/${orderId}/invoice`, {
         responseType: 'blob'
       });
       return response.data;
@@ -210,7 +210,7 @@ export const orderService = {
    */
   async getOrderStatusHistory(orderId) {
     try {
-      const response = await axios.get(`/api/orders/${orderId}/status-history`);
+      const response = await axios.get(`/orders/${orderId}/status-history`);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -225,7 +225,7 @@ export const orderService = {
    */
   async addOrderReview(orderId, reviewData) {
     try {
-      const response = await axios.post(`/api/orders/${orderId}/review`, reviewData);
+      const response = await axios.post(`/orders/${orderId}/review`, reviewData);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -240,7 +240,7 @@ export const orderService = {
    */
   async requestRefund(orderId, refundData) {
     try {
-      const response = await axios.post(`/api/orders/${orderId}/refund`, refundData);
+      const response = await axios.post(`/orders/${orderId}/refund`, refundData);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -254,7 +254,7 @@ export const orderService = {
    */
   async trackOrder(orderId) {
     try {
-      const response = await axios.get(`/api/orders/${orderId}/track`);
+      const response = await axios.get(`/orders/${orderId}/track`);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -268,7 +268,7 @@ export const orderService = {
    */
   async getDeliveryEstimation(deliveryAddress) {
     try {
-      const response = await axios.post('/api/orders/delivery-estimation', deliveryAddress);
+      const response = await axios.post('/orders/delivery-estimation', deliveryAddress);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -282,7 +282,7 @@ export const orderService = {
    */
   async validateOrder(orderData) {
     try {
-      const response = await axios.post('/api/orders/validate', orderData);
+      const response = await axios.post('/orders/validate', orderData);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -297,7 +297,7 @@ export const orderService = {
    */
   async getOrderSummary(items, deliveryAddress) {
     try {
-      const response = await axios.post('/api/orders/summary', {
+      const response = await axios.post('/orders/summary', {
         items,
         deliveryAddress
       });
@@ -314,7 +314,7 @@ export const orderService = {
    */
   async exportOrders(params = {}) {
     try {
-      const response = await axios.get('/api/orders/export', { 
+      const response = await axios.get('/orders/export', { 
         params,
         responseType: 'blob'
       });
@@ -353,7 +353,7 @@ export const orderService = {
    */
   async getRecentActivity(limit = 10) {
     try {
-      const response = await axios.get('/api/orders/recent-activity', { 
+      const response = await axios.get('/orders/recent-activity', { 
         params: { limit }
       });
       return response.data;
@@ -370,7 +370,7 @@ export const orderService = {
    */
   async bulkUpdateOrders(orderIds, updateData) {
     try {
-      const response = await axios.patch('/api/orders/bulk-update', {
+      const response = await axios.patch('/orders/bulk-update', {
         orderIds,
         ...updateData
       });
@@ -387,7 +387,7 @@ export const orderService = {
    */
   async getDeliveryTracking(orderId) {
     try {
-      const response = await axios.get(`/api/orders/${orderId}/tracking`);
+      const response = await axios.get(`/orders/${orderId}/tracking`);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -402,7 +402,7 @@ export const orderService = {
    */
   async addOrderNote(orderId, note) {
     try {
-      const response = await axios.post(`/api/orders/${orderId}/notes`, { note });
+      const response = await axios.post(`/orders/${orderId}/notes`, { note });
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -416,7 +416,7 @@ export const orderService = {
    */
   async getOrderAlerts(params = {}) {
     try {
-      const response = await axios.get('/api/orders/alerts', { params });
+      const response = await axios.get('/orders/alerts', { params });
       return response.data;
     } catch (error) {
       throw this.handleError(error);

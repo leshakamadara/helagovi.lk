@@ -32,15 +32,78 @@ const BuyerOrders = () => {
     totalOrders: 0
   })
   const [refreshing, setRefreshing] = useState(false)
+  const [orderStats, setOrderStats] = useState({
+    all: 0,
+    pending: 0,
+    confirmed: 0,
+    preparing: 0,
+    shipped: 0,
+    delivered: 0,
+    cancelled: 0
+  })
 
   useEffect(() => {
     fetchOrders()
-  }, [filter, pagination.currentPage])
+    fetchOrderStats()
+  }, []) // Remove filter and pagination.currentPage dependencies for stats
+
+  useEffect(() => {
+    fetchOrders()
+  }, [filter, pagination.currentPage]) // Keep this for order fetching
+
+  const fetchOrderStats = async () => {
+    try {
+      // Fetch all orders with a large limit to get accurate status counts
+      const response = await orderService.getMyOrders({ limit: 1000 }) // Large limit to get all orders
+      if (response.success && response.data.orders) {
+        const counts = {
+          all: response.data.pagination.totalOrders || 0,
+          pending: 0,
+          confirmed: 0,
+          preparing: 0,
+          shipped: 0,
+          delivered: 0,
+          cancelled: 0
+        }
+        
+        // Count orders by status from all fetched orders
+        response.data.orders.forEach(order => {
+          if (counts[order.status] !== undefined) {
+            counts[order.status]++
+          }
+        })
+        
+        setOrderStats(counts)
+      }
+    } catch (error) {
+      // If API call fails, fall back to current page calculation
+      console.warn('Failed to fetch order statistics, using current page counts')
+      const currentPageCounts = {
+        all: pagination.totalOrders,
+        pending: 0,
+        confirmed: 0,
+        preparing: 0,
+        shipped: 0,
+        delivered: 0,
+        cancelled: 0
+      }
+      
+      orders.forEach(order => {
+        if (currentPageCounts[order.status] !== undefined) {
+          currentPageCounts[order.status]++
+        }
+      })
+      
+      setOrderStats(currentPageCounts)
+    }
+  }
 
   const fetchOrders = async (refresh = false) => {
     try {
       if (refresh) {
         setRefreshing(true)
+        // Refresh stats when manually refreshing
+        await fetchOrderStats()
       } else {
         setLoading(true)
       }
@@ -154,29 +217,6 @@ const BuyerOrders = () => {
     })
   }
 
-  const getStatusCounts = () => {
-    // This would ideally come from the API, but we'll calculate from current orders
-    const counts = {
-      all: pagination.totalOrders,
-      pending: 0,
-      confirmed: 0,
-      preparing: 0,
-      shipped: 0,
-      delivered: 0,
-      cancelled: 0
-    }
-    
-    orders.forEach(order => {
-      if (counts[order.status] !== undefined) {
-        counts[order.status]++
-      }
-    })
-    
-    return counts
-  }
-
-  const statusCounts = getStatusCounts()
-
   if (loading && !refreshing) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -207,19 +247,22 @@ const BuyerOrders = () => {
       </div>
 
       <div className="mb-8">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
             <H1 className="text-gray-900">My Orders</H1>
             <P className="text-gray-600">Track and manage your orders</P>
           </div>
           
           <button
-            onClick={() => fetchOrders(true)}
+            onClick={() => {
+              fetchOrders(true)
+              fetchOrderStats()
+            }}
             disabled={refreshing}
-            className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            className="flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 w-full sm:w-auto"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            {refreshing ? 'Refreshing...' : 'Refresh'}
+            <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
           </button>
         </div>
       </div>
@@ -245,29 +288,31 @@ const BuyerOrders = () => {
       {/* Filter Tabs */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
         <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
-            {[
-              { id: 'all', label: 'All Orders', count: statusCounts.all },
-              { id: 'pending', label: 'Pending', count: statusCounts.pending },
-              { id: 'confirmed', label: 'Confirmed', count: statusCounts.confirmed },
-              { id: 'shipped', label: 'Shipped', count: statusCounts.shipped },
-              { id: 'delivered', label: 'Delivered', count: statusCounts.delivered },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => handleFilterChange(tab.id)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                  filter === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                {tab.label}
-                <span className="ml-2 bg-gray-100 text-gray-900 py-0.5 px-2.5 rounded-full text-xs">
-                  {tab.count}
-                </span>
-              </button>
-            ))}
+          <nav className="px-4 sm:px-6 overflow-x-auto" aria-label="Tabs">
+            <div className="flex space-x-4 sm:space-x-8 min-w-max">
+              {[
+                { id: 'all', label: 'All Orders', count: orderStats.all },
+                { id: 'pending', label: 'Pending', count: orderStats.pending },
+                { id: 'confirmed', label: 'Confirmed', count: orderStats.confirmed },
+                { id: 'shipped', label: 'Shipped', count: orderStats.shipped },
+                { id: 'delivered', label: 'Delivered', count: orderStats.delivered },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => handleFilterChange(tab.id)}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                    filter === tab.id
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  {tab.label}
+                  <span className="ml-2 bg-gray-100 text-gray-900 py-0.5 px-2.5 rounded-full text-xs">
+                    {tab.count}
+                  </span>
+                </button>
+              ))}
+            </div>
           </nav>
         </div>
       </div>
@@ -277,9 +322,9 @@ const BuyerOrders = () => {
         {orders.length > 0 ? (
           orders.map((order) => (
             <div key={order._id} className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
+              <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                     <div>
                       <h3 className="text-lg font-medium text-gray-900">#{order.orderNumber}</h3>
                       <p className="text-sm text-gray-500">
@@ -288,28 +333,28 @@ const BuyerOrders = () => {
                     </div>
                     {getStatusBadge(order.status)}
                   </div>
-                  <div className="text-right">
+                  <div className="text-left sm:text-right">
                     <p className="text-lg font-semibold text-gray-900">{formatCurrency(order.total)}</p>
                     <p className="text-sm text-gray-500">{order.items.length} item(s)</p>
                   </div>
                 </div>
               </div>
 
-              <div className="px-6 py-4">
+              <div className="px-4 sm:px-6 py-4">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Order Items */}
                   <div className="lg:col-span-2">
                     <h4 className="font-medium text-gray-900 mb-3">Items</h4>
                     <div className="space-y-3">
                       {order.items.map((item, index) => (
-                        <div key={index} className="flex items-center space-x-4">
+                        <div key={index} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3 bg-gray-50 rounded-lg">
                           <img
                             src={item.productSnapshot?.image?.url || 'https://via.placeholder.com/60x60?text=Product'}
                             alt={item.productSnapshot?.title || 'Product'}
-                            className="h-16 w-16 rounded-lg object-cover"
+                            className="h-16 w-16 rounded-lg object-cover flex-shrink-0 mx-auto sm:mx-0"
                             onError={(e) => e.target.src = 'https://via.placeholder.com/60x60?text=Product'}
                           />
-                          <div className="flex-1">
+                          <div className="flex-1 text-center sm:text-left">
                             <h5 className="font-medium text-gray-900">
                               {item.productSnapshot?.title || 'Unknown Product'}
                             </h5>
@@ -322,7 +367,7 @@ const BuyerOrders = () => {
                               </p>
                             )}
                           </div>
-                          <div className="text-right">
+                          <div className="text-center sm:text-right">
                             <p className="font-medium text-gray-900">
                               {formatCurrency(item.subtotal)}
                             </p>
@@ -335,10 +380,10 @@ const BuyerOrders = () => {
                   {/* Order Details */}
                   <div>
                     <h4 className="font-medium text-gray-900 mb-3">Details</h4>
-                    <div className="space-y-2 text-sm">
+                    <div className="space-y-3 text-sm bg-gray-50 p-4 rounded-lg">
                       {order.deliveryAddress && (
-                        <div className="flex items-center text-gray-600">
-                          <MapPin className="h-4 w-4 mr-2" />
+                        <div className="flex items-start gap-2 text-gray-600">
+                          <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
                           <span>
                             {order.deliveryAddress.city}, {order.deliveryAddress.district}
                           </span>
@@ -346,22 +391,22 @@ const BuyerOrders = () => {
                       )}
                       
                       {order.expectedDeliveryDate && (
-                        <div className="flex items-center text-gray-600">
-                          <Calendar className="h-4 w-4 mr-2" />
+                        <div className="flex items-start gap-2 text-gray-600">
+                          <Calendar className="h-4 w-4 mt-0.5 flex-shrink-0" />
                           <span>Expected: {formatDate(order.expectedDeliveryDate)}</span>
                         </div>
                       )}
                       
                       {order.actualDeliveryDate && (
-                        <div className="flex items-center text-gray-600">
-                          <CheckCircle className="h-4 w-4 mr-2" />
+                        <div className="flex items-start gap-2 text-gray-600">
+                          <CheckCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
                           <span>Delivered: {formatDate(order.actualDeliveryDate)}</span>
                         </div>
                       )}
                       
                       {order.trackingNumber && (
-                        <div className="flex items-center text-gray-600">
-                          <Truck className="h-4 w-4 mr-2" />
+                        <div className="flex items-start gap-2 text-gray-600">
+                          <Truck className="h-4 w-4 mt-0.5 flex-shrink-0" />
                           <span>Tracking: {order.trackingNumber}</span>
                         </div>
                       )}
@@ -370,34 +415,34 @@ const BuyerOrders = () => {
                 </div>
               </div>
 
-              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-                <div className="flex justify-between items-center">
+              <div className="px-4 sm:px-6 py-4 bg-gray-50 border-t border-gray-200">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                   <button 
                     onClick={() => navigate(`/orders/${order._id}`)}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center justify-center sm:justify-start"
                   >
-                    <Eye className="h-4 w-4 inline mr-1" />
+                    <Eye className="h-4 w-4 mr-1" />
                     View Details
                   </button>
                   
-                  <div className="flex space-x-3">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                     {(order.status === 'pending' || order.status === 'confirmed') && (
                       <button 
                         onClick={() => handleCancelOrder(order._id)}
-                        className="text-red-600 hover:text-red-800 text-sm font-medium"
+                        className="text-red-600 hover:text-red-800 text-sm font-medium px-3 py-1 border border-red-200 rounded hover:bg-red-50"
                       >
                         Cancel Order
                       </button>
                     )}
                     
                     {order.status === 'delivered' && order.canBeReviewed && (
-                      <button className="text-green-600 hover:text-green-800 text-sm font-medium">
+                      <button className="text-green-600 hover:text-green-800 text-sm font-medium px-3 py-1 border border-green-200 rounded hover:bg-green-50">
                         Write Review
                       </button>
                     )}
                     
                     {order.trackingNumber && (
-                      <button className="text-purple-600 hover:text-purple-800 text-sm font-medium">
+                      <button className="text-purple-600 hover:text-purple-800 text-sm font-medium px-3 py-1 border border-purple-200 rounded hover:bg-purple-50">
                         Track Order
                       </button>
                     )}
@@ -430,66 +475,75 @@ const BuyerOrders = () => {
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (
-        <div className="mt-8 flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 rounded-lg">
-          <div className="flex flex-1 justify-between sm:hidden">
-            <button
-              onClick={() => handlePageChange(pagination.currentPage - 1)}
-              disabled={!pagination.hasPrevPage}
-              className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <button
-              onClick={() => handlePageChange(pagination.currentPage + 1)}
-              disabled={!pagination.hasNextPage}
-              className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
-          
-          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm text-gray-700">
-                Showing page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalOrders} total orders)
-              </p>
-            </div>
-            
-            <div>
-              <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+        <div className="mt-8 bg-white border border-gray-200 rounded-lg shadow-sm">
+          <div className="px-4 py-3 sm:px-6">
+            {/* Mobile Pagination */}
+            <div className="flex flex-col gap-3 sm:hidden">
+              <div className="text-center text-sm text-gray-700">
+                Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalOrders} total orders)
+              </div>
+              <div className="flex justify-between gap-2">
                 <button
                   onClick={() => handlePageChange(pagination.currentPage - 1)}
                   disabled={!pagination.hasPrevPage}
-                  className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50"
+                  className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Previous
                 </button>
-                
-                {Array.from({ length: Math.min(pagination.totalPages, 5) }, (_, i) => {
-                  const page = i + 1;
-                  return (
-                    <button
-                      key={page}
-                      onClick={() => handlePageChange(page)}
-                      className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-                        page === pagination.currentPage
-                          ? 'bg-blue-600 text-white'
-                          : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  );
-                })}
-                
                 <button
                   onClick={() => handlePageChange(pagination.currentPage + 1)}
                   disabled={!pagination.hasNextPage}
-                  className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50"
+                  className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
                 </button>
-              </nav>
+              </div>
+            </div>
+            
+            {/* Desktop Pagination */}
+            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Showing page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalOrders} total orders)
+                </p>
+              </div>
+              
+              <div>
+                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                  <button
+                    onClick={() => handlePageChange(pagination.currentPage - 1)}
+                    disabled={!pagination.hasPrevPage}
+                    className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  
+                  {Array.from({ length: Math.min(pagination.totalPages, 5) }, (_, i) => {
+                    const page = i + 1;
+                    return (
+                      <button
+                        key={page}
+                        onClick={() => handlePageChange(page)}
+                        className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                          page === pagination.currentPage
+                            ? 'bg-blue-600 text-white'
+                            : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    );
+                  })}
+                  
+                  <button
+                    onClick={() => handlePageChange(pagination.currentPage + 1)}
+                    disabled={!pagination.hasNextPage}
+                    className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </nav>
+              </div>
             </div>
           </div>
         </div>

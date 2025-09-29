@@ -515,7 +515,7 @@ const Navbar = () => {
                     <Menu className="h-6 w-6" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-[300px]">
+                <SheetContent side="right" className="w-[320px]">
                   <SheetHeader>
                     <SheetTitle className="flex items-center gap-2">
                       <img 
@@ -527,6 +527,31 @@ const Navbar = () => {
                     </SheetTitle>
                   </SheetHeader>
                   <div className="mt-6 space-y-4">
+                    {/* Cart for buyers on mobile */}
+                    {isAuthenticated && user.role === 'buyer' && (
+                      <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 mb-2">
+                        <div className="flex items-center gap-2">
+                          <ShoppingCart className="h-5 w-5 text-emerald-600" />
+                          <span className="font-medium">Cart</span>
+                          {itemCount > 0 && (
+                            <span className="ml-2 bg-emerald-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                              {itemCount}
+                            </span>
+                          )}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="px-2 py-1"
+                          onClick={() => {
+                            setIsOpen(false)
+                            navigate('/cart')
+                          }}
+                        >
+                          View
+                        </Button>
+                      </div>
+                    )}
                     {/* Mobile Navigation Items */}
                     <div className="space-y-2">
                       {navigationItems.map((item) => (
@@ -540,52 +565,67 @@ const Navbar = () => {
                         </Link>
                       ))}
                     </div>
-                    
                     <hr className="border-gray-200" />
-                    
-                    {isAuthenticated ? (
-                      (user.role === 'buyer' || user.role === 'farmer') ? (
-                        <>
-                          <div className="space-y-2">
-                            {(user.role === 'buyer' ? getBuyerMenuItems() : getFarmerMenuItems()).map((item) => (
-                              <Link
-                                key={item.to}
-                                to={item.to}
-                                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-                                onClick={() => setIsOpen(false)}
-                              >
-                                <item.icon className="h-5 w-5 text-emerald-600" />
-                                <span className="font-medium">{item.label}</span>
-                              </Link>
-                            ))}
-                          </div>
-                          <hr className="border-gray-200" />
-                          <Button
-                            onClick={() => {
-                              handleLogout();
-                              setIsOpen(false);
-                            }}
-                            variant="outline"
-                            className="w-full justify-start gap-3"
-                          >
-                            <LogOut className="h-5 w-5" />
-                            Logout
-                          </Button>
-                        </>
-                      ) : (
+                    {/* Buyer options directly in navigation for mobile */}
+                    {isAuthenticated && user.role === 'buyer' && (
+                      <div className="space-y-2">
+                        {/* Profile section */}
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={user.avatar} />
+                            <AvatarFallback>{getUserInitials()}</AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm font-medium text-gray-700">
+                            {user.firstName || user.name || 'User'}
+                          </span>
+                        </div>
+                        {/* Buyer menu items */}
+                        {getBuyerMenuItems().map((item, index) => (
+                          item.divider ? (
+                            <hr key={`divider-${index}`} className="border-gray-200 my-2" />
+                          ) : (
+                            <Link
+                              key={item.to}
+                              to={item.to}
+                              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                              onClick={() => setIsOpen(false)}
+                            >
+                              <item.icon className="h-5 w-5 text-emerald-600" />
+                              <span className="font-medium">{item.label}</span>
+                            </Link>
+                          )
+                        ))}
                         <Button
                           onClick={() => {
                             handleLogout();
                             setIsOpen(false);
                           }}
                           variant="outline"
-                          className="w-full justify-start gap-3"
+                          className="w-full justify-start gap-3 mt-2"
                         >
                           <LogOut className="h-5 w-5" />
                           Logout
                         </Button>
-                      )
-                    ) : (
+                      </div>
+                    )}
+                    {/* Farmer mobile menu (unchanged) */}
+                    {isAuthenticated && user.role === 'farmer' && (
+                      <div className="space-y-2">
+                        {getFarmerMenuItems().map((item) => (
+                          <Link
+                            key={item.to}
+                            to={item.to}
+                            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                            onClick={() => setIsOpen(false)}
+                          >
+                            <item.icon className="h-5 w-5 text-emerald-600" />
+                            <span className="font-medium">{item.label}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                    {/* Guest users */}
+                    {!isAuthenticated && (
                       <div className="space-y-3">
                         <Button
                           asChild

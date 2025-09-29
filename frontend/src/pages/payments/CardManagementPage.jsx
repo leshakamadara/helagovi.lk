@@ -147,18 +147,19 @@ export default function CardManagerPage() {
       </div>
 
       <div className="mb-8">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
             <H1 className="text-gray-900">Payment Cards</H1>
             <P className="text-gray-600">Manage your saved payment methods securely and conveniently</P>
           </div>
           
           <button
-            className="bg-black text-white hover:bg-gray-800 gap-2 shadow-lg px-4 py-2 rounded-lg flex items-center"
+            className="bg-black text-white hover:bg-gray-800 gap-2 shadow-lg px-4 py-2 rounded-lg flex items-center justify-center w-full sm:w-auto transition-colors duration-200"
             onClick={() => handleOpenModal()}
             disabled={isLoading}
           >
-            <Plus className="w-5 h-5" /> {isLoading ? 'Processing...' : 'Add Card'}
+            <Plus className="w-5 h-5" /> 
+            <span className="font-medium">{isLoading ? 'Processing...' : 'Add Card'}</span>
           </button>
         </div>
       </div>
@@ -172,8 +173,12 @@ export default function CardManagerPage() {
             <P className="text-gray-500 mb-6">
               Add your first payment card to get started with secure checkout
             </P>
-            <button className="bg-black text-white hover:bg-gray-800 gap-2 px-4 py-2 rounded-lg flex items-center mx-auto" onClick={() => handleOpenModal()}>
-              <Plus className="w-5 h-5 mr-2" /> Add Your First Card
+            <button 
+              className="bg-black text-white hover:bg-gray-800 gap-2 px-6 py-3 rounded-lg flex items-center justify-center mx-auto w-full sm:w-auto transition-colors duration-200"
+              onClick={() => handleOpenModal()}
+            >
+              <Plus className="w-5 h-5 mr-2" /> 
+              <span className="font-medium">Add Your First Card</span>
             </button>
           </div>
         )}

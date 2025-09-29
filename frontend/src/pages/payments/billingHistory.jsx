@@ -4,6 +4,7 @@ import OrderSummary from '../../components/payOrderSummary';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../lib/axios'; // Assumes Axios instance is set up here
+import { orderService } from '../../services/orderService';
 
 const PaymentPage = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -120,20 +121,71 @@ const PaymentPage = () => {
       };
 
       // ✅ PayHere Events
-      window.payhere.onCompleted = function (orderId) {
+      window.payhere.onCompleted = async function (orderId) {
         console.log('Payment completed:', orderId);
-        setIsLoading(false);
-        navigate('/success', { 
-          state: { 
-            orderId, 
-            order,
-            transactionDetails: {
-              paymentMethod: 'PayHere',
-              transactionId: orderId,
-              status: 'completed'
-            }
-          } 
-        });
+        
+        try {
+          // Prepare order data for backend
+          const orderData = {
+            items: orderData.items.map(item => ({
+              productId: item.productId,
+              quantity: item.quantity
+            })),
+            deliveryAddress: {
+              firstName: orderData.deliveryInfo.firstName,
+              lastName: orderData.deliveryInfo.lastName,
+              email: orderData.deliveryInfo.email,
+              phone: orderData.deliveryInfo.phone,
+              addressLine1: orderData.deliveryInfo.addressLine1,
+              addressLine2: orderData.deliveryInfo.addressLine2 || '',
+              city: orderData.deliveryInfo.city,
+              district: orderData.deliveryInfo.district,
+              country: 'Sri Lanka'
+            },
+            paymentMethod: 'payhere',
+            notes: orderData.deliveryInfo.notes || ''
+          };
+
+          console.log('Creating order with data:', orderData);
+          
+          // Create order in database
+          const orderResponse = await orderService.createOrder(orderData);
+          const createdOrder = orderResponse.data.order;
+          
+          console.log('Order created successfully:', createdOrder);
+          
+          setIsLoading(false);
+          navigate('/success', { 
+            state: { 
+              orderId, 
+              order: {
+                ...order,
+                orderNumber: createdOrder.orderNumber,
+                id: createdOrder._id
+              },
+              transactionDetails: {
+                paymentMethod: 'PayHere',
+                transactionId: orderId,
+                status: 'completed'
+              }
+            } 
+          });
+        } catch (orderError) {
+          console.error('Failed to create order:', orderError);
+          setIsLoading(false);
+          alert('Payment was successful, but there was an issue creating your order. Please contact support with transaction ID: ' + orderId);
+          navigate('/success', { 
+            state: { 
+              orderId, 
+              order,
+              transactionDetails: {
+                paymentMethod: 'PayHere',
+                transactionId: orderId,
+                status: 'completed'
+              }
+            } 
+          });
+        }
       };
 
       window.payhere.onDismissed = function () {
