@@ -240,6 +240,14 @@ export async function createPayment(req, res) {
       return res.status(500).json({ error: "Merchant credentials not set" });
     }
 
+    console.log("PayHere Environment Check:", {
+      NODE_ENV: process.env.NODE_ENV,
+      IS_PRODUCTION,
+      MERCHANT_ID: MERCHANT_ID.substring(0, 4) + "***", // Log first 4 chars only for security
+      PAYHERE_BASE_URL,
+      PAYHERE_MERCHANT_BASE_URL
+    });
+
     const { order_id, amount, currency } = req.body;
 
     if (!order_id || !amount || !currency) {
