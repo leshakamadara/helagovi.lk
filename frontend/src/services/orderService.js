@@ -1,4 +1,4 @@
-import axios from '../lib/axios';
+import { api as axios } from '../lib/axios';
 
 /**
  * Order API Service
@@ -180,7 +180,7 @@ export const orderService = {
    */
   async getOrderStatistics() {
     try {
-      const response = await axios.get('/orders/statistics');
+      const response = await axios.get('/orders/stats');
       return response.data;
     } catch (error) {
       throw this.handleError(error);

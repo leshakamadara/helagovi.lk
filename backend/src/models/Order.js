@@ -370,7 +370,32 @@ orderSchema.post('save', async function(doc) {
 orderSchema.statics.findByBuyer = function(buyerId, status = null) {
   const query = { buyer: buyerId };
   if (status) query.status = status;
-  return this.find(query)
+  
+  // Add filter to exclude test orders
+  const testOrderFilter = {
+    $and: [
+      // Exclude orders from the future (test data)
+      { createdAt: { $lte: new Date() } },
+      // Exclude orders with test buyer names
+      {
+        $nor: [
+          { 'buyer.firstName': { $regex: '^test$', $options: 'i' } },
+          { 'buyer.firstName': { $regex: '^dummy$', $options: 'i' } },
+          { 'buyer.firstName': { $regex: '^sample$', $options: 'i' } },
+          { 'buyer.lastName': { $regex: '^test$', $options: 'i' } },
+          { 'buyer.lastName': { $regex: '^dummy$', $options: 'i' } },
+          { 'buyer.lastName': { $regex: '^sample$', $options: 'i' } }
+        ]
+      },
+      // Exclude orders with suspicious order numbers (future timestamps)
+      { orderNumber: { $not: { $regex: '1758640665029' } } }
+    ]
+  };
+  
+  // Combine filters
+  const finalQuery = { ...query, ...testOrderFilter };
+  
+  return this.find(finalQuery)
     .populate('buyer', 'firstName lastName email phone')
     .populate('farmers', 'firstName lastName email phone')
     .populate('items.product', 'title images unit')
@@ -380,7 +405,32 @@ orderSchema.statics.findByBuyer = function(buyerId, status = null) {
 orderSchema.statics.findByFarmer = function(farmerId, status = null) {
   const query = { farmers: farmerId };
   if (status) query.status = status;
-  return this.find(query)
+  
+  // Add filter to exclude test orders
+  const testOrderFilter = {
+    $and: [
+      // Exclude orders from the future (test data)
+      { createdAt: { $lte: new Date() } },
+      // Exclude orders with test buyer names
+      {
+        $nor: [
+          { 'buyer.firstName': { $regex: '^test$', $options: 'i' } },
+          { 'buyer.firstName': { $regex: '^dummy$', $options: 'i' } },
+          { 'buyer.firstName': { $regex: '^sample$', $options: 'i' } },
+          { 'buyer.lastName': { $regex: '^test$', $options: 'i' } },
+          { 'buyer.lastName': { $regex: '^dummy$', $options: 'i' } },
+          { 'buyer.lastName': { $regex: '^sample$', $options: 'i' } }
+        ]
+      },
+      // Exclude orders with suspicious order numbers (future timestamps)
+      { orderNumber: { $not: { $regex: '1758640665029' } } }
+    ]
+  };
+  
+  // Combine filters
+  const finalQuery = { ...query, ...testOrderFilter };
+  
+  return this.find(finalQuery)
     .populate('buyer', 'firstName lastName email phone')
     .populate('farmers', 'firstName lastName email phone')
     .populate('items.product', 'title images unit')

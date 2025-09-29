@@ -4,14 +4,17 @@ import User from '../models/User.js';
 import mongoose from 'mongoose';
 
 /**
- * Create a new order
+ * Crexport const getMyOrders = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userRole = req.user.role; a new order
  */
 export const createOrder = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    const { items, deliveryAddress, paymentMethod, notes } = req.body;
+    const { items, deliveryAddress, paymentMethod, paymentStatus, transactionId, notes } = req.body;
     const buyerId = req.user.id;
 
     // Validate required fields
@@ -87,15 +90,11 @@ export const createOrder = async (req, res) => {
     const subtotal = totalAmount;
     const total = subtotal + estimatedDeliveryFee;
 
-    // Generate order number
-    const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
-
     // Get unique farmers from items
     const farmerIds = [...new Set(products.map(p => p.farmer._id))];
 
     // Create order object
     const orderData = {
-      orderNumber,
       buyer: buyerId,
       farmers: farmerIds,
       items: processedItems,
@@ -105,8 +104,10 @@ export const createOrder = async (req, res) => {
       deliveryAddress,
       paymentInfo: {
         method: paymentMethod || 'cash_on_delivery',
-        status: 'pending',
-        amount: total
+        status: paymentStatus || 'pending',
+        transactionId: transactionId || undefined,
+        amount: total,
+        paidAt: paymentStatus === 'paid' ? new Date() : undefined
       },
       notes,
       status: 'pending',
@@ -165,7 +166,7 @@ export const createOrder = async (req, res) => {
  */
 export const getMyOrders = async (req, res) => {
   try {
-    const userId = req.user.id;
+  const userId = req.user.id;
     const userRole = req.user.role;
     const { status, page = 1, limit = 10 } = req.query;
 
@@ -234,9 +235,7 @@ export const getOrderById = async (req, res) => {
   try {
     const { orderId } = req.params;
     const userId = req.user.id;
-    const userRole = req.user.role;
-
-    const order = await Order.findById(orderId)
+    const userRole = req.user.role;    const order = await Order.findById(orderId)
       .populate('buyer', 'firstName lastName email phone')
       .populate('farmers', 'firstName lastName email phone')
       .populate('items.product', 'title images unit farmer')
@@ -285,9 +284,7 @@ export const getOrderByNumber = async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const userId = req.user.id;
-    const userRole = req.user.role;
-
-    const order = await Order.findByOrderNumber(orderNumber);
+    const userRole = req.user.role;    const order = await Order.findByOrderNumber(orderNumber);
 
     if (!order) {
       return res.status(404).json({
@@ -333,9 +330,7 @@ export const updateOrderStatus = async (req, res) => {
     const { orderId } = req.params;
     const { status, note } = req.body;
     const userId = req.user.id;
-    const userRole = req.user.role;
-
-    const order = await Order.findById(orderId)
+    const userRole = req.user.role;    const order = await Order.findById(orderId)
       .populate('buyer', 'firstName lastName')
       .populate('farmers', 'firstName lastName');
 
@@ -422,9 +417,7 @@ export const cancelOrder = async (req, res) => {
     const { orderId } = req.params;
     const { reason } = req.body;
     const userId = req.user.id;
-    const userRole = req.user.role;
-
-    const order = await Order.findById(orderId);
+    const userRole = req.user.role;    const order = await Order.findById(orderId);
 
     if (!order) {
       return res.status(404).json({

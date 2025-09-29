@@ -16,10 +16,27 @@ import {
   Phone,
   Mail,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Download,
+  Search,
+  Filter,
+  DollarSign,
+  TrendingUp,
+  MessageCircle,
+  Star,
+  FileText,
+  CreditCard,
+  ArrowUpDown
 } from 'lucide-react'
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb'
 import { H1, H2, H3, P, Muted, Large } from '../../components/ui/typography'
+import { toast } from 'sonner'
+import { Button } from '../../components/ui/button'
+import { Input } from '../../components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
+import { Badge } from '../../components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs'
 
 const FarmerOrders = () => {
   const { user } = useAuth()
@@ -43,6 +60,16 @@ const FarmerOrders = () => {
     delivered: 0,
     cancelled: 0
   })
+  const [searchTerm, setSearchTerm] = useState('')
+  const [sortBy, setSortBy] = useState('createdAt')
+  const [sortOrder, setSortOrder] = useState('desc')
+  const [analytics, setAnalytics] = useState({
+    totalRevenue: 0,
+    totalOrders: 0,
+    pendingOrders: 0,
+    averageOrderValue: 0
+  })
+  const [activeTab, setActiveTab] = useState('orders')
 
   useEffect(() => {
     fetchOrders()
@@ -51,52 +78,81 @@ const FarmerOrders = () => {
 
   useEffect(() => {
     fetchOrders()
-  }, [filter, pagination.currentPage])
+  }, [filter, pagination.currentPage, searchTerm, sortBy, sortOrder])
 
   const fetchOrderStats = async () => {
     try {
-      // Fetch all orders with a large limit to get accurate status counts
-      const response = await orderService.getMyOrders({ limit: 1000 }) // Large limit to get all orders
-      if (response.success && response.data.orders) {
-        const counts = {
-          all: response.data.pagination.totalOrders || 0,
-          pending: 0,
-          confirmed: 0,
-          preparing: 0,
-          shipped: 0,
-          delivered: 0,
-          cancelled: 0
-        }
+      const response = await orderService.getOrderStatistics();
+      if (response.success && response.data) {
+        const { statusCounts, revenue } = response.data;
+        setOrderStats({
+          all: statusCounts.all,
+          pending: statusCounts.pending,
+          confirmed: statusCounts.confirmed,
+          preparing: statusCounts.preparing,
+          shipped: statusCounts.shipped,
+          delivered: statusCounts.delivered,
+          cancelled: statusCounts.cancelled
+        });
         
-        // Count orders by status from all fetched orders
-        response.data.orders.forEach(order => {
-          if (counts[order.status] !== undefined) {
-            counts[order.status]++
-          }
-        })
-        
-        setOrderStats(counts)
+        // Update analytics with accurate data
+        setAnalytics(prev => ({
+          ...prev,
+          totalRevenue: revenue.total,
+          averageOrderValue: revenue.averageOrderValue
+        }));
+      } else {
+        console.warn('Failed to fetch order statistics: Invalid response', response);
       }
     } catch (error) {
-      // If API call fails, fall back to current page calculation
-      console.warn('Failed to fetch order statistics, using current page counts')
-      const currentPageCounts = {
-        all: pagination.totalOrders,
-        pending: 0,
-        confirmed: 0,
-        preparing: 0,
-        shipped: 0,
-        delivered: 0,
-        cancelled: 0
+      console.warn('Failed to fetch order statistics:', error);
+      // Don't show error to user, just log it since this is supplementary data
+    }
+  }
+
+  const fetchAnalytics = async () => {
+    // Farmers don't have access to analytics endpoint, so we'll calculate basic stats from their orders
+    try {
+      const response = await orderService.getMyOrders({ limit: 1000 })
+      if (response.success && response.data.orders) {
+        // Filter out test orders same as in fetchOrders
+        const validOrders = response.data.orders.filter(order => {
+          const orderDate = new Date(order.createdAt)
+          const now = new Date()
+          
+          // Exclude orders from the future (test data)
+          if (orderDate > now) {
+            return false
+          }
+          
+          // Exclude orders with test buyer names
+          const buyerName = `${order.buyer?.firstName || ''} ${order.buyer?.lastName || ''}`.toLowerCase()
+          if (buyerName.includes('test') || buyerName.includes('dummy') || buyerName.includes('sample')) {
+            return false
+          }
+          
+          // Exclude orders with suspicious order numbers (future timestamps)
+          if (order.orderNumber && order.orderNumber.includes('1758640665029')) {
+            return false
+          }
+          
+          return true
+        })
+        
+        const totalRevenue = validOrders.reduce((sum, order) => sum + order.total, 0)
+        const totalOrders = validOrders.length
+        const pendingOrders = validOrders.filter(order => order.status === 'pending').length
+        const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
+
+        setAnalytics({
+          totalRevenue,
+          totalOrders,
+          pendingOrders,
+          averageOrderValue
+        })
       }
-      
-      orders.forEach(order => {
-        if (currentPageCounts[order.status] !== undefined) {
-          currentPageCounts[order.status]++
-        }
-      })
-      
-      setOrderStats(currentPageCounts)
+    } catch (error) {
+      console.warn('Failed to calculate analytics from orders:', error)
     }
   }
 
@@ -104,7 +160,8 @@ const FarmerOrders = () => {
     try {
       if (refresh) {
         setRefreshing(true)
-        // Refresh stats when manually refreshing
+        // Refresh analytics when manually refreshing
+        await fetchAnalytics()
         await fetchOrderStats()
       } else {
         setLoading(true)
@@ -113,18 +170,49 @@ const FarmerOrders = () => {
 
       const params = {
         page: pagination.currentPage,
-        limit: 10
+        limit: 10,
+        sortBy,
+        sortOrder
       }
       
       if (filter !== 'all') {
         params.status = filter
       }
 
+      if (searchTerm) {
+        params.search = searchTerm
+      }
+
       const response = await orderService.getMyOrders(params)
       
       if (response.success) {
-        setOrders(response.data.orders)
+        // Filter out test orders (future dates, test buyer names, or specific patterns)
+        const filteredOrders = response.data.orders.filter(order => {
+          const orderDate = new Date(order.createdAt)
+          const now = new Date()
+          
+          // Exclude orders from the future (test data)
+          if (orderDate > now) {
+            return false
+          }
+          
+          // Exclude orders with test buyer names
+          const buyerName = `${order.buyer?.firstName || ''} ${order.buyer?.lastName || ''}`.toLowerCase()
+          if (buyerName.includes('test') || buyerName.includes('dummy') || buyerName.includes('sample')) {
+            return false
+          }
+          
+          // Exclude orders with suspicious order numbers (future timestamps)
+          if (order.orderNumber && order.orderNumber.includes('1758640665029')) {
+            return false
+          }
+          
+          return true
+        })
+        
+        setOrders(filteredOrders)
         setPagination(response.data.pagination)
+        // No longer calling fetchOrderStats here since it's called separately
       } else {
         setError(response.message || 'Failed to fetch orders')
       }
@@ -143,6 +231,31 @@ const FarmerOrders = () => {
   const handleFilterChange = (newFilter) => {
     setFilter(newFilter)
     setPagination(prev => ({ ...prev, currentPage: 1 }))
+  }
+
+  const handleSearch = (term) => {
+    setSearchTerm(term)
+    setPagination(prev => ({ ...prev, currentPage: 1 }))
+  }
+
+  const handleSort = (field, order) => {
+    setSortBy(field)
+    setSortOrder(order)
+    setPagination(prev => ({ ...prev, currentPage: 1 }))
+  }
+
+  const handleExportOrders = async () => {
+    try {
+      await orderService.exportOrders({
+        status: filter !== 'all' ? filter : undefined,
+        search: searchTerm || undefined,
+        sortBy,
+        sortOrder
+      })
+      toast.success('Orders exported successfully')
+    } catch (error) {
+      toast.error('Failed to export orders')
+    }
   }
 
   const handleStatusUpdate = async (orderId, newStatus) => {
@@ -178,6 +291,8 @@ const FarmerOrders = () => {
         return <Clock className="h-5 w-5 text-yellow-600" />
       case 'confirmed':
         return <CheckCircle className="h-5 w-5 text-blue-600" />
+      case 'preparing':
+        return <Package className="h-5 w-5 text-orange-600" />
       case 'shipped':
         return <Truck className="h-5 w-5 text-purple-600" />
       case 'delivered':
@@ -193,6 +308,7 @@ const FarmerOrders = () => {
     const statusColors = {
       pending: 'bg-yellow-100 text-yellow-800',
       confirmed: 'bg-blue-100 text-blue-800',
+      preparing: 'bg-orange-100 text-orange-800',
       shipped: 'bg-purple-100 text-purple-800',
       delivered: 'bg-green-100 text-green-800',
       cancelled: 'bg-red-100 text-red-800'
@@ -209,7 +325,8 @@ const FarmerOrders = () => {
   const getNextStatus = (currentStatus) => {
     const statusFlow = {
       pending: 'confirmed',
-      confirmed: 'shipped',
+      confirmed: 'preparing',
+      preparing: 'shipped',
       shipped: 'delivered'
     }
     return statusFlow[currentStatus]
@@ -218,7 +335,8 @@ const FarmerOrders = () => {
   const getStatusActionLabel = (currentStatus) => {
     const labels = {
       pending: 'Confirm Order',
-      confirmed: 'Mark as Shipped',
+      confirmed: 'Start Preparing',
+      preparing: 'Mark as Shipped',
       shipped: 'Mark as Delivered'
     }
     return labels[currentStatus]
@@ -251,7 +369,7 @@ const FarmerOrders = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <div className="max-w-7xl mx-auto pt-16 pb-6 px-4 sm:px-6 lg:px-8">
       {/* Breadcrumbs */}
       <div className="mb-6">
         <Breadcrumb>
@@ -272,19 +390,33 @@ const FarmerOrders = () => {
       </div>
 
       <div className="mb-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
             <H1 className="text-gray-900">Order Management</H1>
             <P className="text-gray-600">Manage orders for your products</P>
           </div>
-          <button
-            onClick={() => fetchOrders(true)}
-            disabled={refreshing}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
+          
+          <div className="flex gap-2">
+            <Button
+              onClick={handleExportOrders}
+              variant="outline"
+              size="sm"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+            <Button
+              onClick={() => {
+                fetchOrders(true)
+              }}
+              disabled={refreshing}
+              variant="outline"
+              size="sm"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -301,6 +433,57 @@ const FarmerOrders = () => {
         </div>
       )}
 
+      {/* Analytics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <TrendingUp className="h-6 w-6 text-blue-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+              <p className="text-2xl font-bold text-gray-900">{formatCurrency(analytics.totalRevenue || 0)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <ShoppingBag className="h-6 w-6 text-green-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Total Orders</p>
+              <p className="text-2xl font-bold text-gray-900">{analytics.totalOrders || 0}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-yellow-100 rounded-lg">
+              <Clock className="h-6 w-6 text-yellow-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Pending Orders</p>
+              <p className="text-2xl font-bold text-gray-900">{analytics.pendingOrders || 0}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <Package className="h-6 w-6 text-purple-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Avg. Order Value</p>
+              <p className="text-2xl font-bold text-gray-900">{formatCurrency(analytics.averageOrderValue || 0)}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Filter Tabs */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
         <div className="border-b border-gray-200">
@@ -309,6 +492,7 @@ const FarmerOrders = () => {
               { id: 'all', label: 'All Orders', count: orderStats.all },
               { id: 'pending', label: 'Pending', count: orderStats.pending },
               { id: 'confirmed', label: 'Confirmed', count: orderStats.confirmed },
+              { id: 'preparing', label: 'Preparing', count: orderStats.preparing },
               { id: 'shipped', label: 'Shipped', count: orderStats.shipped },
               { id: 'delivered', label: 'Delivered', count: orderStats.delivered },
               { id: 'cancelled', label: 'Cancelled', count: orderStats.cancelled },
@@ -329,6 +513,41 @@ const FarmerOrders = () => {
               </button>
             ))}
           </nav>
+        </div>
+      </div>
+
+      {/* Search and Sort */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search orders by order number, buyer name, or product..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+            >
+              <option value="createdAt">Date</option>
+              <option value="total">Amount</option>
+              <option value="status">Status</option>
+            </select>
+            <button
+              onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
+              className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              <ArrowUpDown className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -364,15 +583,15 @@ const FarmerOrders = () => {
                       {order.items.map((item, index) => (
                         <div key={index} className="flex items-center space-x-3">
                           <img
-                            src={item.product.primaryImage?.url || 'https://via.placeholder.com/50x50?text=Product'}
-                            alt={item.product.title}
+                            src={item.product?.primaryImage?.url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjI1IiB5PSIyNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgdGV4dC1iYXNlPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5OTk5OSI+UHJvZHVjdDwvdGV4dD4KPHN2Zz4='}
+                            alt={item.product?.title || 'Product'}
                             className="h-12 w-12 rounded-lg object-cover"
-                            onError={(e) => e.target.src = 'https://via.placeholder.com/50x50?text=Product'}
+                            onError={(e) => e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjI1IiB5PSIyNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgdGV4dC1iYXNlPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5OTk5OSI+UHJvZHVjdDwvdGV4dD4KPHN2Zz4='}
                           />
                           <div className="flex-1 min-w-0">
-                            <h5 className="font-medium text-gray-900 text-sm truncate">{item.product.title}</h5>
+                            <h5 className="font-medium text-gray-900 text-sm truncate">{item.product?.title || 'Unknown Product'}</h5>
                             <p className="text-xs text-gray-500">
-                              {item.quantity} {item.product.unit} × {formatCurrency(item.price)}
+                              {item.quantity} {item.product?.unit || 'unit'} × {formatCurrency(item.price)}
                             </p>
                           </div>
                         </div>
@@ -386,18 +605,18 @@ const FarmerOrders = () => {
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center text-gray-600">
                         <User className="h-4 w-4 mr-2 flex-shrink-0" />
-                        <span>{order.buyer.firstName} {order.buyer.lastName}</span>
+                        <span>{order.buyer?.firstName || ''} {order.buyer?.lastName || ''}</span>
                       </div>
                       <div className="flex items-center text-gray-600">
                         <Phone className="h-4 w-4 mr-2 flex-shrink-0" />
-                        <a href={`tel:${order.buyer.phone}`} className="hover:text-green-600">
-                          {order.buyer.phone}
+                        <a href={`tel:${order.buyer?.phone || ''}`} className="hover:text-green-600">
+                          {order.buyer?.phone || 'N/A'}
                         </a>
                       </div>
                       <div className="flex items-center text-gray-600">
                         <Mail className="h-4 w-4 mr-2 flex-shrink-0" />
-                        <a href={`mailto:${order.buyer.email}`} className="hover:text-green-600 truncate">
-                          {order.buyer.email}
+                        <a href={`mailto:${order.buyer?.email || ''}`} className="hover:text-green-600 truncate">
+                          {order.buyer?.email || 'N/A'}
                         </a>
                       </div>
                     </div>
@@ -410,14 +629,14 @@ const FarmerOrders = () => {
                       <div className="flex items-start text-gray-600">
                         <MapPin className="h-4 w-4 mr-2 flex-shrink-0 mt-0.5" />
                         <div>
-                          <div>{order.deliveryAddress.street}</div>
-                          <div>{order.deliveryAddress.city}, {order.deliveryAddress.district}</div>
-                          <div>{order.deliveryAddress.postalCode}</div>
+                          <div>{order.deliveryAddress?.street || 'N/A'}</div>
+                          <div>{order.deliveryAddress?.city || 'N/A'}, {order.deliveryAddress?.district || 'N/A'}</div>
+                          <div>{order.deliveryAddress?.postalCode || 'N/A'}</div>
                         </div>
                       </div>
                       <div className="flex items-center text-gray-600">
                         <Package className="h-4 w-4 mr-2 flex-shrink-0" />
-                        <span className="capitalize">{order.paymentMethod.replace('_', ' ')}</span>
+                        <span className="capitalize">{order.paymentMethod ? order.paymentMethod.replace('_', ' ') : 'Cash on Delivery'}</span>
                       </div>
                       {order.confirmedAt && (
                         <div className="flex items-center text-gray-600">
@@ -450,7 +669,7 @@ const FarmerOrders = () => {
                   </button>
                   <div className="flex space-x-3">
                     <button 
-                      onClick={() => window.open(`tel:${order.buyer.phone}`, '_blank')}
+                      onClick={() => window.open(`tel:${order.buyer?.phone || ''}`, '_blank')}
                       className="text-green-600 hover:text-green-800 text-sm font-medium"
                     >
                       <Phone className="h-4 w-4 inline mr-1" />

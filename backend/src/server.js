@@ -66,15 +66,15 @@ app.get("/api/seed-database", async (req, res) => {
   try {
     console.log("Starting database seeding...");
     await seedCategories();
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       message: "Database seeded successfully with categories",
       timestamp: new Date().toISOString()
     });
   } catch (error) {
     console.error("Database seeding failed:", error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       message: "Database seeding failed",
       error: error.message,
       timestamp: new Date().toISOString()

@@ -3,6 +3,7 @@ import { Lock, CreditCard, ArrowLeft } from 'lucide-react';
 import OrderSummary from '../../components/payOrderSummary';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
 import api from '../../lib/axios'; // Assumes Axios instance is set up here
 import { orderService } from '../../services/orderService';
 
@@ -12,6 +13,7 @@ const PaymentPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { clearCart } = useCart();
   
   // Get order data from delivery page or use default
   const { orderData } = location.state || {};
@@ -128,33 +130,42 @@ const PaymentPage = () => {
         
         try {
           // Prepare order data for backend
-          const orderData = {
+          const orderDataPayload = {
             items: orderData.items.map(item => ({
               productId: item.productId,
               quantity: item.quantity
             })),
             deliveryAddress: {
-              firstName: orderData.deliveryInfo.firstName,
-              lastName: orderData.deliveryInfo.lastName,
-              email: orderData.deliveryInfo.email,
+              recipientName: `${orderData.deliveryInfo.firstName} ${orderData.deliveryInfo.lastName}`,
               phone: orderData.deliveryInfo.phone,
-              addressLine1: orderData.deliveryInfo.addressLine1,
-              addressLine2: orderData.deliveryInfo.addressLine2 || '',
+              street: orderData.deliveryInfo.addressLine1 + (orderData.deliveryInfo.addressLine2 ? ', ' + orderData.deliveryInfo.addressLine2 : ''),
               city: orderData.deliveryInfo.city,
               district: orderData.deliveryInfo.district,
-              country: 'Sri Lanka'
+              postalCode: orderData.deliveryInfo.postalCode,
+              specialInstructions: orderData.deliveryInfo.deliveryInstructions || ''
             },
             paymentMethod: 'payhere',
-            notes: orderData.deliveryInfo.notes || ''
+            paymentStatus: 'paid',
+            transactionId: orderId,
+            notes: orderData.deliveryInfo.deliveryInstructions || ''
           };
 
-          console.log('Creating order with data:', orderData);
+          console.log('Creating order with data:', orderDataPayload);
           
           // Create order in database
-          const orderResponse = await orderService.createOrder(orderData);
+          const orderResponse = await orderService.createOrder(orderDataPayload);
           const createdOrder = orderResponse.data.order;
           
           console.log('Order created successfully:', createdOrder);
+          
+          // Clear the cart after successful order creation
+          try {
+            await clearCart();
+            console.log('Cart cleared successfully');
+          } catch (cartError) {
+            console.warn('Failed to clear cart:', cartError);
+            // Don't fail the order creation if cart clearing fails
+          }
           
           setIsLoading(false);
           navigate('/success', { 
@@ -163,7 +174,11 @@ const PaymentPage = () => {
               order: {
                 ...order,
                 orderNumber: createdOrder.orderNumber,
-                id: createdOrder._id
+                id: createdOrder._id,
+                summary: {
+                  ...order.summary,
+                  total: createdOrder.total
+                }
               },
               transactionDetails: {
                 paymentMethod: 'PayHere',

@@ -11,6 +11,8 @@ import {
 } from '../controllers/orderController.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { body, param, query, validationResult } from 'express-validator';
+import Order from '../models/Order.js';
+import mongoose from 'mongoose';
 
 const router = express.Router();
 
@@ -222,6 +224,127 @@ router.get('/number/:orderNumber',
 );
 
 /**
+ * Get order statistics for current user (farmers get their orders stats)
+ * Access: Authenticated users
+ */
+router.get('/stats', 
+  protect,
+  async (req, res) => {
+    try {
+  const userId = req.user.id;
+      const userRole = req.user.role;
+
+  console.log('[DEBUG] /orders/stats - req.user:', req.user);
+  console.log('[DEBUG] /orders/stats - userId:', userId, 'Type:', typeof userId);
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: 'User ID is required'
+        });
+      }
+
+      // Ensure userId is a valid ObjectId
+      let objectId;
+      try {
+        objectId = new mongoose.Types.ObjectId(userId);
+        console.log('[DEBUG] /orders/stats - objectId:', objectId, 'Type:', typeof objectId);
+      } catch (error) {
+        console.error('[DEBUG] /orders/stats - ObjectId conversion error:', error);
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid user ID format',
+          debug: {
+            userId,
+            error: error.message
+          }
+        });
+      }
+
+      let matchQuery = {};
+      if (userRole === 'farmer') {
+        matchQuery.farmers = objectId;
+      } else if (userRole === 'buyer') {
+        matchQuery.buyer = objectId;
+      }
+      // Admin can see all orders
+
+      // Add filter to exclude test orders
+      const testOrderFilter = {
+        $and: [
+          // Exclude orders from the future (test data)
+          { createdAt: { $lte: new Date() } },
+          // Exclude orders with test buyer names
+          {
+            $nor: [
+              { 'buyer.firstName': { $regex: '^test$', $options: 'i' } },
+              { 'buyer.firstName': { $regex: '^dummy$', $options: 'i' } },
+              { 'buyer.firstName': { $regex: '^sample$', $options: 'i' } },
+              { 'buyer.lastName': { $regex: '^test$', $options: 'i' } },
+              { 'buyer.lastName': { $regex: '^dummy$', $options: 'i' } },
+              { 'buyer.lastName': { $regex: '^sample$', $options: 'i' } }
+            ]
+          },
+          // Exclude orders with suspicious order numbers (future timestamps)
+          { orderNumber: { $not: { $regex: '1758640665029' } } }
+        ]
+      };
+
+      // Combine user filter with test order filter
+      matchQuery = { ...matchQuery, ...testOrderFilter };
+
+      // Get status counts using simple queries
+      const statusCounts = {
+        all: 0,
+        pending: 0,
+        confirmed: 0,
+        preparing: 0,
+        shipped: 0,
+        delivered: 0,
+        cancelled: 0,
+        refunded: 0
+      };
+
+      // Get all orders count
+      statusCounts.all = await Order.countDocuments(matchQuery);
+
+      // Get counts for each status
+      const statuses = Object.keys(statusCounts).filter(s => s !== 'all');
+      for (const status of statuses) {
+        statusCounts[status] = await Order.countDocuments({ ...matchQuery, status });
+      }
+
+      // Calculate revenue from completed orders
+      const completedOrders = await Order.find({ 
+        ...matchQuery, 
+        status: { $in: ['delivered', 'shipped'] }
+      }).select('total');
+
+      const totalRevenue = completedOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+      const averageOrderValue = completedOrders.length > 0 ? totalRevenue / completedOrders.length : 0;
+
+      res.json({
+        success: true,
+        data: {
+          statusCounts,
+          revenue: {
+            total: totalRevenue,
+            averageOrderValue: averageOrderValue,
+            completedOrders: completedOrders.length
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Get order stats error:', error);
+      res.status(400).json({
+        success: false,
+        message: 'Failed to fetch order statistics',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+);
+
+/**
  * GET /api/orders/:orderId
  * Get order by ID
  * Access: Order participants and admin
@@ -231,30 +354,132 @@ router.get('/:orderId',
   orderIdValidation,
   handleValidationErrors,
   getOrderById
-);
+); 
 
 /**
- * PATCH /api/orders/:orderId/status
- * Update order status
- * Access: Farmers, buyers (limited), and admin
+ * Export orders to CSV
+ * Access: Farmers and admin
  */
-router.patch('/:orderId/status', 
+router.get('/export', 
   protect,
-  updateStatusValidation,
-  handleValidationErrors,
-  updateOrderStatus
-);
+  async (req, res) => {
+    try {
+  const userId = req.user.id;
+      const userRole = req.user.role;
+      const { status, search, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
 
-/**
- * PATCH /api/orders/:orderId/cancel
- * Cancel an order
- * Access: Order participants and admin
- */
-router.patch('/:orderId/cancel', 
-  protect,
-  cancelOrderValidation,
-  handleValidationErrors,
-  cancelOrder
+      // Ensure userId is a valid ObjectId
+      let objectId;
+      try {
+        objectId = new mongoose.Types.ObjectId(userId);
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid user ID format'
+        });
+      }
+
+      let query = {};
+      
+      // Filter by user role
+      if (userRole === 'farmer') {
+        query.farmers = objectId;
+      } else if (userRole === 'buyer') {
+        query.buyer = objectId;
+      }
+      // Admin can see all orders
+
+      // Add filter to exclude test orders
+      const testOrderFilter = {
+        $and: [
+          // Exclude orders from the future (test data)
+          { createdAt: { $lte: new Date() } },
+          // Exclude orders with test buyer names
+          {
+            $nor: [
+              { 'buyer.firstName': { $regex: '^test$', $options: 'i' } },
+              { 'buyer.firstName': { $regex: '^dummy$', $options: 'i' } },
+              { 'buyer.firstName': { $regex: '^sample$', $options: 'i' } },
+              { 'buyer.lastName': { $regex: '^test$', $options: 'i' } },
+              { 'buyer.lastName': { $regex: '^dummy$', $options: 'i' } },
+              { 'buyer.lastName': { $regex: '^sample$', $options: 'i' } }
+            ]
+          },
+          // Exclude orders with suspicious order numbers (future timestamps)
+          { orderNumber: { $not: { $regex: '1758640665029' } } }
+        ]
+      };
+
+      // Combine user filter with test order filter
+      query = { ...query, ...testOrderFilter };
+
+      // Apply filters
+      if (status && status !== 'all') {
+        query.status = status;
+      }
+
+      if (search) {
+        query.$or = [
+          { orderNumber: { $regex: search, $options: 'i' } },
+          { 'buyer.firstName': { $regex: search, $options: 'i' } },
+          { 'buyer.lastName': { $regex: search, $options: 'i' } },
+          { 'items.product.title': { $regex: search, $options: 'i' } }
+        ];
+      }
+
+      // Get orders with populated data
+      const orders = await Order.find(query)
+        .populate('buyer', 'firstName lastName email phone')
+        .populate('farmers', 'firstName lastName')
+        .populate('items.product', 'title')
+        .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 });
+
+      // Create CSV content
+      const csvHeaders = [
+        'Order Number',
+        'Date',
+        'Buyer Name',
+        'Buyer Email',
+        'Buyer Phone',
+        'Status',
+        'Total Amount',
+        'Items Count',
+        'Delivery Address',
+        'Payment Method'
+      ];
+
+      const csvRows = orders.map(order => [
+        order.orderNumber,
+        new Date(order.createdAt).toLocaleDateString(),
+        `${order.buyer.firstName} ${order.buyer.lastName}`,
+        order.buyer.email,
+        order.buyer.phone || '',
+        order.status,
+        order.total,
+        order.items.length,
+        `${order.deliveryAddress.street}, ${order.deliveryAddress.city}, ${order.deliveryAddress.district} ${order.deliveryAddress.postalCode}`,
+        order.paymentInfo?.method || 'N/A'
+      ]);
+
+      const csvContent = [csvHeaders, ...csvRows]
+        .map(row => row.map(field => `"${field}"`).join(','))
+        .join('\n');
+
+      // Set headers for file download
+      const filename = `orders-export-${new Date().toISOString().split('T')[0]}.csv`;
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      
+      res.send(csvContent);
+    } catch (error) {
+      console.error('Export orders error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to export orders',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
 );
 
 // Error handling middleware for this router
