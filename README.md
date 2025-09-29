@@ -7,9 +7,9 @@
 # ✨ When Ideas Meet Reality  
 
 <div align="center">
-  <img src="https://res.cloudinary.com/dckoipgrs/image/upload/v1759142371/Screenshot_2025-09-29_at_16.06.52_limfme.png" alt="Website Desktop" width="600"/>
+  <img src="https://res.cloudinary.com/dckoipgrs/image/upload/v1759142371/Screenshot_2025-09-29_at_16.06.52_limfme.png" alt="Website Desktop" width="100%"/>
   <br/><br/>
-  <img src="https://res.cloudinary.com/dckoipgrs/image/upload/v1759142370/IMG_82A811E6F22A-1_nk9hkw.jpg" alt="Website Mobile" width="600"/>
+  <img src="https://res.cloudinary.com/dckoipgrs/image/upload/v1759142370/IMG_82A811E6F22A-1_nk9hkw.jpg" alt="Website Mobile" width="500"/>
 </div>
 
 ---
