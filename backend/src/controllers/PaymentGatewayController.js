@@ -4,11 +4,11 @@ import axios from "axios";
 import SavedCard from "../models/SavedCard.js";
 
 
-const MERCHANT_ID = process.env.PAYHERE_MERCHANT_ID || "1232059";
-const MERCHANT_SECRET = process.env.PAYHERE_MERCHANT_SECRET || "MTUzNjMyNzg3NDMxNDAzNjE3MjgxMDU0MjM1MTI0Mzk2OTQzMDMw";
+const MERCHANT_ID = process.env.PAYHERE_MERCHANT_ID;
+const MERCHANT_SECRET = process.env.PAYHERE_MERCHANT_SECRET;
 
-const PAYHERE_APP_ID = process.env.PAYHERE_APP_ID || "4OVyIPKMqpM4JFnJsgjrNJ3D0";
-const PAYHERE_APP_SECRET = process.env.PAYHERE_APP_SECRET || "4OZppi0fGZp4eWcPgTbpva8Rjodd2AgzK8MPnQi7VTfA";
+const PAYHERE_APP_ID = process.env.PAYHERE_APP_ID;
+const PAYHERE_APP_SECRET = process.env.PAYHERE_APP_SECRET;
 const PUBLIC_URL = process.env.PUBLIC_URL || process.env.FRONTEND_URL || "https://www.helagovi.lk";
 const BACKEND_WEBHOOK_URL = process.env.BACKEND_WEBHOOK_URL || process.env.BACKEND_URL || "https://helagovi-lk.onrender.com";
 
