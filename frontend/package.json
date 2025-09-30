@@ -34,15 +34,19 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@shadcn/ui": "^0.0.4",
     "@tanstack/react-table": "^8.21.3",
+    "@vitejs/plugin-react": "^4.6.0",
+    "autoprefixer": "^10.4.21",
     "axios": "^1.12.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "daisyui": "^4.12.24",
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.6.0",
     "jspdf": "^3.0.2",
     "lottie-react": "^2.4.1",
     "lucide-react": "^0.525.0",
     "next-themes": "^0.4.6",
+    "postcss": "^8.5.6",
     "react": "^19.1.1",
     "react-day-picker": "^9.11.0",
     "react-dom": "^19.1.1",
@@ -54,15 +58,11 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1",
     "tailwind-variants": "^3.1.1",
+    "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^1.1.2",
-    "zod": "^4.1.11",
-    "@vitejs/plugin-react": "^4.6.0",
-    "autoprefixer": "^10.4.21",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.17",
     "vite": "^7.0.3",
-    "daisyui": "^4.12.24"
+    "zod": "^4.1.11"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
@@ -79,6 +79,7 @@
     "globals": "^16.3.0",
     "husky": "^8.0.0",
     "lint-staged": "^16.1.5",
-    "prettier": "^3.6.2"
+    "prettier": "^3.6.2",
+    "serve": "^14.2.5"
   }
 }
