@@ -503,7 +503,7 @@ const Navbar = () => {
                 // Guest users see login button
                 <Link
                   to="/login"
-                  className="bg-emerald-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-emerald-700"
+                  className="bg-white text-emerald-600 border border-emerald-600 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 hover:bg-[#22C55E] hover:text-white hover:border-[#22C55E]"
                 >
                   Login
                 </Link>

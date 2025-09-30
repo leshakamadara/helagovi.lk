@@ -184,11 +184,11 @@ export default function CardManagerPage() {
         )}
 
         {cards.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {cards.map(card => (
               <div key={card._id} className="relative group">
                 <div 
-                  className={`w-96 h-60 rounded-2xl shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-3xl ${getCardGradient(card.method)}`}
+                  className={`w-full max-w-sm mx-auto h-60 rounded-2xl shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-3xl ${getCardGradient(card.method)}`}
                 >
                   <div className="p-6 text-white h-full flex flex-col justify-between">
                     <div className="flex justify-between items-start">
