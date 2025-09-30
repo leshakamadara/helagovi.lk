@@ -22,12 +22,19 @@ services:
     env: node
     region: singapore
     plan: starter
-    buildCommand: cd frontend && npm install && npm run build
-    startCommand: cd frontend && npx serve -s dist -l 3000
+    buildCommand: |
+      cd frontend
+      npm install
+      npm run build
+    startCommand: |
+      cd frontend
+      npx serve -s dist -l $PORT
     rootDir: .
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 10000
 
 # Database (if using Render PostgreSQL - optional)
 # databases:
