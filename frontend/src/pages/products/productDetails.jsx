@@ -84,8 +84,25 @@ const ProductDetails = () => {
   };
 
   useEffect(() => {
+    // Prevent browser scroll restoration
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+    
     fetchProduct();
+    // Scroll to top when component mounts
+    window.scrollTo(0, 0);
   }, [productId]);
+
+  // Scroll to top after product loads
+  useEffect(() => {
+    if (product && !loading) {
+      // Small delay to ensure DOM is fully rendered
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }, 100);
+    }
+  }, [product, loading]);
 
   const fetchProduct = async () => {
     try {
