@@ -75,6 +75,7 @@ import {
 } from './ui/dropdown-menu'
 import { Badge } from './ui/badge'
 import { Input } from './ui/input'
+import { Muted } from './ui/typography'
 import api from '../lib/axios'
 
 const Navbar = () => {
@@ -357,9 +358,9 @@ const Navbar = () => {
                       <div className="p-4">
                         <div className="flex items-center justify-between mb-4">
                           <h3 className="text-lg font-semibold">Shopping Cart</h3>
-                          <span className="text-sm text-gray-500">
+                          <Muted className="text-sm">
                             {itemCount} {itemCount === 1 ? 'item' : 'items'}
-                          </span>
+                          </Muted>
                         </div>
 
                         {cartItems.length > 0 ? (
@@ -437,7 +438,7 @@ const Navbar = () => {
                         ) : (
                           <div className="text-center py-6">
                             <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                            <p className="text-gray-500 mb-3">Your cart is empty</p>
+                            <Muted className="mb-3">Your cart is empty</Muted>
                             <Button
                               onClick={() => {
                                 toggleCartDropdown(false)
@@ -575,9 +576,9 @@ const Navbar = () => {
                             <AvatarImage src={user.avatar} />
                             <AvatarFallback>{getUserInitials()}</AvatarFallback>
                           </Avatar>
-                          <span className="text-sm font-medium text-gray-700">
+                          <Muted className="text-sm font-medium">
                             {user.firstName || user.name || 'User'}
-                          </span>
+                          </Muted>
                         </div>
                         {/* Buyer menu items */}
                         {getBuyerMenuItems().map((item, index) => (
@@ -617,9 +618,9 @@ const Navbar = () => {
                             <AvatarImage src={user.avatar} />
                             <AvatarFallback>{getUserInitials()}</AvatarFallback>
                           </Avatar>
-                          <span className="text-sm font-medium text-gray-700">
+                          <Muted className="text-sm font-medium">
                             {user.firstName || user.name || 'User'}
-                          </span>
+                          </Muted>
                         </div>
                         {/* Farmer menu items */}
                         {getFarmerMenuItems().map((item) => (
