@@ -43,7 +43,8 @@ const FarmerOrders = () => {
   const navigate = useNavigate()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+    const [error, setError] = useState(null)
+  const [success, setSuccess] = useState(null)
   const [filter, setFilter] = useState('all')
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -260,28 +261,50 @@ const FarmerOrders = () => {
 
   const handleStatusUpdate = async (orderId, newStatus) => {
     try {
-      const response = await orderService.updateOrderStatus(orderId, newStatus)
-      
-      if (response.success) {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
         // Update the order in the local state
-        setOrders(prevOrders => 
-          prevOrders.map(order => 
-            order._id === orderId 
-              ? { ...order, status: newStatus, [`${newStatus}At`]: new Date().toISOString() }
-              : order
-          )
-        )
+        setOrders(orders.map(order => 
+          order._id === orderId 
+            ? { ...order, status: newStatus, [`${newStatus}At`]: new Date() }
+            : order
+        ))
         
-        // Refresh order statistics
-        await fetchOrderStats()
+        // Update analytics
+        fetchAnalytics()
         
         // Show success message
-        toast.success(`Order status updated to ${newStatus}`)
+        setError(null)
+        setSuccess(`Order status updated to ${newStatus} successfully!`)
+        
+        // Clear success message after 5 seconds
+        setTimeout(() => setSuccess(null), 5000)
       } else {
-        toast.error(response.message || 'Failed to update order status')
+        // Handle specific error cases
+        if (data.message.includes('delivered status')) {
+          setError(`Cannot mark as delivered: Order must be shipped first. Please follow the proper order flow: Confirm → Prepare → Ship → Deliver`)
+        } else if (data.message.includes('Cannot transition from')) {
+          const currentStatus = data.message.match(/from (\w+) to/)[1]
+          const nextRequired = getNextStatus(currentStatus)
+          setError(`Invalid status transition. Current status: ${currentStatus}. Next step should be: ${getStatusActionLabel(currentStatus)}`)
+        } else {
+          setError(data.message || 'Failed to update order status')
+        }
+        setSuccess(null) // Clear any previous success message
       }
     } catch (error) {
-      toast.error(error.message || 'Failed to update order status')
+      console.error('Status update error:', error)
+      setError('Network error. Please check your connection and try again.')
     }
   }
 
@@ -340,6 +363,16 @@ const FarmerOrders = () => {
       shipped: 'Mark as Delivered'
     }
     return labels[currentStatus]
+  }
+
+  const getStatusProgression = (currentStatus) => {
+    const allStatuses = ['pending', 'confirmed', 'preparing', 'shipped', 'delivered']
+    const currentIndex = allStatuses.indexOf(currentStatus)
+    return {
+      completed: allStatuses.slice(0, currentIndex),
+      current: currentStatus,
+      remaining: allStatuses.slice(currentIndex + 1)
+    }
   }
 
   const formatCurrency = (amount) => {
@@ -428,6 +461,19 @@ const FarmerOrders = () => {
             <div className="ml-3">
               <h3 className="text-sm font-medium text-red-800">Error</h3>
               <div className="mt-2 text-sm text-red-700">{error}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Display */}
+      {success && (
+        <div className="mb-6 bg-green-50 border border-green-200 rounded-md p-4">
+          <div className="flex">
+            <CheckCircle className="h-5 w-5 text-green-400" />
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-green-800">Success</h3>
+              <div className="mt-2 text-sm text-green-700">{success}</div>
             </div>
           </div>
         </div>
@@ -575,6 +621,61 @@ const FarmerOrders = () => {
               </div>
 
               <div className="px-6 py-4">
+                {/* Status Progression */}
+                <div className="mb-6">
+                  <h4 className="font-medium text-gray-900 mb-3">Order Progress</h4>
+                  <div className="flex items-center space-x-2">
+                    {['pending', 'confirmed', 'preparing', 'shipped', 'delivered'].map((status, index) => {
+                      const progression = getStatusProgression(order.status)
+                      const isCompleted = progression.completed.includes(status)
+                      const isCurrent = progression.current === status
+                      const isRemaining = progression.remaining.includes(status)
+                      
+                      return (
+                        <div key={status} className="flex items-center">
+                          <div className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium ${
+                            isCompleted 
+                              ? 'bg-green-100 text-green-800' 
+                              : isCurrent 
+                                ? 'bg-blue-100 text-blue-800 ring-2 ring-blue-500' 
+                                : 'bg-gray-100 text-gray-400'
+                          }`}>
+                            {isCompleted ? (
+                              <CheckCircle className="h-4 w-4" />
+                            ) : isCurrent ? (
+                              getStatusIcon(status)
+                            ) : (
+                              <div className="w-2 h-2 bg-current rounded-full"></div>
+                            )}
+                          </div>
+                          <span className={`ml-2 text-xs font-medium capitalize ${
+                            isCompleted 
+                              ? 'text-green-800' 
+                              : isCurrent 
+                                ? 'text-blue-800' 
+                                : 'text-gray-400'
+                          }`}>
+                            {status}
+                          </span>
+                          {index < 4 && (
+                            <div className={`w-8 h-0.5 mx-2 ${
+                              isCompleted ? 'bg-green-300' : 'bg-gray-200'
+                            }`}></div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    {order.status === 'pending' && "Next: Confirm the order to start processing"}
+                    {order.status === 'confirmed' && "Next: Start preparing the order"}
+                    {order.status === 'preparing' && "Next: Mark as shipped when ready for delivery"}
+                    {order.status === 'shipped' && "Next: Mark as delivered when customer receives the order"}
+                    {order.status === 'delivered' && "Order completed successfully"}
+                    {order.status === 'cancelled' && "Order has been cancelled"}
+                  </p>
+                </div>
+
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Order Items */}
                   <div className="lg:col-span-1">
@@ -685,8 +786,14 @@ const FarmerOrders = () => {
                     </button>
                     {getNextStatus(order.status) && (
                       <button
-                        onClick={() => handleStatusUpdate(order._id, getNextStatus(order.status))}
-                        className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700"
+                        onClick={() => {
+                          const expectedNextStatus = getNextStatus(order.status)
+                          if (expectedNextStatus) {
+                            handleStatusUpdate(order._id, expectedNextStatus)
+                          }
+                        }}
+                        disabled={!getNextStatus(order.status)}
+                        className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                       >
                         {getStatusActionLabel(order.status)}
                       </button>

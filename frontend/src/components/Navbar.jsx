@@ -608,9 +608,20 @@ const Navbar = () => {
                         </Button>
                       </div>
                     )}
-                    {/* Farmer mobile menu (unchanged) */}
+                    {/* Farmer mobile menu */}
                     {isAuthenticated && user.role === 'farmer' && (
                       <div className="space-y-2">
+                        {/* Profile section */}
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={user.avatar} />
+                            <AvatarFallback>{getUserInitials()}</AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm font-medium text-gray-700">
+                            {user.firstName || user.name || 'User'}
+                          </span>
+                        </div>
+                        {/* Farmer menu items */}
                         {getFarmerMenuItems().map((item) => (
                           <Link
                             key={item.to}
@@ -622,6 +633,17 @@ const Navbar = () => {
                             <span className="font-medium">{item.label}</span>
                           </Link>
                         ))}
+                        <Button
+                          onClick={() => {
+                            handleLogout();
+                            setIsOpen(false);
+                          }}
+                          variant="outline"
+                          className="w-full justify-start gap-3 mt-2"
+                        >
+                          <LogOut className="h-5 w-5" />
+                          Logout
+                        </Button>
                       </div>
                     )}
                     {/* Guest users */}

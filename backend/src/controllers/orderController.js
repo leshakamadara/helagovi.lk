@@ -396,7 +396,7 @@ export const updateOrderStatus = async (req, res) => {
     // Define allowed status updates by role
     const allowedStatusUpdates = {
       buyer: ['cancelled'], // Buyers can only cancel
-      farmer: ['confirmed', 'preparing', 'shipped', 'cancelled'], // Farmers can update most statuses
+      farmer: ['confirmed', 'preparing', 'shipped', 'delivered', 'cancelled'], // Farmers can update most statuses including delivered
       admin: ['pending', 'confirmed', 'preparing', 'shipped', 'delivered', 'cancelled', 'refunded'] // Admins can update any status
     };
 
