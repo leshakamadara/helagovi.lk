@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb';
+import { Helmet } from 'react-helmet';
 
 const ProductDetails = () => {
   const [searchParams] = useSearchParams();
@@ -297,6 +298,32 @@ const ProductDetails = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Open Graph Meta Tags */}
+      <Helmet>
+        <title>{product ? `${product.title} | Helagovi.lk` : 'Product Details | Helagovi.lk'}</title>
+        <meta name="description" content={product ? `${product.description} - Fresh ${product.title} from ${product.city}, ${product.district}. Price: Rs. ${product.price}/${product.unit}` : 'Discover fresh organic products from local farmers on Helagovi.lk'} />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="product" />
+        <meta property="og:url" content={window.location.href} />
+        <meta property="og:title" content={product ? `${product.title} | Helagovi.lk` : 'Product Details | Helagovi.lk'} />
+        <meta property="og:description" content={product ? `${product.description} - Fresh ${product.title} from ${product.city}, ${product.district}. Price: Rs. ${product.price}/${product.unit}` : 'Discover fresh organic products from local farmers on Helagovi.lk'} />
+        <meta property="og:image" content={product?.images?.[0]?.url || 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg'} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:site_name" content="Helagovi.lk" />
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={product ? `${product.title} | Helagovi.lk` : 'Product Details | Helagovi.lk'} />
+        <meta name="twitter:description" content={product ? `${product.description} - Fresh ${product.title} from ${product.city}, ${product.district}. Price: Rs. ${product.price}/${product.unit}` : 'Discover fresh organic products from local farmers on Helagovi.lk'} />
+        <meta name="twitter:image" content={product?.images?.[0]?.url || 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg'} />
+        
+        {/* Additional meta tags */}
+        <meta name="keywords" content={product ? `${product.title}, organic, fresh produce, ${product.city}, ${product.district}, farmer, Helagovi.lk` : 'organic products, fresh produce, local farmers, Sri Lanka'} />
+        <link rel="canonical" href={window.location.href} />
+      </Helmet>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-8">
         {/* Breadcrumbs */}
         <div className="mb-6">
