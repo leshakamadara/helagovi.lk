@@ -21,9 +21,6 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     rollupOptions: {
-      input: {
-        main: path.resolve(__dirname, 'index.html'),
-      },
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
@@ -31,9 +28,6 @@ export default defineConfig({
         }
       }
     }
-  },
-  ssr: {
-    noExternal: ['react-helmet-async']
   },
   preview: {
     port: 3000,
