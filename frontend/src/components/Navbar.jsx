@@ -475,16 +475,18 @@ const Navbar = () => {
                         item.divider ? (
                           <DropdownMenuSeparator key={`divider-${index}`} />
                         ) : (
-                          <DropdownMenuItem key={item.to} asChild>
-                            <Link to={item.to} className="flex items-center">
-                              <item.icon className="h-4 w-4 mr-2" />
-                              {item.label}
-                            </Link>
+                          <DropdownMenuItem 
+                            key={item.to} 
+                            onClick={() => navigate(item.to)}
+                            className="flex items-center cursor-pointer"
+                          >
+                            <item.icon className="h-4 w-4 mr-2" />
+                            {item.label}
                           </DropdownMenuItem>
                         )
                       ))}
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={handleLogout}>
+                      <DropdownMenuItem onClick={handleLogout} className="flex items-center cursor-pointer">
                         <LogOut className="h-4 w-4 mr-2" />
                         Logout
                       </DropdownMenuItem>
