@@ -30,15 +30,7 @@ const createReviewValidation = [
   body('images')
     .optional()
     .isArray({ max: 5 })
-    .withMessage('Maximum 5 images allowed'),
-  body('images.*.url')
-    .optional()
-    .isURL()
-    .withMessage('Invalid image URL'),
-  body('images.*.publicId')
-    .optional()
-    .notEmpty()
-    .withMessage('Image public ID is required')
+    .withMessage('Maximum 5 images allowed')
 ];
 
 const updateReviewValidation = [
@@ -85,6 +77,8 @@ router.get('/my', protect, authorize('buyer'), getUserReviews);
 
 // GET /api/reviews/eligibility/:productId - Check if user can review a product
 router.get('/eligibility/:productId', protect, authorize('buyer'), checkReviewEligibility);
+
+
 
 // POST /api/reviews/product/:productId - Create a review for a product
 router.post(
