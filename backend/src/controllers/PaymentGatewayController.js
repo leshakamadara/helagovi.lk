@@ -1,6 +1,7 @@
 import express from "express";
 import crypto from "crypto";
 import axios from "axios";
+import qs from "querystring";
 import SavedCard from "../models/SavedCard.js";
 
 
@@ -127,63 +128,84 @@ export async function charge(req, res) {
       console.error("No preapproved token found");
       return res.status(404).json({ message: "No preapproved token found" });
     }
+
+    // Get the token
     const auth = Buffer.from(`${PAYHERE_APP_ID}:${PAYHERE_APP_SECRET}`).toString("base64");
-    const tokenRes = await axios.post(
-      "https://sandbox.payhere.lk/merchant/v1/oauth/token",
-      "grant_type=client_credentials",
-      {
-        headers: {
-          Authorization: `Basic ${auth}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
-    );
-    const accessToken = tokenRes.data.access_token;
-    const body = {
-      type: "PAYMENT",
-      order_id,
-      items,
-      currency,
-      amount,
-      customer_token: savedCard.token,
-      custom_1: userId,
-      notify_url: `${BACKEND_WEBHOOK_URL}/api/payments/charge-notify`,
-      itemList: [
-        {
-          name: items,
-          number: order_id,
-          quantity: 1,
-          unit_amount: amount,
-        },
-      ],
-    };
-    console.log("Calling PayHere charge API with headers:", {
-      "Authorization": "Bearer [REDACTED]",
-      "Content-Type": "application/json",
-      "Origin": PUBLIC_URL,
-      "Referer": PUBLIC_URL
-    });
     
-    const response = await axios.post(
-      "https://sandbox.payhere.lk/merchant/v1/payment/charge",
-      body,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-          "Origin": PUBLIC_URL,
-          "Referer": PUBLIC_URL,
-          "User-Agent": "helagovi.lk-backend/1.0"
-        },
+    try {
+      const tokenRes = await axios.post(
+        "https://sandbox.payhere.lk/merchant/v1/oauth/token",
+        "grant_type=client_credentials",
+        {
+          headers: {
+            Authorization: `Basic ${auth}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+        }
+      );
+      
+      if (!tokenRes.data || !tokenRes.data.access_token) {
+        console.error("Failed to get access token:", tokenRes.data);
+        return res.status(500).json({ message: "Failed to get PayHere access token" });
       }
-    );
-    const data = response.data;
-    if (data.status === 1 && data.data.status_code === 2) {
-      console.log("Payment successful", data.data);
-      res.json({ message: "Payment successful ", data: data.data });
-    } else {
-      console.error("Payment failed", data);
-      res.status(400).json({ message: "Payment failed ", data });
+      
+      const accessToken = tokenRes.data.access_token;
+      
+      // Prepare the charge request body
+      const body = {
+        type: "PAYMENT",
+        order_id,
+        items,
+        currency,
+        amount: parseFloat(amount),  // Ensure amount is a number
+        customer_token: savedCard.token,
+        custom_1: userId,
+        notify_url: `${BACKEND_WEBHOOK_URL}/api/payments/charge-notify`,
+        itemList: [
+          {
+            name: items,
+            number: order_id,
+            quantity: 1,
+            unit_amount: parseFloat(amount),  // Ensure unit_amount is a number
+          },
+        ],
+      };
+
+      // Use domain without www to match what's likely in PayHere whitelist
+      const domain = PUBLIC_URL.replace('www.', '');
+      
+      console.log("Calling PayHere charge API with payload:", {
+        ...body,
+        customer_token: "[REDACTED]"  // Don't log the actual token
+      });
+      
+      const response = await axios.post(
+        "https://sandbox.payhere.lk/merchant/v1/payment/charge",
+        body,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+            // Remove Origin and Referer headers as they're causing domain validation issues
+            "Host": "sandbox.payhere.lk"
+          },
+        }
+      );
+      
+      const data = response.data;
+      if (data.status === 1 && data.data.status_code === 2) {
+        console.log("Payment successful", data.data);
+        res.json({ message: "Payment successful", data: data.data });
+      } else {
+        console.error("Payment failed", data);
+        res.status(400).json({ message: "Payment failed", data });
+      }
+    } catch (apiErr) {
+      console.error("API error:", apiErr.response?.data || apiErr.message);
+      res.status(500).json({ 
+        message: "API error", 
+        error: apiErr.response?.data || apiErr.message
+      });
     }
   } catch (err) {
     console.error("Charging error:", err.response?.data || err.message);
@@ -225,43 +247,65 @@ const getAuthorizationCode = () => {
 
 const getAccessToken = async () => {
   const url = `${PAYHERE_BASE_URL}/merchant/v1/oauth/token`;
-  const response = await axios.post(
-    url,
-    qs.stringify({ grant_type: "client_credentials" }),
-    {
-      headers: {
-        Authorization: `Basic ${getAuthorizationCode()}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
+  try {
+    const response = await axios.post(
+      url,
+      "grant_type=client_credentials", // Don't use qs.stringify as it's causing issues
+      {
+        headers: {
+          Authorization: `Basic ${getAuthorizationCode()}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Host": "sandbox.payhere.lk"
+        },
+      }
+    );
+    if (!response.data || !response.data.access_token) {
+      console.error("Invalid access token response:", response.data);
+      throw new Error("Failed to get valid access token");
     }
-  );
-  return response.data.access_token;
+    return response.data.access_token;
+  } catch (error) {
+    console.error("Error getting access token:", error.response?.data || error.message);
+    throw error;
+  }
 };
 
 const getPaymentDetails = async (accessToken, order_id) => {
   const url = `${PAYHERE_BASE_URL}/merchant/v1/payment/search?order_id=${order_id}`;
-  const response = await axios.get(url, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-  });
-  return response.data;
+  try {
+    const response = await axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+        "Host": "sandbox.payhere.lk"
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error getting payment details:", error.response?.data || error.message);
+    throw error;
+  }
 };
 
 const refundPayment = async (accessToken, payment_id, description) => {
   const url = `${PAYHERE_BASE_URL}/merchant/v1/payment/refund`;
-  const response = await axios.post(
-    url,
-    { payment_id, description },
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-    }
-  );
-  return response.data;
+  try {
+    const response = await axios.post(
+      url,
+      { payment_id, description },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          "Host": "sandbox.payhere.lk"
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error processing refund:", error.response?.data || error.message);
+    throw error;
+  }
 };
 
 
@@ -332,6 +376,46 @@ export async function getPayHistory(req, res) {
     res.status(500).json({
       error: "Failed to fetch transaction history",
       details: error.response?.data || error.message,
+    });
+  }
+}
+
+export async function verifyPayhereConnection(req, res) {
+  try {
+    console.log("Verifying PayHere connection...");
+    console.log("App ID:", PAYHERE_APP_ID ? "Set" : "Not set");
+    console.log("App Secret:", PAYHERE_APP_SECRET ? "Set" : "Not set");
+    console.log("Merchant ID:", MERCHANT_ID ? "Set" : "Not set");
+    console.log("PUBLIC_URL:", PUBLIC_URL);
+    console.log("BACKEND_WEBHOOK_URL:", BACKEND_WEBHOOK_URL);
+    
+    try {
+      const accessToken = await getAccessToken();
+      
+      return res.status(200).json({
+        status: "success",
+        message: "PayHere connection verified successfully",
+        accessToken: accessToken ? "Valid" : "Invalid",
+        domains: {
+          public_url: PUBLIC_URL,
+          webhook_url: BACKEND_WEBHOOK_URL
+        },
+        info: "If you are experiencing 'Access denied for the domain' errors, ensure the domains are whitelisted in the PayHere merchant dashboard"
+      });
+    } catch (tokenError) {
+      return res.status(401).json({
+        status: "error",
+        message: "Failed to get PayHere access token",
+        error: tokenError.response?.data || tokenError.message,
+        suggestion: "Check your PayHere credentials (APP_ID and APP_SECRET)"
+      });
+    }
+  } catch (error) {
+    console.error("PayHere verification error:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Internal server error during PayHere verification",
+      error: error.message
     });
   }
 }
