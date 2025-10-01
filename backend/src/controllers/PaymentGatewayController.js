@@ -179,6 +179,8 @@ export async function charge(req, res) {
     console.log("PayHere environment:", {
       PAYHERE_BASE_URL,
       PAYHERE_MERCHANT_BASE_URL,
+      PUBLIC_URL,
+      BACKEND_WEBHOOK_URL,
       APP_ID_PRESENT: !!PAYHERE_APP_ID,
       APP_SECRET_PRESENT: !!PAYHERE_APP_SECRET,
       MERCHANT_ID_PRESENT: !!MERCHANT_ID
@@ -251,6 +253,14 @@ export async function charge(req, res) {
 
     // 4. Call PayHere charge API
     console.log("Calling PayHere charge API with body:", JSON.stringify(body, null, 2));
+    console.log("PayHere API URL:", `${PAYHERE_MERCHANT_BASE_URL}/payment/charge`);
+    console.log("Request headers:", {
+      "Authorization": "Bearer [REDACTED]",
+      "Content-Type": "application/json",
+      "User-Agent": "helagovi.lk-backend",
+      "Origin": PUBLIC_URL,
+      "Referer": PUBLIC_URL
+    });
     
     try {
       const response = await axios.post(
@@ -260,6 +270,9 @@ export async function charge(req, res) {
           headers: {
             Authorization: `Bearer ${accessToken}`,
             "Content-Type": "application/json",
+            "User-Agent": "helagovi.lk-backend",
+            "Origin": PUBLIC_URL,
+            "Referer": PUBLIC_URL
           },
         }
       );
