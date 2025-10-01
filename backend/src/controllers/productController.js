@@ -238,6 +238,8 @@ export const getAllProducts = async (req, res) => {
       freshnessDays: 1,
       soldPercentage: 1,
       primaryImage: 1,
+      averageRating: 1,
+      totalReviews: 1,
       'category._id': 1,
       'category.name': 1,
       'category.slug': 1,

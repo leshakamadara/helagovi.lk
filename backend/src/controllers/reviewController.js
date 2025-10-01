@@ -4,6 +4,7 @@ import Order from '../models/Order.js';
 import User from '../models/User.js';
 import mongoose from 'mongoose';
 import { validationResult } from 'express-validator';
+import { updateProductReviewStats } from '../lib/updateProductReviewStats.js';
 
 // Get all reviews for a product
 export const getProductReviews = async (req, res) => {
@@ -162,17 +163,12 @@ export const createReview = async (req, res) => {
       .populate('farmer', 'firstName lastName')
       .populate('product', 'title');
 
-    // Update product's average rating (don't fail the entire operation if this fails)
-    // This could be done in a background job for better performance
+    // Update product's average rating and review count (don't fail the entire operation if this fails)
     try {
-      const reviewStats = await Review.getProductReviewStats(productId);
-      await Product.findByIdAndUpdate(productId, {
-        averageRating: reviewStats.averageRating,
-        totalReviews: reviewStats.totalReviews
-      });
-      console.log('Product stats updated successfully after review creation');
+      await updateProductReviewStats(productId);
+      console.log('Product review stats updated successfully after review creation');
     } catch (statsError) {
-      console.warn('Failed to update product stats, but review creation was successful:', statsError);
+      console.warn('Failed to update product review stats, but review creation was successful:', statsError);
       // Don't fail the entire operation - the review creation was successful
     }
 
@@ -288,17 +284,13 @@ export const updateReview = async (req, res) => {
     await review.save();
     console.log('Review saved successfully');
 
-    // Update product's average rating (don't fail the entire operation if this fails)
+    // Update product's average rating and review count (don't fail the entire operation if this fails)
     try {
-      console.log('Updating product stats for product:', review.product);
-      const reviewStats = await Review.getProductReviewStats(review.product);
-      await Product.findByIdAndUpdate(review.product, {
-        averageRating: reviewStats.averageRating,
-        totalReviews: reviewStats.totalReviews
-      });
-      console.log('Product stats updated successfully');
+      console.log('Updating product review stats for product:', review.product);
+      await updateProductReviewStats(review.product);
+      console.log('Product review stats updated successfully after review update');
     } catch (statsError) {
-      console.warn('Failed to update product stats, but review update was successful:', statsError);
+      console.warn('Failed to update product review stats, but review update was successful:', statsError);
       // Don't fail the entire operation - the review update was successful
     }
 
@@ -360,12 +352,14 @@ export const deleteReview = async (req, res) => {
     const productId = review.product;
     await review.deleteOne();
 
-    // Update product's average rating
-    const reviewStats = await Review.getProductReviewStats(productId);
-    await Product.findByIdAndUpdate(productId, {
-      averageRating: reviewStats.averageRating,
-      totalReviews: reviewStats.totalReviews
-    });
+    // Update product's average rating and review count
+    try {
+      await updateProductReviewStats(productId);
+      console.log('Product review stats updated successfully after review deletion');
+    } catch (statsError) {
+      console.warn('Failed to update product review stats after deletion:', statsError);
+      // Don't fail the entire operation - the review deletion was successful
+    }
 
     res.status(200).json({
       success: true,

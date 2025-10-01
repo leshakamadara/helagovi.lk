@@ -261,18 +261,9 @@ const FarmerOrders = () => {
 
   const handleStatusUpdate = async (orderId, newStatus) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${orderId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ status: newStatus })
-      })
+      const response = await orderService.updateOrderStatus(orderId, newStatus)
 
-      const data = await response.json()
-
-      if (response.ok) {
+      if (response.success) {
         // Update the order in the local state
         setOrders(orders.map(order => 
           order._id === orderId 
@@ -291,14 +282,15 @@ const FarmerOrders = () => {
         setTimeout(() => setSuccess(null), 5000)
       } else {
         // Handle specific error cases
-        if (data.message.includes('delivered status')) {
+        const errorMessage = response.message || 'Failed to update order status'
+        if (errorMessage.includes('delivered status')) {
           setError(`Cannot mark as delivered: Order must be shipped first. Please follow the proper order flow: Confirm → Prepare → Ship → Deliver`)
-        } else if (data.message.includes('Cannot transition from')) {
-          const currentStatus = data.message.match(/from (\w+) to/)[1]
+        } else if (errorMessage.includes('Cannot transition from')) {
+          const currentStatus = errorMessage.match(/from (\w+) to/)[1]
           const nextRequired = getNextStatus(currentStatus)
           setError(`Invalid status transition. Current status: ${currentStatus}. Next step should be: ${getStatusActionLabel(currentStatus)}`)
         } else {
-          setError(data.message || 'Failed to update order status')
+          setError(errorMessage)
         }
         setSuccess(null) // Clear any previous success message
       }

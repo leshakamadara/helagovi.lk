@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Star } from 'lucide-react';
+import { Star, Upload, Loader2, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/axios';
 import { Button } from './ui/button';
@@ -39,6 +39,17 @@ const ReviewsSection = ({ productId }) => {
   });
 
   const [editingReview, setEditingReview] = useState(null);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [previewImages, setPreviewImages] = useState([]);
+
+  // Image lightbox state
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [imageGallery, setImageGallery] = useState([]);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     fetchReviews();
@@ -99,13 +110,42 @@ const ReviewsSection = ({ productId }) => {
 
   const handleSubmitReview = async (e) => {
     e.preventDefault();
-    if (!reviewForm.title.trim() || !reviewForm.comment.trim()) {
-      toast.error('Please fill in all required fields');
+    
+    // Enhanced validation
+    if (!reviewForm.title.trim()) {
+      toast.error('Please enter a review title');
+      return;
+    }
+    if (reviewForm.title.trim().length < 5) {
+      toast.error('Title must be at least 5 characters long');
+      return;
+    }
+    if (reviewForm.title.trim().length > 100) {
+      toast.error('Title must be less than 100 characters');
+      return;
+    }
+    if (!reviewForm.comment.trim()) {
+      toast.error('Please enter your review');
+      return;
+    }
+    if (reviewForm.comment.trim().length < 10) {
+      toast.error('Review must be at least 10 characters long');
+      return;
+    }
+    if (reviewForm.comment.trim().length > 1000) {
+      toast.error('Review must be less than 1000 characters');
       return;
     }
 
     try {
       setSubmitting(true);
+      
+      const reviewData = {
+        rating: reviewForm.rating,
+        title: reviewForm.title.trim(),
+        comment: reviewForm.comment.trim(),
+        images: reviewForm.images
+      };
       
       const endpoint = editingReview 
         ? `/reviews/${editingReview._id}`
@@ -113,13 +153,15 @@ const ReviewsSection = ({ productId }) => {
       
       const method = editingReview ? 'put' : 'post';
       
-      const response = await api[method](endpoint, reviewForm);
+      console.log('Submitting review:', reviewData);
+      const response = await api[method](endpoint, reviewData);
       
       if (response.data.success) {
         toast.success(editingReview ? 'Review updated successfully' : 'Review submitted successfully');
         setShowReviewForm(false);
         setEditingReview(null);
         setReviewForm({ rating: 5, title: '', comment: '', images: [] });
+        setPreviewImages([]);
         fetchReviews(); // Refresh reviews
         if (!editingReview) {
           setCanReview(false); // User can no longer review this product
@@ -166,6 +208,223 @@ const ReviewsSection = ({ productId }) => {
       toast.error(error.response?.data?.message || 'Failed to record vote');
     }
   };
+
+  const handleImageSelect = (files) => {
+    if (!files || files.length === 0) return;
+
+    // Create preview URLs for selected files
+    const selectedFiles = Array.from(files);
+    const previewUrls = selectedFiles.map(file => ({
+      file,
+      url: URL.createObjectURL(file),
+      isPreview: true
+    }));
+
+    // Add previews to state
+    setPreviewImages(prev => [...prev, ...previewUrls]);
+
+    // Upload images to Cloudinary
+    handleImageUpload(selectedFiles);
+  };
+
+  const handleImageUpload = async (files) => {
+    if (!files || files.length === 0) return;
+
+    setUploadingImages(true);
+
+    try {
+      const formData = new FormData();
+      files.forEach(file => {
+        formData.append('images', file);
+      });
+
+      const response = await api.post('/upload/reviews', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (response.data.success) {
+        // Replace preview images with uploaded images
+        setPreviewImages(prev => prev.filter(img => !img.isPreview));
+
+        setReviewForm(prev => ({
+          ...prev,
+          images: [...prev.images, ...response.data.data.images]
+        }));
+        toast.success('Images uploaded successfully!');
+      } else {
+        // Remove preview images on failure
+        setPreviewImages(prev => prev.filter(img => !img.isPreview));
+        toast.error(response.data.message || 'Failed to upload images');
+      }
+    } catch (error) {
+      console.error('Image upload error:', error);
+      // Remove preview images on error
+      setPreviewImages(prev => prev.filter(img => !img.isPreview));
+      toast.error('Failed to upload images');
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  const removeImage = (imageIndex, isPreview = false) => {
+    if (isPreview) {
+      // Remove preview image and revoke URL to prevent memory leaks
+      setPreviewImages(prev => {
+        const imageToRemove = prev[imageIndex];
+        if (imageToRemove && imageToRemove.url) {
+          URL.revokeObjectURL(imageToRemove.url);
+        }
+        return prev.filter((_, i) => i !== imageIndex);
+      });
+    } else {
+      // Remove uploaded image
+      setReviewForm(prev => ({
+        ...prev,
+        images: prev.images.filter((_, i) => i !== imageIndex)
+      }));
+    }
+  };
+
+  // Cleanup preview URLs on unmount
+  useEffect(() => {
+    return () => {
+      // Revoke all preview URLs to prevent memory leaks
+      previewImages.forEach(preview => {
+        if (preview.url) {
+          URL.revokeObjectURL(preview.url);
+        }
+      });
+    };
+  }, []);
+
+  // Image lightbox functions
+  const openImageModal = (images, index) => {
+    setImageGallery(images);
+    setCurrentImageIndex(index);
+    setSelectedImage(images[index]);
+    setZoomLevel(1);
+    setImagePosition({ x: 0, y: 0 });
+  };
+
+  const closeImageModal = () => {
+    setSelectedImage(null);
+    setImageGallery([]);
+    setCurrentImageIndex(0);
+    setZoomLevel(1);
+    setImagePosition({ x: 0, y: 0 });
+    setIsDragging(false);
+  };
+
+  const navigateImage = (direction) => {
+    if (imageGallery.length === 0) return;
+    
+    let newIndex;
+    if (direction === 'next') {
+      newIndex = currentImageIndex + 1 >= imageGallery.length ? 0 : currentImageIndex + 1;
+    } else {
+      newIndex = currentImageIndex - 1 < 0 ? imageGallery.length - 1 : currentImageIndex - 1;
+    }
+    
+    setCurrentImageIndex(newIndex);
+    setSelectedImage(imageGallery[newIndex]);
+    setZoomLevel(1);
+    setImagePosition({ x: 0, y: 0 });
+  };
+
+  // Zoom functions
+  const handleZoom = (delta) => {
+    setZoomLevel(prevZoom => {
+      const newZoom = Math.max(0.5, Math.min(5, prevZoom + delta));
+      if (newZoom <= 1) {
+        setImagePosition({ x: 0, y: 0 });
+      }
+      return newZoom;
+    });
+  };
+
+  const resetZoom = () => {
+    setZoomLevel(1);
+    setImagePosition({ x: 0, y: 0 });
+  };
+
+  // Mouse drag functions
+  const handleMouseDown = (e) => {
+    if (zoomLevel > 1) {
+      setIsDragging(true);
+      setDragStart({
+        x: e.clientX - imagePosition.x,
+        y: e.clientY - imagePosition.y
+      });
+    }
+  };
+
+  const handleMouseMove = (e) => {
+    if (isDragging && zoomLevel > 1) {
+      setImagePosition({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  // Mouse wheel zoom
+  const handleWheel = (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.2 : 0.2;
+    handleZoom(delta);
+  };
+
+  // Keyboard navigation for image modal
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (!selectedImage) return;
+      
+      switch (event.key) {
+        case 'Escape':
+          closeImageModal();
+          break;
+        case 'ArrowLeft':
+          navigateImage('prev');
+          break;
+        case 'ArrowRight':
+          navigateImage('next');
+          break;
+        case '=':
+        case '+':
+          handleZoom(0.2);
+          break;
+        case '-':
+        case '_':
+          handleZoom(-0.2);
+          break;
+        case '0':
+          resetZoom();
+          break;
+        default:
+          break;
+      }
+    };
+
+    if (selectedImage) {
+      document.addEventListener('keydown', handleKeyDown);
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.overflow = 'unset';
+    };
+  }, [selectedImage, currentImageIndex, imageGallery, isDragging, dragStart, imagePosition]);
 
   const renderStars = (rating, interactive = false, onRatingChange = null) => {
     return (
@@ -238,6 +497,9 @@ const ReviewsSection = ({ productId }) => {
               maxLength={100}
               required
             />
+            <div className="text-xs text-gray-500">
+              {reviewForm.title.length}/100 characters (minimum 5 required)
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -251,6 +513,95 @@ const ReviewsSection = ({ productId }) => {
               maxLength={1000}
               required
             />
+            <div className="text-xs text-gray-500">
+              {reviewForm.comment.length}/1000 characters (minimum 10 required)
+            </div>
+          </div>
+
+          {/* Image upload section */}
+          <div className="space-y-2">
+            <Label>Photos (Optional)</Label>
+            
+            {/* Display uploaded and preview images */}
+            {((reviewForm.images && reviewForm.images.length > 0) || previewImages.length > 0) && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+                {/* Uploaded images */}
+                {reviewForm.images && reviewForm.images.map((image, imageIndex) => (
+                  <div key={`uploaded-${imageIndex}`} className="relative group">
+                    <img
+                      src={image.url}
+                      alt={image.alt}
+                      className="w-full h-20 object-cover rounded-lg border"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(imageIndex, false)}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                
+                {/* Preview images */}
+                {previewImages.map((preview, previewIndex) => (
+                  <div key={`preview-${previewIndex}`} className="relative group">
+                    <img
+                      src={preview.url}
+                      alt="Preview"
+                      className="w-full h-20 object-cover rounded-lg border border-blue-300"
+                    />
+                    <div className="absolute inset-0 bg-blue-500 bg-opacity-20 rounded-lg flex items-center justify-center">
+                      {uploadingImages ? (
+                        <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+                      ) : (
+                        <div className="text-xs text-blue-600 font-medium">Preview</div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeImage(previewIndex, true)}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Upload area */}
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={(e) => handleImageSelect(e.target.files)}
+                className="hidden"
+                id="image-upload"
+              />
+              <label
+                htmlFor="image-upload"
+                className="cursor-pointer flex flex-col items-center"
+              >
+                {uploadingImages ? (
+                  <>
+                    <Loader2 className="h-8 w-8 text-blue-500 mb-2 animate-spin" />
+                    <p className="text-sm text-blue-600">Uploading images...</p>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-500">
+                      Click to upload photos
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      PNG, JPG, GIF up to 10MB each
+                    </p>
+                  </>
+                )}
+              </label>
+            </div>
           </div>
 
           <div className="flex gap-2">
@@ -264,6 +615,7 @@ const ReviewsSection = ({ productId }) => {
                 setShowReviewForm(false);
                 setEditingReview(null);
                 setReviewForm({ rating: 5, title: '', comment: '', images: [] });
+                setPreviewImages([]);
               }}
             >
               Cancel
@@ -349,7 +701,8 @@ const ReviewsSection = ({ productId }) => {
                   key={index}
                   src={image.url}
                   alt={image.alt}
-                  className="w-20 h-20 object-cover rounded-lg border"
+                  className="w-20 h-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => openImageModal(review.images, index)}
                 />
               ))}
             </div>
@@ -479,6 +832,123 @@ const ReviewsSection = ({ productId }) => {
             <p className="text-sm mt-2">Be the first to share your experience!</p>
           </CardContent>
         </Card>
+      )}
+
+      {/* Image Lightbox Modal */}
+      {selectedImage && (
+        <div 
+          className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-60 z-50 flex items-center justify-center"
+          onClick={closeImageModal}
+          style={{ margin: 0, padding: 0 }}
+        >
+          <div className="relative w-full h-full overflow-hidden" style={{ margin: 0, padding: 0 }}>
+            {/* Close button */}
+            <button
+              onClick={closeImageModal}
+              className="absolute top-4 right-4 z-20 bg-black bg-opacity-50 text-white rounded-full p-2 hover:bg-opacity-70 transition-all"
+            >
+              <X className="h-6 w-6" />
+            </button>
+
+            {/* Zoom controls */}
+            <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleZoom(0.2);
+                }}
+                className="bg-black bg-opacity-50 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-opacity-70 transition-all"
+                title="Zoom In (+)"
+              >
+                <span className="text-xl font-bold leading-none">+</span>
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleZoom(-0.2);
+                }}
+                className="bg-black bg-opacity-50 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-opacity-70 transition-all"
+                title="Zoom Out (-)"
+              >
+                <span className="text-xl font-bold leading-none">−</span>
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  resetZoom();
+                }}
+                className="bg-black bg-opacity-50 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-opacity-70 transition-all text-xs"
+                title="Reset Zoom (0)"
+              >
+                1:1
+              </button>
+            </div>
+
+            {/* Zoom level indicator */}
+            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
+              {Math.round(zoomLevel * 100)}%
+            </div>
+
+            {/* Navigation buttons */}
+            {imageGallery.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigateImage('prev');
+                  }}
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 bg-black bg-opacity-50 text-white rounded-full p-2 hover:bg-opacity-70 transition-all"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigateImage('next');
+                  }}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 bg-black bg-opacity-50 text-white rounded-full p-2 hover:bg-opacity-70 transition-all"
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+              </>
+            )}
+
+            {/* Image Container */}
+            <div 
+              className="w-full h-full flex items-center justify-center overflow-hidden"
+              onWheel={handleWheel}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={selectedImage.url}
+                alt={selectedImage.alt || 'Review image'}
+                className={`max-w-none rounded-lg transition-transform duration-200 ${
+                  zoomLevel > 1 ? 'cursor-grab' : 'cursor-zoom-in'
+                } ${isDragging ? 'cursor-grabbing' : ''}`}
+                style={{
+                  transform: `scale(${zoomLevel}) translate(${imagePosition.x}px, ${imagePosition.y}px)`,
+                  maxWidth: zoomLevel <= 1 ? '90vw' : 'none',
+                  maxHeight: zoomLevel <= 1 ? '90vh' : 'none',
+                }}
+                onMouseDown={handleMouseDown}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (zoomLevel === 1) {
+                    handleZoom(1);
+                  }
+                }}
+                draggable={false}
+              />
+            </div>
+
+            {/* Image counter */}
+            {imageGallery.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
+                {currentImageIndex + 1} / {imageGallery.length}
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

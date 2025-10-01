@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { orderService } from '../../services/orderService'
+import api from '../../lib/axios'
 import {
   ShoppingBag,
   Clock,
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react'
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb'
 import { H1, H2, H3, P, Muted, Large } from '../../components/ui/typography'
+import ReviewModal from '../../components/ReviewModal'
 
 const BuyerOrders = () => {
   const { user } = useAuth()
@@ -41,6 +43,9 @@ const BuyerOrders = () => {
     delivered: 0,
     cancelled: 0
   })
+  const [reviewModalOpen, setReviewModalOpen] = useState(false)
+  const [selectedOrderForReview, setSelectedOrderForReview] = useState(null)
+  const [existingReviews, setExistingReviews] = useState({})
 
   useEffect(() => {
     fetchOrders()
@@ -123,6 +128,9 @@ const BuyerOrders = () => {
       if (response.success) {
         setOrders(response.data.orders)
         setPagination(response.data.pagination)
+        
+        // Check for existing reviews for delivered orders
+        await checkExistingReviews(response.data.orders)
       } else {
         setError(response.message || 'Failed to fetch orders')
       }
@@ -158,6 +166,43 @@ const BuyerOrders = () => {
       }
     } catch (error) {
       alert(error.message || 'Failed to cancel order')
+    }
+  }
+
+  const handleWriteReview = (order) => {
+    setSelectedOrderForReview(order)
+    setReviewModalOpen(true)
+  }
+
+  const checkExistingReviews = async (orders) => {
+    try {
+      const reviewsMap = {}
+      
+      // Get all delivered orders
+      const deliveredOrders = orders.filter(order => order.status === 'delivered')
+      
+      // Check reviews for each product in delivered orders
+      for (const order of deliveredOrders) {
+        for (const item of order.items) {
+          const productId = typeof item.product === 'object' ? item.product._id : item.product
+          
+          try {
+            // Check if user has already reviewed this product
+            const response = await api.get(`/reviews/eligibility/${productId}`)
+            if (!response.data.data.canReview) {
+              // User has already reviewed this product
+              reviewsMap[`${order._id}-${productId}`] = true
+            }
+          } catch (error) {
+            // If there's an error checking eligibility, assume no review exists
+            console.warn(`Could not check review eligibility for product ${productId}:`, error)
+          }
+        }
+      }
+      
+      setExistingReviews(reviewsMap)
+    } catch (error) {
+      console.error('Error checking existing reviews:', error)
     }
   }
 
@@ -436,8 +481,14 @@ const BuyerOrders = () => {
                     )}
                     
                     {order.status === 'delivered' && order.canBeReviewed && (
-                      <button className="text-green-600 hover:text-green-800 text-sm font-medium px-3 py-1 border border-green-200 rounded hover:bg-green-50">
-                        Write Review
+                      <button
+                        onClick={() => handleWriteReview(order)}
+                        className="text-green-600 hover:text-green-800 text-sm font-medium px-3 py-1 border border-green-200 rounded hover:bg-green-50"
+                      >
+                        {order.items.some(item => {
+                          const productId = typeof item.product === 'object' ? item.product._id : item.product
+                          return existingReviews[`${order._id}-${productId}`]
+                        }) ? 'Edit Review' : 'Write Review'}
                       </button>
                     )}
                     
@@ -548,6 +599,16 @@ const BuyerOrders = () => {
           </div>
         </div>
       )}
+
+      {/* Review Modal */}
+      <ReviewModal
+        isOpen={reviewModalOpen}
+        onClose={() => {
+          setReviewModalOpen(false)
+          setSelectedOrderForReview(null)
+        }}
+        order={selectedOrderForReview}
+      />
     </div>
   )
 }

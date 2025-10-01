@@ -403,10 +403,7 @@ const ProductListing = () => {
             <div className="flex items-center gap-1">
               <Star className="w-3 h-3 text-yellow-400 fill-current" />
               <span className="text-xs text-muted-foreground">
-                {product.averageRating ? product.averageRating.toFixed(1) : '0.0'} 
-                {product.totalReviews > 0 && (
-                  <span className="ml-1">({product.totalReviews})</span>
-                )}
+                {product.averageRating ? product.averageRating.toFixed(1) : '0.0'}
               </span>
             </div>
           </div>
