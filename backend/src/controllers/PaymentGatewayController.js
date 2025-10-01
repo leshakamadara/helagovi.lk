@@ -8,7 +8,9 @@ const MERCHANT_ID = process.env.PAYHERE_MERCHANT_ID || "1232059";
 const MERCHANT_SECRET = process.env.PAYHERE_MERCHANT_SECRET || "MjE3Njk1NDAyNTEwNjY0Mjc4MzIzNDQxNTIwMTYzNTk4MTk2NjA2";
 const PAYHERE_APP_ID = "4OVyIPRAfqq4JFnJsgjrNJ3D0";
 const PAYHERE_APP_SECRET = "8m37JU8FMHr48febsV1al94ZJ45SNZyPX8LTWkYlVIrC";
-const PUBLIC_URL = "https://helagovi-lk.onrender.com";
+// Use frontend domain for PayHere domain validation
+const PUBLIC_URL = "https://www.helagovi.lk";
+const BACKEND_WEBHOOK_URL = "https://helagovi-lk.onrender.com";
 const PAYHERE_BASE_URL = "https://sandbox.payhere.lk";
 
 function verifyMd5(params) {
@@ -53,7 +55,7 @@ export async function preapprove(req, res) {
       merchant_id: MERCHANT_ID,
       return_url: `${PUBLIC_URL}/success`,
       cancel_url: `${PUBLIC_URL}/cancel`,
-      notify_url: `${PUBLIC_URL}/api/payments/notify`,
+      notify_url: `${BACKEND_WEBHOOK_URL}/api/payments/notify`,
       order_id,
       items,
       currency,
@@ -143,7 +145,7 @@ export async function charge(req, res) {
       amount,
       customer_token: savedCard.token,
       custom_1: userId,
-      notify_url: `${PUBLIC_URL}/api/payments/charge-notify`,
+      notify_url: `${BACKEND_WEBHOOK_URL}/api/payments/charge-notify`,
       itemList: [
         {
           name: items,
@@ -153,6 +155,13 @@ export async function charge(req, res) {
         },
       ],
     };
+    console.log("Calling PayHere charge API with headers:", {
+      "Authorization": "Bearer [REDACTED]",
+      "Content-Type": "application/json",
+      "Origin": PUBLIC_URL,
+      "Referer": PUBLIC_URL
+    });
+    
     const response = await axios.post(
       "https://sandbox.payhere.lk/merchant/v1/payment/charge",
       body,
@@ -160,6 +169,9 @@ export async function charge(req, res) {
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
+          "Origin": PUBLIC_URL,
+          "Referer": PUBLIC_URL,
+          "User-Agent": "helagovi.lk-backend/1.0"
         },
       }
     );
