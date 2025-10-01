@@ -236,16 +236,16 @@ const RegisterForm = () => {
 
 export default function RegisterPage() {
   return (
-    <div className="grid min-h-svh lg:grid-cols-2">
-      <div className="bg-muted relative hidden lg:block">
+    <div className="grid min-h-svh md:grid-cols-2">
+      <div className="bg-muted relative hidden md:block">
         <img
           src="https://res.cloudinary.com/dckoipgrs/image/upload/v1759263222/banner_gypb09.png"
           alt="Helagovi.lk Banner"
           className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
         />
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-8 md:gap-12">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 md:gap-8 lg:gap-12">
           <div
-            className="font-black tracking-[-4%] text-transparent bg-clip-text text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl 2xl:text-9xl text-center pb-2"
+            className="font-black tracking-[-4%] text-transparent bg-clip-text text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl text-center pb-2 px-4"
             style={{
               background: 'radial-gradient(circle, #34E89E 0%, #45A21A 50%, #005B26 100%)',
               WebkitBackgroundClip: 'text',
@@ -257,7 +257,7 @@ export default function RegisterPage() {
           <img
             src="https://res.cloudinary.com/dckoipgrs/image/upload/v1759143086/Logo_uf3yae.png"
             alt="Helagovi.lk Logo"
-            className="w-56 h-56 md:w-72 md:h-72 lg:w-96 lg:h-96 object-contain"
+            className="w-40 h-40 sm:w-48 sm:h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 xl:w-96 xl:h-96 object-contain"
           />
         </div>
       </div>
