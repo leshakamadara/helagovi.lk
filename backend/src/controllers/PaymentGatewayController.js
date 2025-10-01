@@ -173,7 +173,7 @@ export async function charge(req,res){
 
     if (!savedCard) return res.status(404).json({ message: "No preapproved token found" });
 
-    // 2. 🔑 Fetch a fresh access token
+    // 2.  Fetch a fresh access token
     const auth = Buffer.from(`${PAYHERE_APP_ID}:${PAYHERE_APP_SECRET}`).toString("base64");
     const tokenRes = await axios.post(
       `${PAYHERE_MERCHANT_BASE_URL}/oauth/token`,

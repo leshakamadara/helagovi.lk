@@ -627,32 +627,34 @@ const ReviewsSection = ({ productId }) => {
   );
 
   const renderReview = (review) => {
-    const isOwner = user?._id === review.buyer._id;
+    // Check ownership - user can edit their own reviews, admins can edit any review
+    const isOwner = user?._id && review.buyer?._id && 
+                   (String(user._id) === String(review.buyer._id) || user?.role === 'admin');
     const reviewDate = new Date(review.createdAt).toLocaleDateString();
 
     return (
       <Card key={review._id} className="mb-4">
         <CardContent className="pt-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <Avatar className="h-10 w-10 flex-shrink-0">
                 <AvatarImage src={review.buyer.avatar} />
                 <AvatarFallback>
                   {review.buyer.firstName?.[0]}{review.buyer.lastName?.[0]}
                 </AvatarFallback>
               </Avatar>
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="font-medium">
                   {review.buyer.firstName} {review.buyer.lastName}
                 </p>
-                <div className="flex items-center gap-2 text-sm text-gray-500">
+                <div className="flex items-center gap-2 text-sm text-gray-500 flex-wrap">
                   {renderStars(review.rating)}
                   <span>•</span>
                   <span>{reviewDate}</span>
                   {review.isVerifiedPurchase && (
                     <>
-                      <span>•</span>
-                      <Badge variant="secondary" className="text-xs">
+                      <span className="hidden sm:inline">•</span>
+                      <Badge variant="secondary" className="text-xs whitespace-nowrap">
                         Verified Purchase
                       </Badge>
                     </>
@@ -660,10 +662,10 @@ const ReviewsSection = ({ productId }) => {
                 </div>
               </div>
             </div>
-            {isOwner && (
-              <div className="flex gap-2">
+            {isAuthenticated && isOwner && (
+              <div className="flex gap-2 flex-shrink-0 self-start">
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => {
                     setEditingReview(review);
@@ -675,13 +677,15 @@ const ReviewsSection = ({ productId }) => {
                     });
                     setShowReviewForm(true);
                   }}
+                  className="text-xs sm:text-sm"
                 >
                   Edit
                 </Button>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => handleDeleteReview(review._id)}
+                  className="text-xs sm:text-sm text-red-600 hover:text-red-700 hover:bg-red-50"
                 >
                   Delete
                 </Button>
@@ -695,26 +699,26 @@ const ReviewsSection = ({ productId }) => {
           </div>
 
           {review.images && review.images.length > 0 && (
-            <div className="flex gap-2 mb-4">
+            <div className="flex flex-wrap gap-2 mb-4">
               {review.images.map((image, index) => (
                 <img
                   key={index}
                   src={image.url}
                   alt={image.alt}
-                  className="w-20 h-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                  className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
                   onClick={() => openImageModal(review.images, index)}
                 />
               ))}
             </div>
           )}
 
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm">
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => handleHelpfulVote(review._id, 'helpful')}
-                className="text-gray-600 hover:text-green-600"
+                className="text-gray-600 hover:text-green-600 text-xs sm:text-sm"
               >
                 Helpful ({review.isHelpful?.helpfulCount || 0})
               </Button>
@@ -722,7 +726,7 @@ const ReviewsSection = ({ productId }) => {
                 variant="ghost"
                 size="sm"
                 onClick={() => handleHelpfulVote(review._id, 'not-helpful')}
-                className="text-gray-600 hover:text-red-600"
+                className="text-gray-600 hover:text-red-600 text-xs sm:text-sm"
               >
                 Not Helpful ({review.isHelpful?.notHelpfulCount || 0})
               </Button>
