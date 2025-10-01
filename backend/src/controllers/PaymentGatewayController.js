@@ -7,12 +7,12 @@ import SavedCard from "../models/SavedCard.js";
 
 const MERCHANT_ID = process.env.PAYHERE_MERCHANT_ID || "1232059";
 const MERCHANT_SECRET = process.env.PAYHERE_MERCHANT_SECRET || "MjE3Njk1NDAyNTEwNjY0Mjc4MzIzNDQxNTIwMTYzNTk4MTk2NjA2";
-const PAYHERE_APP_ID = "4OVyIPRAfqq4JFnJsgjrNJ3D0";
-const PAYHERE_APP_SECRET = "8m37JU8FMHr48febsV1al94ZJ45SNZyPX8LTWkYlVIrC";
+const PAYHERE_APP_ID = process.env.PAYHERE_APP_ID || "4OVyIPRAfqq4JFnJsgjrNJ3D0";
+const PAYHERE_APP_SECRET = process.env.PAYHERE_APP_SECRET || "8m37JU8FMHr48febsV1al94ZJ45SNZyPX8LTWkYlVIrC";
 // Use frontend domain for PayHere domain validation
-const PUBLIC_URL = "https://www.helagovi.lk";
-// PayHere doesn't support any subdomains, use frontend domain for webhooks
-const BACKEND_WEBHOOK_URL = "https://www.helagovi.lk";
+const PUBLIC_URL = process.env.PUBLIC_URL || "https://www.helagovi.lk";
+// PayHere webhooks go to frontend proxy (no subdomain restrictions)
+const BACKEND_WEBHOOK_URL = process.env.BACKEND_WEBHOOK_URL || "https://www.helagovi.lk";
 const PAYHERE_BASE_URL = "https://sandbox.payhere.lk";
 
 function verifyMd5(params) {
