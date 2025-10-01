@@ -243,9 +243,9 @@ export default function RegisterPage() {
           alt="Helagovi.lk Banner"
           className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
         />
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 md:gap-8 lg:gap-12">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 md:gap-6 lg:gap-8 px-4 py-8">
           <div
-            className="font-black tracking-[-4%] text-transparent bg-clip-text text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl text-center pb-2 px-4"
+            className="font-black tracking-[-4%] text-transparent bg-clip-text text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl text-center pb-2 px-4 max-w-full break-words hyphens-auto leading-tight flex-shrink-0"
             style={{
               background: 'radial-gradient(circle, #34E89E 0%, #45A21A 50%, #005B26 100%)',
               WebkitBackgroundClip: 'text',
@@ -254,11 +254,13 @@ export default function RegisterPage() {
           >
             Share Your Harvest
           </div>
-          <img
-            src="https://res.cloudinary.com/dckoipgrs/image/upload/v1759143086/Logo_uf3yae.png"
-            alt="Helagovi.lk Logo"
-            className="w-40 h-40 sm:w-48 sm:h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 xl:w-96 xl:h-96 object-contain"
-          />
+          <div className="flex-shrink-0 mt-2">
+            <img
+              src="https://res.cloudinary.com/dckoipgrs/image/upload/v1759143086/Logo_uf3yae.png"
+              alt="Helagovi.lk Logo"
+              className="w-80 h-80 object-contain"
+            />
+          </div>
         </div>
       </div>
       <div className="flex flex-col gap-4 p-6 md:p-10 bg-green-50">
