@@ -256,7 +256,10 @@ export async function charge(req, res) {
     console.log("PayHere API URL:", `${PAYHERE_MERCHANT_BASE_URL}/payment/charge`);
     console.log("Request headers:", {
       "Authorization": "Bearer [REDACTED]",
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      "User-Agent": "helagovi.lk-backend",
+      "Origin": PUBLIC_URL,
+      "Referer": PUBLIC_URL
     });
     
     try {
@@ -266,7 +269,10 @@ export async function charge(req, res) {
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "User-Agent": "helagovi.lk-backend",
+            "Origin": PUBLIC_URL,
+            "Referer": PUBLIC_URL
           },
         }
       );
