@@ -28,26 +28,42 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// Middleware
-app.use(cors({ 
+// CORS Configuration with detailed logging
+const corsOptions = {
   origin: [
     "http://localhost:5173",
-    "https://helagovi-lk-1.onrender.com",
+    "https://helagovi-lk-1.onrender.com", 
     "https://helagovi-lk.onrender.com",
-     "https://www.helagovi.lk",
+    "https://www.helagovi.lk",
     "https://helagovi.lk"
   ],
-  credentials: true
-}));
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept'],
+  optionsSuccessStatus: 200
+};
+
+console.log("CORS configured for origins:", corsOptions.origin);
+
+// Middleware
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // app.use(ratelimiter); // optional
 
-// Request logging middleware for debugging
+// CORS and request logging middleware for debugging
 app.use((req, res, next) => {
-  if (req.path.includes('/payments/charge')) {
-    console.log(`🔍 ${req.method} ${req.path}`);
+  // Log CORS-related requests
+  if (req.headers.origin && !req.headers.origin.includes('localhost')) {
+    console.log(`🌐 CORS Request: ${req.method} ${req.path}`);
+    console.log("Origin:", req.headers.origin);
+    console.log("User-Agent:", req.headers['user-agent']);
+  }
+  
+  // Detailed logging for payment requests
+  if (req.path.includes('/payments/')) {
+    console.log(`� ${req.method} ${req.path}`);
     console.log("Request headers:", {
       origin: req.headers.origin,
       referer: req.headers.referer,
