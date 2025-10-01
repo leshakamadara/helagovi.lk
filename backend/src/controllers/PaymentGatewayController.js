@@ -159,9 +159,7 @@ export async function charge(req, res) {
     };
     console.log("Calling PayHere charge API with headers:", {
       "Authorization": "Bearer [REDACTED]",
-      "Content-Type": "application/json",
-      "Origin": PUBLIC_URL,
-      "Referer": PUBLIC_URL
+      "Content-Type": "application/json"
     });
     
     const response = await axios.post(
@@ -170,10 +168,7 @@ export async function charge(req, res) {
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-          "Origin": PUBLIC_URL,
-          "Referer": PUBLIC_URL,
-          "User-Agent": "helagovi.lk-backend/1.0"
+          "Content-Type": "application/json"
         },
       }
     );
