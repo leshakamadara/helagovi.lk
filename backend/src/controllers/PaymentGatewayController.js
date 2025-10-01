@@ -162,7 +162,14 @@ export async function notify(req, res) {
 
 export async function charge(req, res) {
   try {
+    console.log("=== PAYHERE CHARGE REQUEST START ===");
     console.log("Charge request received:", req.body);
+    console.log("Request headers:", {
+      origin: req.headers.origin,
+      referer: req.headers.referer,
+      'user-agent': req.headers['user-agent'],
+      host: req.headers.host
+    });
     
     const { userId, cardId, order_id, items, amount, currency = "LKR" } = req.body;
     if (!userId || !cardId || !order_id || !amount || !items) {
@@ -176,11 +183,14 @@ export async function charge(req, res) {
       return res.status(500).json({ message: "PayHere credentials not configured" });
     }
 
-    console.log("PayHere environment:", {
+    console.log("PayHere environment configuration:", {
       PAYHERE_BASE_URL,
       PAYHERE_MERCHANT_BASE_URL,
       PUBLIC_URL,
+      FRONTEND_URL: process.env.FRONTEND_URL,
       BACKEND_WEBHOOK_URL,
+      NODE_ENV: process.env.NODE_ENV,
+      FORCE_PAYHERE_SANDBOX: process.env.FORCE_PAYHERE_SANDBOX,
       APP_ID_PRESENT: !!PAYHERE_APP_ID,
       APP_SECRET_PRESENT: !!PAYHERE_APP_SECRET,
       MERCHANT_ID_PRESENT: !!MERCHANT_ID
@@ -252,47 +262,68 @@ export async function charge(req, res) {
     };
 
     // 4. Call PayHere charge API
-    console.log("Calling PayHere charge API with body:", JSON.stringify(body, null, 2));
+    console.log("=== PAYHERE API CALL ===");
     console.log("PayHere API URL:", `${PAYHERE_MERCHANT_BASE_URL}/payment/charge`);
-    console.log("Request headers:", {
-      "Authorization": "Bearer [REDACTED]",
+    console.log("Charge request body:", JSON.stringify(body, null, 2));
+    
+    const requestHeaders = {
+      Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
-      "User-Agent": "helagovi.lk-backend",
+      "User-Agent": "helagovi.lk-backend/1.0",
       "Origin": PUBLIC_URL,
       "Referer": PUBLIC_URL
+    };
+    
+    console.log("Request headers being sent to PayHere:", {
+      "Authorization": "Bearer [REDACTED]",
+      "Content-Type": requestHeaders["Content-Type"],
+      "User-Agent": requestHeaders["User-Agent"],
+      "Origin": requestHeaders["Origin"],
+      "Referer": requestHeaders["Referer"]
     });
     
     try {
+      console.log("Making PayHere API request...");
       const response = await axios.post(
         `${PAYHERE_MERCHANT_BASE_URL}/payment/charge`,
         body,
         {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-            "User-Agent": "helagovi.lk-backend",
-            "Origin": PUBLIC_URL,
-            "Referer": PUBLIC_URL
-          },
+          headers: requestHeaders,
         }
       );
 
-      console.log("PayHere charge response:", response.data);
+      console.log("=== PAYHERE API RESPONSE ===");
+      console.log("PayHere charge response status:", response.status);
+      console.log("PayHere charge response data:", JSON.stringify(response.data, null, 2));
+      
       const data = response.data;
       
       if (data.status === 1 && data.data.status_code === 2) {
-        console.log("Payment successful");
+        console.log("✅ Payment successful");
+        console.log("=== CHARGE REQUEST END (SUCCESS) ===");
         res.json({ message: "Payment successful", data: data.data });
       } else {
-        console.log("Payment failed with response:", data);
+        console.log("❌ Payment failed with response:", data);
+        console.log("=== CHARGE REQUEST END (PAYMENT FAILED) ===");
         res.status(400).json({ message: "Payment failed", data });
       }
     } catch (chargeError) {
-      console.error("PayHere charge API error:", chargeError.response?.data || chargeError.message);
+      console.error("=== PAYHERE API ERROR ===");
+      console.error("Error status:", chargeError.response?.status);
+      console.error("Error data:", JSON.stringify(chargeError.response?.data, null, 2));
+      console.error("Error message:", chargeError.message);
+      console.error("Full error:", chargeError);
       throw chargeError; // Re-throw to be caught by outer try-catch
     }
   } catch (err) {
-    console.error("Charging error:", err.response?.data || err.message);
+    console.error("=== CHARGING ERROR (OUTER CATCH) ===");
+    console.error("Error details:", {
+      message: err.message,
+      status: err.response?.status,
+      data: err.response?.data,
+      stack: err.stack
+    });
+    console.error("=== CHARGE REQUEST END (ERROR) ===");
     res.status(500).json({ message: "Charging failed", error: err.response?.data || err.message });
   }
 }

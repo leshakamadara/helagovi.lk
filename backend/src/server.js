@@ -44,6 +44,21 @@ app.use(express.urlencoded({ extended: true }));
 
 // app.use(ratelimiter); // optional
 
+// Request logging middleware for debugging
+app.use((req, res, next) => {
+  if (req.path.includes('/payments/charge')) {
+    console.log(`🔍 ${req.method} ${req.path}`);
+    console.log("Request headers:", {
+      origin: req.headers.origin,
+      referer: req.headers.referer,
+      'user-agent': req.headers['user-agent'],
+      host: req.headers.host,
+      'x-forwarded-for': req.headers['x-forwarded-for']
+    });
+  }
+  next();
+});
+
 // Serve static files for uploads
 app.use('/uploads', express.static('uploads'));
 
