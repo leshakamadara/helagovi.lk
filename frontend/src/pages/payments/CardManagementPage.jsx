@@ -103,7 +103,7 @@ export default function CardManagerPage() {
     const cardMethod = method?.toUpperCase();
     switch (cardMethod) {
       case 'VISA': return 'bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900';
-      case 'MASTERCARD': return 'bg-gradient-to-br from-red-600 via-red-700 to-red-900';
+      case 'MASTER': return 'bg-gradient-to-br from-red-600 via-red-700 to-red-900';
       default: return 'bg-gradient-to-br from-gray-600 via-gray-700 to-gray-900';
     }
   };
@@ -172,7 +172,7 @@ export default function CardManagerPage() {
                     <div className="flex justify-between text-sm">
                       <div className="flex-1">
                         <div className="text-xs opacity-70 mb-1">CARD HOLDER</div>
-                        <div className="font-medium">{formatCardName(card.card_name)}</div>
+                        <div className="font-medium">{formatCardName(card.card_holder_name)}</div>
                       </div>
                       <div className="text-right">
                         <div className="text-xs opacity-70 mb-1">EXPIRES</div>

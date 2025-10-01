@@ -6,8 +6,8 @@ import SuccessPage from './pages/payments/SuccessPage'
 import ChargePage from './pages/payments/ChargePage'
 import CardManagementPage from './pages/payments/CardManagementPage'
 import PaymentPage from './pages/payments/billingHistory'
-
-
+import RefundPage from './pages/payments/refund.jsx'
+import PaymentHistoryPage from './pages/payments/PaymentHistoryPage.jsx'
 
 const App = () => {
   return (
@@ -21,7 +21,8 @@ const App = () => {
       <Route path="/CardManagementPage" element={<CardManagementPage />} />
       <Route path='/saveCard' element={<addCard/>}/>
       <Route path="/PaymentPage" element={<PaymentPage/>} />
-      
+      <Route path="/refundPage" element={<RefundPage/>} />
+      <Route path="/payHistory" element={<PaymentHistoryPage/>} />
 
 
     </Routes>  

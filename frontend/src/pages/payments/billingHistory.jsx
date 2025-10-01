@@ -9,7 +9,7 @@ const PaymentPage = () => {
   const [loadingType, setLoadingType] = useState('');
   const navigate = useNavigate();
 
-  // ✅ Replace with actual env var if needed
+  
   const PUBLIC_URL = window.location.origin;
 
   // Example order
@@ -49,7 +49,7 @@ const PaymentPage = () => {
       const amount = order.summary.total.toFixed(2);
 
       // ✅ Axios request instead of fetch
-      const res = await api.post('/payy/create-payment', {
+      const res = await api.post('/payments/pay', {
         order_id,
         amount,
         currency: 'LKR',
@@ -133,7 +133,7 @@ const PaymentPage = () => {
             <h3 className="text-xl font-bold text-gray-800 mb-6">Choose Payment Method</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <button
+              <button 
                 className={`bg-green-500 hover:bg-green-600 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center ${
                   isLoading && loadingType === 'mobile' ? 'opacity-75 cursor-not-allowed' : ''
                 }`}

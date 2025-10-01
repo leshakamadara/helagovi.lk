@@ -13,6 +13,8 @@ import supportRoutes from "./routes/supportRoutes.js";
 
 
 
+
+
 dotenv.config();
 
 const app = express();
@@ -23,6 +25,7 @@ app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+
 // app.use(ratelimiter); // optional
 
 // Routes
@@ -31,6 +34,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/support", supportRoutes);
+
 
 
 
