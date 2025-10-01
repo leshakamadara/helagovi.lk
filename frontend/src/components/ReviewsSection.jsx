@@ -677,7 +677,7 @@ const ReviewsSection = ({ productId }) => {
                     });
                     setShowReviewForm(true);
                   }}
-                  className="text-xs sm:text-sm"
+                  className="h-8 px-3 text-xs sm:text-sm min-w-[60px] sm:min-w-[70px]"
                 >
                   Edit
                 </Button>
@@ -685,7 +685,7 @@ const ReviewsSection = ({ productId }) => {
                   variant="outline"
                   size="sm"
                   onClick={() => handleDeleteReview(review._id)}
-                  className="text-xs sm:text-sm text-red-600 hover:text-red-700 hover:bg-red-50"
+                  className="h-8 px-3 text-xs sm:text-sm min-w-[60px] sm:min-w-[70px] text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300"
                 >
                   Delete
                 </Button>
