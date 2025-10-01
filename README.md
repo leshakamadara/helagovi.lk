@@ -1,9 +1,29 @@
-
 <div align="center">
-  <img src="https://framerusercontent.com/images/tQEEeKRa0oOBXHoksVNKvgBJZc.png" alt="Helagovi.lk Logo" width="200"/>
+  <img src="https://res.cloudinary.com/dckoipgrs/image/upload/v1759143086/Logo_uf3yae.png" alt="Helagovi.lk Logo" width="300"/>
 </div>
 
+
+
+ ⚠️ **Disclaimer**  
+ - This is a **test academic project** created for educational purposes only.  
+ - The name *Helagovi* is inspired by the Sinhala word *Hela* (meaning *Ceylon*).  
+ - It was chosen out of admiration for local digital innovations.  
+ - It is used here in a purely academic context, with no commercial intent.
+
+
+
+# ✨ When Ideas Meet Reality  
+
+<div align="center">
+  <img src="https://res.cloudinary.com/dckoipgrs/image/upload/v1759142371/Screenshot_2025-09-29_at_16.06.52_limfme.png" alt="Website Desktop" width="100%"/>
+  <br/><br/>
+  <img src="https://res.cloudinary.com/dckoipgrs/image/upload/v1759142370/IMG_82A811E6F22A-1_nk9hkw.jpg" alt="Website Mobile" width="500"/>
+</div>
+
+---
+
 # 🛠️ Helagovi.lk Git Workflow
+
 
 ---
 
@@ -183,26 +203,9 @@ git rebase dev   # or git merge dev
 
 ---
 
-## 🚀 Production Deployment
-
-### Live URLs
-- **Website:** https://www.helagovi.lk
-- **API:** https://helagovi-backend.onrender.com
-- **API Documentation:** https://helagovi-backend.onrender.com/api-docs
-
-### Payment Integration
-- **PayHere Gateway:** Integrated with live webhook URLs
-- **Production Webhook:** Set in PayHere dashboard to: `https://helagovi-backend.onrender.com/api/payments/notify`
-
-### Deployment Guide
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions.
-
----
-
 ✅ **Summary Notes**
 
 1. **Clone repo → checkout dev → pull** to start fresh.
 2. **Create feature branch locally** → work → push → PR → merge to dev.
 3. **Dependencies:** Install **both frontend and backend** before starting.
 4. **Never commit directly to main** — always work on feature branch first.
-5. **Production:** Deployed on Render with PayHere payment integration.
