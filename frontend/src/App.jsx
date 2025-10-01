@@ -1,8 +1,10 @@
-import { Routes, Route, Navigate, Link } from 'react-router-dom'
+import { Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
 import { Sprout } from 'lucide-react'
+import { AnimatePresence } from 'framer-motion'
 import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import PageTransition from './components/PageTransition'
 import ErrorBoundary from './components/ErrorBoundary'
 import RoleBasedHome from './components/RoleBasedHome'
 import Navbar from './components/Navbar'
@@ -48,63 +50,52 @@ import MainLayout from "./layouts/MainLayout";
 import { Toaster } from 'sonner';
 
 function App() {
+  const location = useLocation()
+
   return (
     <AuthProvider>
       <CartProvider>
         <div className="min-h-screen bg-gray-50">
-        <Routes>
-          {/* Main Page - Role-based Home */}
-          <Route path="/" element={<RoleBasedHome />} />
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            {/* Main Page - Role-based Home */}
+            <Route path="/" element={<RoleBasedHome />} />
 
-          {/* User / Auth Routes - with individual navbar */}
-          <Route path="/register" element={
-            <>
-              <div className="bg-white shadow-lg">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                  <div className="flex justify-between h-16">
-                    <div className="flex items-center">
-                      <Link to="/" className="flex-shrink-0 flex items-center">
-                        <img
-                          src="https://framerusercontent.com/images/tQEEeKRa0oOBXHoksVNKvgBJZc.png"
-                          alt="Helagovi.lk Logo"
-                          className="h-8 w-8 object-contain"
-                        />
-                        <span className="ml-2 text-xl font-bold text-gray-800">Helagovi.lk</span>
-                      </Link>
-                    </div>
-                    <div className="flex items-center">
-                        <Link
-                          to="/login"
-                          className="bg-white text-emerald-600 border border-emerald-600 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 hover:bg-[#22C55E] hover:text-white hover:border-[#22C55E]"
-                        >
-                          Login
-                        </Link>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <Register />
-            </>
-          } />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/forgot-password" element={
-            <>
-              <Navbar />
-              <ForgotPassword />
-            </>
-          } />
-          <Route path="/reset-password" element={
-            <>
-              <Navbar />
-              <ResetPassword />
-            </>
-          } />
-          <Route path="/verify-email" element={
-            <>
-              <Navbar />
-              <VerifyEmail />
-            </>
-          } />
+            {/* User / Auth Routes - with smooth transitions */}
+            <Route path="/register" element={
+              <PageTransition>
+                <Register />
+              </PageTransition>
+            } />
+            <Route path="/login" element={
+              <PageTransition>
+                <LoginPage />
+              </PageTransition>
+            } />
+            <Route path="/forgot-password" element={
+              <PageTransition>
+                <>
+                  <Navbar />
+                  <ForgotPassword />
+                </>
+              </PageTransition>
+            } />
+            <Route path="/reset-password" element={
+              <PageTransition>
+                <>
+                  <Navbar />
+                  <ResetPassword />
+                </>
+              </PageTransition>
+            } />
+            <Route path="/verify-email" element={
+              <PageTransition>
+                <>
+                  <Navbar />
+                  <VerifyEmail />
+                </>
+              </PageTransition>
+            } />
 
           {/* Debug Route */}
           <Route path="/debug" element={<Debug />} />
@@ -353,6 +344,7 @@ function App() {
             </ProtectedRoute>
           } />
         </Routes>
+        </AnimatePresence>
         <Toaster
           position="top-right"
           expand={false}

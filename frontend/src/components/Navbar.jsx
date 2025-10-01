@@ -503,9 +503,9 @@ const Navbar = () => {
                 // Guest users see login button
                 <Link
                   to="/login"
-                  className="bg-white text-emerald-600 border border-emerald-600 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 hover:bg-[#22C55E] hover:text-white hover:border-[#22C55E]"
+                  className="bg-white text-emerald-600 border border-emerald-600 px-4 py-2 rounded-md text-sm font-medium transition-all duration-400 ease-out hover:bg-[#22C55E] hover:text-white hover:border-[#22C55E] hover:rounded-full"
                 >
-                  Login
+                  Sign In
                 </Link>
               )}
             </div>
@@ -659,7 +659,7 @@ const Navbar = () => {
                           onClick={() => setIsOpen(false)}
                         >
                           <Link to="/login">
-                            Login
+                            Sign In
                           </Link>
                         </Button>
                         <Button
