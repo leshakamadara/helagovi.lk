@@ -34,6 +34,7 @@ const corsOptions = {
     "http://localhost:5173",
     "https://helagovi-lk-1.onrender.com", 
     "https://helagovi-lk.onrender.com",
+    "https://api.helagovi.lk",
     "https://www.helagovi.lk",
     "https://helagovi.lk"
   ],

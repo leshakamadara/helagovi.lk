@@ -11,7 +11,8 @@ const PAYHERE_APP_ID = "4OVyIPRAfqq4JFnJsgjrNJ3D0";
 const PAYHERE_APP_SECRET = "8m37JU8FMHr48febsV1al94ZJ45SNZyPX8LTWkYlVIrC";
 // Use frontend domain for PayHere domain validation
 const PUBLIC_URL = "https://www.helagovi.lk";
-const BACKEND_WEBHOOK_URL = "https://helagovi-lk.onrender.com";
+// Use custom API subdomain for webhooks (PayHere-friendly)
+const BACKEND_WEBHOOK_URL = "https://api.helagovi.lk";
 const PAYHERE_BASE_URL = "https://sandbox.payhere.lk";
 
 function verifyMd5(params) {
