@@ -160,34 +160,76 @@ export async function notify(req, res) {
 
 
 
-export async function charge(req,res){
-    {
+export async function charge(req, res) {
   try {
+    console.log("Charge request received:", req.body);
+    
     const { userId, cardId, order_id, items, amount, currency = "LKR" } = req.body;
     if (!userId || !cardId || !order_id || !amount || !items) {
+      console.error("Missing required fields:", { userId, cardId, order_id, items, amount, currency });
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-// 1. Retrieve preapproved token by userId + cardId
-  const savedCard = await SavedCard.findOne({ _id: cardId, userId });
+    // Check PayHere credentials
+    if (!PAYHERE_APP_ID || !PAYHERE_APP_SECRET) {
+      console.error("PayHere credentials not configured");
+      return res.status(500).json({ message: "PayHere credentials not configured" });
+    }
 
-    if (!savedCard) return res.status(404).json({ message: "No preapproved token found" });
+    console.log("PayHere environment:", {
+      PAYHERE_BASE_URL,
+      PAYHERE_MERCHANT_BASE_URL,
+      APP_ID_PRESENT: !!PAYHERE_APP_ID,
+      APP_SECRET_PRESENT: !!PAYHERE_APP_SECRET,
+      MERCHANT_ID_PRESENT: !!MERCHANT_ID
+    });
 
-    // 2.  Fetch a fresh access token
+    // 1. Retrieve preapproved token by userId + cardId
+    console.log("Looking for saved card:", { cardId, userId });
+    const savedCard = await SavedCard.findOne({ _id: cardId, userId });
+
+    if (!savedCard) {
+      console.error("No preapproved token found for:", { cardId, userId });
+      return res.status(404).json({ message: "No preapproved token found" });
+    }
+
+    console.log("Found saved card:", { 
+      cardId: savedCard._id, 
+      token: savedCard.token,
+      cardName: savedCard.card_name 
+    });
+
+    // 2. Fetch a fresh access token
+    console.log("Fetching PayHere access token...");
     const auth = Buffer.from(`${PAYHERE_APP_ID}:${PAYHERE_APP_SECRET}`).toString("base64");
-    const tokenRes = await axios.post(
-      `${PAYHERE_MERCHANT_BASE_URL}/oauth/token`,
-      "grant_type=client_credentials",
-      {
-        headers: {
-          Authorization: `Basic ${auth}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
+    
+    let accessToken;
+    try {
+      const tokenRes = await axios.post(
+        `${PAYHERE_MERCHANT_BASE_URL}/oauth/token`,
+        "grant_type=client_credentials",
+        {
+          headers: {
+            Authorization: `Basic ${auth}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+        }
+      );
+      
+      accessToken = tokenRes.data.access_token;
+      console.log("Successfully obtained access token");
+      
+      if (!accessToken) {
+        console.error("No access token received from PayHere");
+        return res.status(500).json({ message: "Failed to obtain PayHere access token" });
       }
-    );
-    const accessToken = tokenRes.data.access_token;
+    } catch (tokenError) {
+      console.error("Error fetching PayHere access token:", tokenError.response?.data || tokenError.message);
+      return res.status(500).json({ message: "Failed to authenticate with PayHere" });
+    }
 
     // 3. Build charge body
+    console.log("Building charge request body...");
     const body = {
       type: "PAYMENT",
       order_id,
@@ -208,28 +250,38 @@ export async function charge(req,res){
     };
 
     // 4. Call PayHere charge API
-    const response = await axios.post(
-      `${PAYHERE_MERCHANT_BASE_URL}/payment/charge`,
-      body,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    console.log("Calling PayHere charge API with body:", JSON.stringify(body, null, 2));
+    
+    try {
+      const response = await axios.post(
+        `${PAYHERE_MERCHANT_BASE_URL}/payment/charge`,
+        body,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-    const data = response.data;
-    if (data.status === 1 && data.data.status_code === 2) {
-      res.json({ message: "Payment successful ", data: data.data });
-    } else {
-      res.status(400).json({ message: "Payment failed ", data });
+      console.log("PayHere charge response:", response.data);
+      const data = response.data;
+      
+      if (data.status === 1 && data.data.status_code === 2) {
+        console.log("Payment successful");
+        res.json({ message: "Payment successful", data: data.data });
+      } else {
+        console.log("Payment failed with response:", data);
+        res.status(400).json({ message: "Payment failed", data });
+      }
+    } catch (chargeError) {
+      console.error("PayHere charge API error:", chargeError.response?.data || chargeError.message);
+      throw chargeError; // Re-throw to be caught by outer try-catch
     }
   } catch (err) {
     console.error("Charging error:", err.response?.data || err.message);
     res.status(500).json({ message: "Charging failed", error: err.response?.data || err.message });
   }
-}
 }
 
 
