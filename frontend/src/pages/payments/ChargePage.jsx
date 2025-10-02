@@ -201,7 +201,7 @@ const ChargePage = () => {
           console.log("Creating order with data:", orderPayload);
           console.log("Items count:", items.length);
           const orderRes = await api.post("/orders", orderPayload);
-          const createdOrder = orderRes.data.order;
+          const createdOrder = orderRes.data.data?.order || orderRes.data.order;
           console.log("Order created successfully:", createdOrder);
           
           // Step 3: Clear cart and navigate to success
