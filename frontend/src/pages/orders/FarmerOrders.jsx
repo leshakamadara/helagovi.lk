@@ -140,10 +140,12 @@ const FarmerOrders = () => {
           return true
         })
         
-        const totalRevenue = validOrders.reduce((sum, order) => sum + order.total, 0)
+        // Exclude cancelled orders from revenue calculation
+        const revenueOrders = validOrders.filter(order => order.status !== 'cancelled')
+        const totalRevenue = revenueOrders.reduce((sum, order) => sum + order.total, 0)
         const totalOrders = validOrders.length
         const pendingOrders = validOrders.filter(order => order.status === 'pending').length
-        const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
+        const averageOrderValue = revenueOrders.length > 0 ? totalRevenue / revenueOrders.length : 0
 
         setAnalytics({
           totalRevenue,
@@ -359,11 +361,23 @@ const FarmerOrders = () => {
 
   const getStatusProgression = (currentStatus) => {
     const allStatuses = ['pending', 'confirmed', 'preparing', 'shipped', 'delivered']
+    
+    // Handle cancelled status separately
+    if (currentStatus === 'cancelled') {
+      return {
+        completed: [],
+        current: 'cancelled',
+        remaining: [],
+        isCancelled: true
+      }
+    }
+    
     const currentIndex = allStatuses.indexOf(currentStatus)
     return {
       completed: allStatuses.slice(0, currentIndex),
       current: currentStatus,
-      remaining: allStatuses.slice(currentIndex + 1)
+      remaining: allStatuses.slice(currentIndex + 1),
+      isCancelled: false
     }
   }
 
@@ -617,46 +631,59 @@ const FarmerOrders = () => {
                 <div className="mb-6">
                   <h4 className="font-medium text-gray-900 mb-3">Order Progress</h4>
                   <div className="flex items-center space-x-2">
-                    {['pending', 'confirmed', 'preparing', 'shipped', 'delivered'].map((status, index) => {
-                      const progression = getStatusProgression(order.status)
-                      const isCompleted = progression.completed.includes(status)
-                      const isCurrent = progression.current === status
-                      const isRemaining = progression.remaining.includes(status)
-                      
-                      return (
-                        <div key={status} className="flex items-center">
-                          <div className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium ${
-                            isCompleted 
-                              ? 'bg-green-100 text-green-800' 
-                              : isCurrent 
-                                ? 'bg-blue-100 text-blue-800 ring-2 ring-blue-500' 
-                                : 'bg-gray-100 text-gray-400'
-                          }`}>
-                            {isCompleted ? (
-                              <CheckCircle className="h-4 w-4" />
-                            ) : isCurrent ? (
-                              getStatusIcon(status)
-                            ) : (
-                              <div className="w-2 h-2 bg-current rounded-full"></div>
+                    {order.status === 'cancelled' ? (
+                      // Show cancelled status
+                      <div className="flex items-center">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium bg-red-100 text-red-800 ring-2 ring-red-500">
+                          <XCircle className="h-4 w-4" />
+                        </div>
+                        <span className="ml-2 text-xs font-medium capitalize text-red-800">
+                          Cancelled
+                        </span>
+                      </div>
+                    ) : (
+                      // Show normal progression
+                      ['pending', 'confirmed', 'preparing', 'shipped', 'delivered'].map((status, index) => {
+                        const progression = getStatusProgression(order.status)
+                        const isCompleted = progression.completed.includes(status)
+                        const isCurrent = progression.current === status
+                        const isRemaining = progression.remaining.includes(status)
+                        
+                        return (
+                          <div key={status} className="flex items-center">
+                            <div className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium ${
+                              isCompleted 
+                                ? 'bg-green-100 text-green-800' 
+                                : isCurrent 
+                                  ? 'bg-blue-100 text-blue-800 ring-2 ring-blue-500' 
+                                  : 'bg-gray-100 text-gray-400'
+                            }`}>
+                              {isCompleted ? (
+                                <CheckCircle className="h-4 w-4" />
+                              ) : isCurrent ? (
+                                getStatusIcon(status)
+                              ) : (
+                                <div className="w-2 h-2 bg-current rounded-full"></div>
+                              )}
+                            </div>
+                            <span className={`ml-2 text-xs font-medium capitalize ${
+                              isCompleted 
+                                ? 'text-green-800' 
+                                : isCurrent 
+                                  ? 'text-blue-800' 
+                                  : 'text-gray-400'
+                            }`}>
+                              {status}
+                            </span>
+                            {index < 4 && (
+                              <div className={`w-8 h-0.5 mx-2 ${
+                                isCompleted ? 'bg-green-300' : 'bg-gray-200'
+                              }`}></div>
                             )}
                           </div>
-                          <span className={`ml-2 text-xs font-medium capitalize ${
-                            isCompleted 
-                              ? 'text-green-800' 
-                              : isCurrent 
-                                ? 'text-blue-800' 
-                                : 'text-gray-400'
-                          }`}>
-                            {status}
-                          </span>
-                          {index < 4 && (
-                            <div className={`w-8 h-0.5 mx-2 ${
-                              isCompleted ? 'bg-green-300' : 'bg-gray-200'
-                            }`}></div>
-                          )}
-                        </div>
-                      )
-                    })}
+                        )
+                      })
+                    )}
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
                     {order.status === 'pending' && "Next: Confirm the order to start processing"}
