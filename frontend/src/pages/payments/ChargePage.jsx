@@ -139,6 +139,10 @@ const ChargePage = () => {
           // Get orderData from location.state (passed from billingHistory)
           const orderDataFromState = location.state?.orderData;
           
+          console.log("Location state:", location.state);
+          console.log("orderDataFromState:", orderDataFromState);
+          console.log("order object:", order);
+          
           // Prepare delivery address if available
           let deliveryAddress = {};
           if (orderDataFromState?.deliveryInfo) {
@@ -164,14 +168,29 @@ const ChargePage = () => {
             };
           }
           
-          const orderPayload = {
-            items: orderDataFromState?.items.map(item => ({
+          // Validate we have items
+          let items = [];
+          if (orderDataFromState?.items && orderDataFromState.items.length > 0) {
+            items = orderDataFromState.items.map(item => ({
               productId: item.productId,
               quantity: item.quantity
-            })) || order.summary.items.map(item => ({
+            }));
+          } else if (order.summary?.items && order.summary.items.length > 0) {
+            items = order.summary.items.map(item => ({
               productId: item.productId || item._id,
               quantity: item.quantity || 1,
-            })),
+            }));
+          } else {
+            throw new Error("No items found in order data");
+          }
+          
+          // Validate delivery address
+          if (!deliveryAddress.recipientName || !deliveryAddress.phone || !deliveryAddress.city) {
+            throw new Error("Missing required delivery address fields");
+          }
+          
+          const orderPayload = {
+            items,
             deliveryAddress,
             paymentMethod: 'saved_card',
             paymentStatus: 'paid',
@@ -180,6 +199,7 @@ const ChargePage = () => {
           };
           
           console.log("Creating order with data:", orderPayload);
+          console.log("Items count:", items.length);
           const orderRes = await api.post("/orders", orderPayload);
           const createdOrder = orderRes.data.order;
           console.log("Order created successfully:", createdOrder);
@@ -212,8 +232,14 @@ const ChargePage = () => {
             } 
           });
         } catch (orderErr) {
-          console.error("Error creating order:", orderErr);
-          setMessage(`⚠️ Payment successful (ID: ${data.data?.payment_id || orderId}), but order creation failed. Please contact support.`);
+          console.error("Error creating order:", {
+            message: orderErr.message,
+            response: orderErr.response?.data,
+            status: orderErr.response?.status,
+            fullError: orderErr
+          });
+          const errorDetails = orderErr.response?.data?.error || orderErr.response?.data?.message || orderErr.message;
+          setMessage(`⚠️ Payment successful (ID: ${data.data?.payment_id || orderId}), but order creation failed: ${errorDetails}. Please contact support.`);
         }
       } else {
         setMessage("⚠️ Payment Failed");
