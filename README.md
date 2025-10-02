@@ -14,6 +14,13 @@
 
 # ✨ When Ideas Meet Reality  
 
+
+<div align="center">
+  
+[![Website](https://img.shields.io/badge/Website-helagovi.lk-success?style=for-the-badge)](https://www.helagovi.lk)
+
+</div>
+
 <div align="center">
   <img src="https://res.cloudinary.com/dckoipgrs/image/upload/v1759142371/Screenshot_2025-09-29_at_16.06.52_limfme.png" alt="Website Desktop" width="100%"/>
   <br/><br/>
@@ -22,190 +29,142 @@
 
 ---
 
-# 🛠️ Helagovi.lk Git Workflow
 
 
----
+## 🚀 Getting Started
 
-## Step A: Clone the Repository
+### Prerequisites
+
+- Node.js
+- MongoDB Atlas account
+- Cloudinary account
+- Upstash Redis account (optional)
+- PayHere merchant account
+
+### Step 1: Clone the Repository
 
 ```bash
 git clone https://github.com/leshakamadara/helagovi.lk.git
 cd helagovi.lk
 ```
 
----
+### Step 2: Environment Configuration
 
-## 🔄 Step B: Switch to `dev` Branch and Pull Latest Changes
+Create a `.env` file in the **backend** folder with the following variables:
 
-```bash
-git checkout dev
-git pull origin dev
+```env
+# Server Configuration
+PORT=5001
+NODE_ENV=development
+
+# Database
+MONGO_URI=YOUR_MONGO_URI
+
+# Authentication
+JWT_SECRET=YOUR_JWT_SECRET
+JWT_EXPIRE=1d
+
+# Cloudinary Configuration
+CLOUDINARY_CLOUD_NAME=YOUR_CLOUD_NAME
+CLOUDINARY_API_KEY=YOUR_CLOUD_API_KEY
+CLOUDINARY_API_SECRET=YOUR_CLOUD_API_SECRET
+
+# Redis Cache (Upstash)
+UPSTASH_REDIS_REST_URL=YOUR_REDIS_REST_URL
+UPSTASH_REDIS_REST_TOKEN=YOUR_REDIS_REST_TOKEN
+
+# PayHere Payment Gateway
+PAYHERE_MERCHANT_ID=YOUR_PAYHERE_MERCHANT_ID
+PAYHERE_MERCHANT_SECRET=YOUR_PAYHERE_MERCHANT_SECRET
+PAYHERE_APP_ID=YOUR_PAYHERE_APP_ID
+PAYHERE_APP_SECRET=YOUR_PAYHERE_APP_SECRET
+FORCE_PAYHERE_SANDBOX=true
+
+# Frontend URLs
+PUBLIC_URL=https://www.helagovi.lk
+FRONTEND_URL=https://www.helagovi.lk
+BACKEND_WEBHOOK_URL=https://www.helagovi.lk
 ```
 
-> 💡 **Note:** `dev` is the integration branch for all features. Always start from here.
+### Step 3: Install Dependencies
 
----
-
-## 🌿 Step C: Create Your Feature Branch
+#### Backend Dependencies
 
 ```bash
-git checkout -b feature/order-management
-```
-
-> **Replace** `order-management` with your task name.
-> **Convention:** `feature/<your-task-name>`
-
-## Example Feature Branch Names
-
-* `feature/order-management`
-* `feature/product-listing`
-* `feature/user-management`
-* `feature/payment`
-
-* **Local branch created first**
-* **Push to GitHub** after you start committing changes
-
-
-
-## ❓ Feature Branch Creation: Local vs Remote
-
-* Feature branches are **created locally** on each team member’s machine.
-* After creating locally, you **push them to GitHub** so others can see/review.
-* **Example:** `git checkout -b feature/user-management` → local branch
-  → `git push -u origin feature/user-management` → now branch exists remotely.
-
-> **do not create feature branches directly on GitHub** - Standard workflow is local → push.
-
-
----
-
-## 💻 Step D: Work Locally
-
-### 1. Install Dependencies (if needed)
-
-```bash
-# Backend
 cd backend
 npm install
 cd ..
+```
 
-# Frontend  
+#### Frontend Dependencies
+
+```bash
 cd frontend
 npm install
 cd ..
 ```
 
-### 2. Run both backend and frontend (or open new terminal for both folders)
+### Step 4: Run the Application
+
+You can run both backend and frontend simultaneously by opening two terminal windows:
+
+#### Backend
 
 ```bash
 cd backend
 npm run dev
-cd ..
-
 ```
+
+#### Frontend
 
 ```bash
 cd frontend
 npm run dev
-cd ..
 ```
 
-> Each developer installs both **frontend and backend dependencies** to work locally.
+---
 
-### 2. Development Process
+## 🛠️ Technology Stack
 
-* Make changes in **frontend/** or **backend/** folders
-* Test your feature locally
-* Ensure everything works as expected
+### Backend
+- Node.js
+- Express.js
+- MongoDB Atlas
+- Redis (Upstash)
+
+### Frontend
+- React.js
+-  Tailwind CSS/ShadCN
+
+### Third-Party Services
+- **Cloudinary** - Image upload and management
+- **PayHere** - Payment gateway integration
+- **Upstash Redis** - Caching layer (optional)
 
 ---
 
-## 📝 Step E: Stage & Commit Changes
+## 📦 Key Features
 
-```bash
-git add .
-git commit -m "Add order management feature"
-```
+### Database
+- MongoDB Atlas for production data storage
+- Ensure credentials match production accounts
 
-> ✨ **Tip:** Keep commit messages short and descriptive.
+### Image Management
+- Cloudinary for image uploads and optimization
+- Configure API keys in environment variables
 
----
+### Caching (Optional)
+- Upstash Redis for caching sessions and frequent queries
+- Improves application performance
 
-## 🚀 Step F: Push Feature Branch to GitHub
-
-```bash
-git push -u origin feature/order-management
-```
-
-* This creates the branch **on GitHub** after it was first created **locally**
-
----
-
-## 🔍 Step G: Create Pull Request (PR)
-
-### Process:
-
-1. Go to your repository on GitHub
-2. Click **"Compare & pull request"** for your branch
-3. **Ensure the following settings:**
-
-   * **Base branch:** `dev`
-   * **Compare branch:** your feature branch (`feature/order-management`)
-4. Add a clear title & description of your feature
-5. Request review from at least **one team member**
-6. Click **"Create Pull Request"** ✅
+### Payment Processing
+- PayHere integration with sandbox mode support
+- Set `FORCE_PAYHERE_SANDBOX=true` for testing
+- Configure merchant IDs, app secrets, and webhook URLs
+- Frontend redirects should match `FRONTEND_URL`
 
 ---
 
-## ✅ Step H: Merge After Approval
+## 📧 Contact
 
-* Once PR is **approved**, merge into `dev` branch
-* **Optionally:** Delete the feature branch after successful merge
-
----
-
-## 🔄 Step I: Keep Your Branch Updated
-
-```bash
-git checkout dev
-git pull origin dev
-git checkout feature/order-management
-git rebase dev   # or git merge dev
-```
-
-> ⚠️ **Important:** Regularly update your branch to avoid merge conflicts
-
----
-
-## Quick Reference Summary
-
-| Branch Type  | Purpose                                                            |
-| ------------ | ------------------------------------------------------------------ |
-| `dev`        | Integration branch for all features                                |
-| `feature/*`  | Individual feature development branches (local first, then pushed) |
-| Pull Request | Merge path: Feature → Dev                                          |
-| `main`       | Stable production branch (merge from dev after testing)            |
-
----
-
-## 🎯 Quick Command Reference
-
-| Action                    | Command                        |
-| ------------------------- | ------------------------------ |
-| Clone repo                | `git clone <repo-url>`         |
-| Switch branch             | `git checkout <branch-name>`   |
-| Create new branch (local) | `git checkout -b <new-branch>` |
-| Stage changes             | `git add .`                    |
-| Commit                    | `git commit -m "message"`      |
-| Push feature branch       | `git push -u origin <branch>`  |
-| Update branch             | `git pull origin <branch>`     |
-
----
-
-✅ **Summary Notes**
-
-1. **Clone repo → checkout dev → pull** to start fresh.
-2. **Create feature branch locally** → work → push → PR → merge to dev.
-3. **Dependencies:** Install **both frontend and backend** before starting.
-4. **Never commit directly to main** — always work on feature branch first.
+For questions or feedback about this academic project, please open an issue in the repository.
