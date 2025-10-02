@@ -168,3 +168,5 @@ npm run dev
 ## 📧 Contact
 
 For questions or feedback about this academic project, please open an issue in the repository.
+
+---
