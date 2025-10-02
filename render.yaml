@@ -14,7 +14,7 @@ services:
         value: production
       - key: PORT
         value: 5001
-      # Add other environment variables in Render dashboard
+     
 
   # Frontend Web Service (for SPA routing support)
   - type: web
@@ -36,10 +36,3 @@ services:
       - key: PORT
         value: 10000
 
-# Database (if using Render PostgreSQL - optional)
-# databases:
-#   - name: helagovi-db
-#     databaseName: helagovi
-#     user: helagovi_user
-#     region: singapore
-#     plan: starter
