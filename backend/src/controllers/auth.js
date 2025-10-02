@@ -440,3 +440,69 @@ export const getUserStats = async (req, res, next) => {
     next(error);
   }
 };
+// @desc    Get all registered users (Admin only)
+// @route   GET /api/auth/users
+// @access  Private/Admin
+export const getAllUsers = async (req, res, next) => {
+  try {
+    const { 
+      role, 
+      isVerified, 
+      search,
+      page = 1, 
+      limit = 20,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Build query
+    const query = {};
+    if (role) query.role = role;
+    if (isVerified !== undefined) query.isVerified = isVerified === 'true';
+    
+    // Add search functionality
+    if (search) {
+      query.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Build sort object
+    const sort = {};
+    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+    // Get users
+    const users = await User.find(query)
+      .select('-password -verificationToken -resetPasswordToken') // Exclude sensitive fields
+      .sort(sort)
+      .skip(skip)
+      .limit(limitNum);
+
+    // Get total count for pagination
+    const totalUsers = await User.countDocuments(query);
+    const totalPages = Math.ceil(totalUsers / limitNum);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        users,
+        pagination: {
+          currentPage: pageNum,
+          totalPages,
+          totalUsers,
+          hasNextPage: pageNum < totalPages,
+          hasPrevPage: pageNum > 1
+        }
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
