@@ -206,7 +206,8 @@ export async function charge(req, res) {
       amount,
       customer_token: savedCard.token,
       custom_1: userId,
-      notify_url: `${BACKEND_WEBHOOK_URL}/api/payments/charge-notify`,
+      // ✅ Use the existing notify endpoint (works for both preapproval and charging)
+      notify_url: `https://helagovi-lk.onrender.com/api/payments/notify`,
       itemList: [
         {
           name: items,
