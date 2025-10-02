@@ -97,7 +97,7 @@ const deliveryAddressSchema = new Schema({
 const paymentInfoSchema = new Schema({
   method: {
     type: String,
-    enum: ['cash_on_delivery', 'bank_transfer', 'mobile_payment', 'credit_card'],
+    enum: ['cash_on_delivery', 'bank_transfer', 'mobile_payment', 'credit_card', 'saved_card'],
     required: [true, 'Payment method is required']
   },
   status: {
