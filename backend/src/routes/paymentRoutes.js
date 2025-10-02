@@ -1,6 +1,6 @@
 import express from "express";
 import { createTransaction, deleteTransaction, getAllTransaction, updateTransaction, getUserTransactions } from "../controllers/paymentController.js";
-import {preapprove,notify,charge,createPayment,verifyPayhereConnection} from "../controllers/PaymentGatewayController.js"
+import {preapprove,notify,charge,createPayment} from "../controllers/PaymentGatewayController.js"
 import {updateCardData,deleteCardData,getCardData} from "../controllers/PaymentCardController.js"
 
 
@@ -25,6 +25,5 @@ router.post("/preapprove", preapprove)
 router.post("/notify",notify)
 router.post("/charge",charge)
 router.post("/pay",createPayment)
-router.get("/verify-connection", verifyPayhereConnection)
 
 export default router;

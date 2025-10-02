@@ -7,7 +7,7 @@ const CheckoutButton = ({ onClick }) => {
     if (!document.getElementById("payhere-sdk")) {
       const script = document.createElement("script");
       script.id = "payhere-sdk";
-      script.src = "https://www.payhere.lk/lib/payhere.js";
+      script.src = "https://sandbox.payhere.lk/lib/payhere.js"; // ✅ Use sandbox for testing
       script.async = true;
       script.onload = () => setSdkLoaded(true); // ✅ Mark SDK loaded
       document.body.appendChild(script);

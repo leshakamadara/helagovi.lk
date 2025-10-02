@@ -7,10 +7,12 @@ import {
 } from "lucide-react";
 import ChargeSummary from "../../components/payOrderSummary";
 import api from "../../lib/axios";
+import { useAuth } from "../../context/AuthContext";
 
 const ChargePage = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const order = location.state?.order || {
     orderNumber: "ORD-UNKNOWN",
@@ -18,7 +20,8 @@ const ChargePage = () => {
     summary: { items: [{ name: "Unknown", price: 0 }], tax: 0, total: 0 },
   };
 
-  const userId = "635";
+  // ✅ Use actual logged-in user ID
+  const userId = user?._id || user?.id;
   const orderId = order.orderNumber || `ORD-${Date.now()}`;
   const items = order.summary.items.map((i) => i.name).join(", ");
   const amount = order.summary.total;
@@ -31,13 +34,27 @@ const ChargePage = () => {
   const [selectedCardId, setSelectedCardId] = useState("");
   const [isLoadingCards, setIsLoadingCards] = useState(false);
 
+  // Redirect if user is not logged in
   useEffect(() => {
+    if (!user) {
+      alert("Please log in to continue with payment");
+      navigate("/login");
+      return;
+    }
     fetchSavedCards();
-  }, []);
+  }, [user, navigate]);
 
   const fetchSavedCards = async () => {
+    if (!userId) {
+      console.error("No userId available");
+      setMessage("❌ User not logged in");
+      setIsLoadingCards(false);
+      return;
+    }
+    
     setIsLoadingCards(true);
     try {
+      console.log("Fetching cards for userId:", userId);
       const response = await api.get(`/payments/card/${userId}`);
       
       const data = response.data;
@@ -66,17 +83,40 @@ const ChargePage = () => {
   };
 
   const handleCharge = async () => {
+    // Validation checks
+    if (!userId) {
+      setMessage("❌ User not logged in");
+      return;
+    }
+    
     if (!selectedCardId) {
       setMessage("⚠️ Please select a card first");
       return;
     }
-    if (!window.confirm("Are you sure you want to charge using this card?")) return;
+    
+    if (!amount || amount <= 0) {
+      setMessage("❌ Invalid order amount");
+      return;
+    }
+    
+    if (!window.confirm(`Are you sure you want to charge LKR ${amount.toFixed(2)} using this card?`)) {
+      return;
+    }
 
     setMessage("");
     setResult(null);
     setIsCharging(true);
 
     try {
+      console.log("Initiating charge with data:", {
+        userId,
+        cardId: selectedCardId,
+        order_id: orderId,
+        items,
+        amount: parseFloat(amount),
+        currency
+      });
+      
       const res = await api.post(`/payments/charge`, {
         userId,
         cardId: selectedCardId,
@@ -85,21 +125,51 @@ const ChargePage = () => {
         amount: parseFloat(amount),
         currency,
       });
+      
       const data = res.data;
       console.log("Charge response:", data);
 
-      
-      if (data.success || res.status === 200) {
+      if (data.success || (data.data && data.data.status_code === 2)) {
         setMessage("✅ Payment Successful");
         setResult(data);
-        navigate("/success", { state: { order, chargeResult: data } });
+        
+        // Navigate to success page
+        setTimeout(() => {
+          navigate("/success", { 
+            state: { 
+              order, 
+              chargeResult: data,
+              transactionDetails: {
+                paymentMethod: 'Saved Card',
+                transactionId: data.data?.payment_id || orderId,
+                status: 'completed'
+              }
+            } 
+          });
+        }, 1500);
       } else {
-        setMessage("⚠️ Payment Failed");
+        const errorMsg = data.data?.status_message || data.message || "Payment failed";
+        setMessage(`⚠️ ${errorMsg}`);
         setResult(data);
       }
     } catch (err) {
-      console.error("Charge error:", err);
-      setMessage("❌ Error occurred while charging");
+      console.error("Charge error:", {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status
+      });
+      
+      const errorMessage = err.response?.data?.error || 
+                          err.response?.data?.message || 
+                          err.message || 
+                          "Error occurred while charging";
+      
+      setMessage(`❌ ${errorMessage}`);
+      
+      // Show more detailed error if available
+      if (err.response?.data?.details) {
+        console.error("Detailed error:", err.response.data.details);
+      }
     } finally {
       setIsCharging(false);
     }

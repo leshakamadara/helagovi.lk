@@ -76,9 +76,8 @@ const PaymentPage = () => {
 
   useEffect(() => {
     const script = document.createElement('script');
-    script.src = import.meta.env.PROD 
-      ? 'https://www.payhere.lk/lib/payhere.js' 
-      : 'https://www.payhere.lk/lib/payhere.js'; // PayHere uses same script for both environments
+    // ✅ Use sandbox for testing, live for production
+    script.src = 'https://sandbox.payhere.lk/lib/payhere.js'; // Use sandbox SDK for testing
     script.async = true;
     document.body.appendChild(script);
     return () => document.body.removeChild(script);
