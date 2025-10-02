@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import api from "../../lib/axios";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb';
+import { H1, P, Muted } from '../../components/ui/typography';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Button } from '../../components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from '../../components/ui/alert';
+import { CreditCard, Info, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 const addCard = () => {
   const [firstName, setFirstName] = useState("");
@@ -85,135 +93,155 @@ const addCard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-green-50 py-8 px-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="card bg-white shadow-xl border border-green-200">
-          <div className="card-body">
-            {/* Header */}
-            <div className="text-center mb-6">
-              <h1 className="card-title text-3xl font-bold text-green-700 justify-center mb-2">
-                💳 Save Card
-              </h1>
-              <p className="text-green-900/70 text-lg">
-                Securely save your card for future automated payments
-              </p>
-            </div>
+    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      {/* Breadcrumbs */}
+      <div className="mb-6">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/">Home</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/buyer-dashboard">Dashboard</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/CardManagementPage">Payment Cards</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Add New Card</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
 
-            {/* Alert for additional info */}
-            <div className="alert alert-info mb-6 border-l-4 border-green-500 bg-green-100 text-green-800">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              <div>
-                <h3 className="font-bold">Safe & Secure</h3>
-                <div className="text-xs">Your payment information is encrypted and processed securely through PayHere.</div>
-              </div>
-            </div>
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div>
+            <H1 className="text-gray-900">Add Payment Card</H1>
+            <P className="text-gray-600">Securely save your card for future automated payments</P>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-2xl mx-auto">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Card Pre-approval
+            </CardTitle>
+            <CardDescription>
+              Securely save your card for future automated payments through PayHere
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+
+            {/* Info Alert */}
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertTitle>Safe & Secure</AlertTitle>
+              <AlertDescription>
+                Your payment information is encrypted and processed securely through PayHere.
+              </AlertDescription>
+            </Alert>
 
             {/* Form */}
             <div className="space-y-4">
               {/* Name Fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-medium text-green-800">First Name</span>
-                  </label>
-                  <input 
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input
+                    id="firstName"
                     type="text"
-                    placeholder="Enter your first name" 
-                    className="input input-bordered bg-white w-full text-green-900 placeholder-green-400 border-green-300 focus:border-green-500 focus:ring focus:ring-green-200" 
-                    value={firstName} 
-                    onChange={e => setFirstName(e.target.value)} 
-                    required 
+                    placeholder="Enter your first name"
+                    value={firstName}
+                    onChange={e => setFirstName(e.target.value)}
+                    required
                   />
                 </div>
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-medium text-green-800">Last Name</span>
-                  </label>
-                  <input 
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
                     type="text"
-                    placeholder="Enter your last name" 
-                    className="input input-bordered bg-white w-full text-green-900 placeholder-green-400 border-green-300 focus:border-green-500 focus:ring focus:ring-green-200" 
-                    value={lastName} 
-                    onChange={e => setLastName(e.target.value)} 
-                    required 
+                    placeholder="Enter your last name"
+                    value={lastName}
+                    onChange={e => setLastName(e.target.value)}
+                    required
                   />
                 </div>
               </div>
 
               {/* Contact Fields */}
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium text-green-800">Email Address</span>
-                </label>
-                <input 
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
                   type="email"
-                  placeholder="your.email@example.com" 
-                  className="input input-bordered bg-white w-full text-green-900 placeholder-green-400 border-green-300 focus:border-green-500 focus:ring focus:ring-green-200" 
-                  value={email} 
-                  onChange={e => setEmail(e.target.value)} 
-                  required 
+                  placeholder="your.email@example.com"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
                 />
               </div>
 
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium text-green-800">Phone Number</span>
-                </label>
-                <input 
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input
+                  id="phone"
                   type="tel"
-                  placeholder="+94 77 123 4567" 
-                  className="input input-bordered bg-white w-full text-green-900 placeholder-green-400 border-green-300 focus:border-green-500 focus:ring focus:ring-green-200" 
-                  value={phone} 
-                  onChange={e => setPhone(e.target.value)} 
-                  required 
+                  placeholder="+94 77 123 4567"
+                  value={phone}
+                  onChange={e => setPhone(e.target.value)}
+                  required
                 />
               </div>
 
               {/* Submit Button */}
-              <div className="form-control mt-8">
-                <button 
-                  type="button" 
-                  className={`btn btn-success btn-lg w-full ${isLoading ? 'loading' : ''}`}
+              <div className="pt-4">
+                <Button
+                  type="button"
+                  className="w-full"
+                  size="lg"
                   disabled={isLoading}
                   onClick={handlePreapprove}
                 >
                   {isLoading ? (
                     <>
-                      <span className="loading loading-spinner"></span>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Processing...
                     </>
                   ) : (
                     <>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                      </svg>
+                      <CreditCard className="mr-2 h-4 w-4" />
                       Preapprove Card
                     </>
                   )}
-                </button>
+                </Button>
               </div>
             </div>
 
             {/* Message Display */}
             {message && (
-              <div className={`alert mt-6 ${message.includes('failed') || message.includes('Error') ? 'alert-error border-red-500 bg-red-100 text-red-700' : 'alert-success border-green-500 bg-green-100 text-green-700'}`}>
-                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={message.includes('failed') || message.includes('Error') ? "M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" : "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"} />
-                </svg>
-                <span>{message}</span>
-              </div>
+              <Alert variant={message.includes('failed') || message.includes('Error') ? 'destructive' : 'default'}>
+                {message.includes('failed') || message.includes('Error') ? (
+                  <AlertCircle className="h-4 w-4" />
+                ) : (
+                  <CheckCircle className="h-4 w-4" />
+                )}
+                <AlertTitle>
+                  {message.includes('failed') || message.includes('Error') ? 'Error' : 'Success'}
+                </AlertTitle>
+                <AlertDescription>{message}</AlertDescription>
+              </Alert>
             )}
-          </div>
-        </div>
-
-        {/* Footer Info */}
-        <div className="text-center mt-8 text-green-900/60">
-          <p className="text-sm">
-            🔒 Powered by HelaGovi - Sri Lanka's most trusted Marketplace
-          </p>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -47,6 +47,7 @@ import CardPreapprovalCancel from './pages/payments/CardPreapprovalCancel'
 import DeliveryInformation from './pages/checkout/DeliveryInformation'
 
 import MainLayout from "./layouts/MainLayout";
+import BuyerDashNavbar from "./components/BuyerDashNavbar";
 import { Toaster } from 'sonner';
 
 function App() {
@@ -306,9 +307,10 @@ function App() {
           {/* Payment Routes */}
           <Route path="/saveCard" element={
             <ProtectedRoute>
-              <MainLayout>
+              <>
+                <BuyerDashNavbar />
                 <BillingHistory />
-              </MainLayout>
+              </>
             </ProtectedRoute>
           } />
           <Route path="/processing" element={<ProcessingPage />} />
