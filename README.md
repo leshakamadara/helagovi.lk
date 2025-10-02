@@ -5,7 +5,7 @@
 
 
  ⚠️ **Disclaimer**  
- - This is a **test academic project** created for educational purposes only.  
+ - This is a **Academic Project** created for educational purposes only.  
  - The name *Helagovi* is inspired by the Sinhala word *Hela* (meaning *Ceylon*).  
  - It was chosen out of admiration for local digital innovations.  
  - It is used here in a purely academic context, with no commercial intent.
