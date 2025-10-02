@@ -117,6 +117,7 @@ const ChargePage = () => {
         currency
       });
       
+      // Step 1: Charge the card
       const res = await api.post(`/payments/charge`, {
         userId,
         cardId: selectedCardId,
@@ -130,9 +131,90 @@ const ChargePage = () => {
 
       
       if (data.success || res.status === 200) {
-        setMessage("✅ Payment Successful");
+        setMessage("✅ Payment Successful - Creating Order...");
         setResult(data);
-        navigate("/success", { state: { order, chargeResult: data } });
+        
+        // Step 2: Create order in database after successful payment
+        try {
+          // Get orderData from location.state (passed from billingHistory)
+          const orderDataFromState = location.state?.orderData;
+          
+          // Prepare delivery address if available
+          let deliveryAddress = {};
+          if (orderDataFromState?.deliveryInfo) {
+            deliveryAddress = {
+              recipientName: `${orderDataFromState.deliveryInfo.firstName} ${orderDataFromState.deliveryInfo.lastName}`.trim(),
+              phone: orderDataFromState.deliveryInfo.phone.replace(/\s+/g, ''),
+              street: orderDataFromState.deliveryInfo.addressLine1 + (orderDataFromState.deliveryInfo.addressLine2 ? ', ' + orderDataFromState.deliveryInfo.addressLine2 : ''),
+              city: orderDataFromState.deliveryInfo.city.trim(),
+              district: orderDataFromState.deliveryInfo.district,
+              postalCode: orderDataFromState.deliveryInfo.postalCode.toString().padStart(5, '0'),
+              specialInstructions: orderDataFromState.deliveryInfo.deliveryInstructions || ''
+            };
+          } else if (order.deliveryInfo) {
+            // Fallback to order object
+            deliveryAddress = {
+              recipientName: `${order.buyer.firstName} ${order.buyer.lastName}`.trim(),
+              phone: order.buyer.phone,
+              street: order.buyer.address,
+              city: order.buyer.city,
+              district: order.deliveryInfo?.district || 'Colombo',
+              postalCode: order.deliveryInfo?.postalCode || '00000',
+              specialInstructions: ''
+            };
+          }
+          
+          const orderPayload = {
+            items: orderDataFromState?.items.map(item => ({
+              productId: item.productId,
+              quantity: item.quantity
+            })) || order.summary.items.map(item => ({
+              productId: item.productId || item._id,
+              quantity: item.quantity || 1,
+            })),
+            deliveryAddress,
+            paymentMethod: 'saved_card',
+            paymentStatus: 'paid',
+            transactionId: data.data?.payment_id || orderId,
+            notes: deliveryAddress.specialInstructions || ''
+          };
+          
+          console.log("Creating order with data:", orderPayload);
+          const orderRes = await api.post("/orders", orderPayload);
+          const createdOrder = orderRes.data.order;
+          console.log("Order created successfully:", createdOrder);
+          
+          // Step 3: Clear cart and navigate to success
+          try {
+            await api.delete("/cart");
+            console.log("Cart cleared successfully");
+          } catch (cartErr) {
+            console.warn("Failed to clear cart:", cartErr);
+          }
+          
+          navigate("/success", { 
+            state: { 
+              orderId: data.data?.payment_id || orderId,
+              order: {
+                ...order,
+                orderNumber: createdOrder.orderNumber,
+                id: createdOrder._id,
+                summary: {
+                  ...order.summary,
+                  total: createdOrder.total
+                }
+              },
+              transactionDetails: {
+                paymentMethod: 'Saved Card',
+                transactionId: data.data?.payment_id || orderId,
+                status: 'completed'
+              }
+            } 
+          });
+        } catch (orderErr) {
+          console.error("Error creating order:", orderErr);
+          setMessage(`⚠️ Payment successful (ID: ${data.data?.payment_id || orderId}), but order creation failed. Please contact support.`);
+        }
       } else {
         setMessage("⚠️ Payment Failed");
         setResult(data);
