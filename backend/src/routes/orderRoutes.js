@@ -69,7 +69,7 @@ const createOrderValidation = [
     .withMessage('Postal code must be 5 digits'),
   body('paymentMethod')
     .optional()
-    .isIn(['cash_on_delivery', 'bank_transfer', 'mobile_payment', 'credit_card'])
+    .isIn(['cash_on_delivery', 'bank_transfer', 'mobile_payment', 'credit_card', 'saved_card'])
     .withMessage('Invalid payment method'),
   body('notes')
     .optional()
