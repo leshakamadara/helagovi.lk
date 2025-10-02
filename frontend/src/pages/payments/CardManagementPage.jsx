@@ -5,7 +5,8 @@ import EditCardForm from '../../components/EditCardModal.jsx';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb';
 import { H1, H2, H3, P, Muted, Large } from '../../components/ui/typography';
 import { Button } from '../../components/ui/button';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 export default function CardManagerPage() {
   const [cards, setCards] = useState([]);
@@ -15,7 +16,13 @@ export default function CardManagerPage() {
   const [notification, setNotification] = useState('');
   const [formData, setFormData] = useState({ card_name: '', expiry_month: '', expiry_year: '' });
 
-  const SESSION_USER_ID = "635";
+  // ✅ Get authentication context and navigation
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
+  // ✅ Use actual logged-in user ID instead of hardcoded value
+  const SESSION_USER_ID = user?._id || user?.id;
+  
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 10 }, (_, i) => currentYear + i);
   const months = [
@@ -31,8 +38,14 @@ export default function CardManagerPage() {
   };
 
   const fetchCards = async () => {
+    if (!SESSION_USER_ID) {
+      console.warn("No user ID available, skipping card fetch");
+      return;
+    }
+    
     setIsLoading(true);
     try {
+      console.log("Fetching cards for user:", SESSION_USER_ID);
       const res = await api.get(`/payments/card/${SESSION_USER_ID}`);
       const data = res.data;
       setCards(Array.isArray(data) ? data : [data]);
@@ -42,7 +55,15 @@ export default function CardManagerPage() {
     } finally { setIsLoading(false); }
   };
 
-  useEffect(() => { fetchCards(); }, []);
+  // ✅ Check if user is logged in and redirect if not
+  useEffect(() => {
+    if (!user) {
+      showNotification("Please log in to manage payment cards", "error");
+      setTimeout(() => navigate('/login'), 2000);
+      return;
+    }
+    fetchCards();
+  }, [user, navigate]);
 
   const handlePreapproval = async () => {
     setIsLoading(true);

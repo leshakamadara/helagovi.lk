@@ -15,7 +15,7 @@ const CardPreapprovalSuccess = () => {
   }, [orderId, statusCode]);
 
   const handleContinue = () => {
-    navigate('/saveCard');
+    navigate('/card-management');
   };
 
   const handleGoHome = () => {

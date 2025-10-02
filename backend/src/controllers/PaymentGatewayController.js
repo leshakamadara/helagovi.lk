@@ -55,9 +55,10 @@ export async function preapprove(req, res) {
       .toUpperCase();
     const params = {
       merchant_id: MERCHANT_ID,
-      return_url: `${PUBLIC_URL}/success`,
-      cancel_url: `${PUBLIC_URL}/cancel`,
-      notify_url: `${BACKEND_WEBHOOK_URL}/api/payments/notify`,
+      return_url: `${PUBLIC_URL}/card-preapproval-success`,
+      cancel_url: `${PUBLIC_URL}/card-preapproval-cancel`,
+      // ✅ For sandbox, PayHere can POST to any URL. Use your actual backend URL
+      notify_url: `https://helagovi-lk.onrender.com/api/payments/notify`,
       order_id,
       items,
       currency,
@@ -72,6 +73,15 @@ export async function preapprove(req, res) {
       hash,
       custom_1: userId,
     };
+    
+    console.log("Preapproval params:", {
+      merchant_id: params.merchant_id,
+      return_url: params.return_url,
+      cancel_url: params.cancel_url,
+      notify_url: params.notify_url,
+      userId: params.custom_1
+    });
+    
     res.json({ url: "https://sandbox.payhere.lk/pay/preapprove", params });
   } catch (err) {
     console.error("Preapprove error:", err.message);
@@ -81,11 +91,34 @@ export async function preapprove(req, res) {
 
 export async function notify(req, res) {
   const body = req.body;
+  console.log("=" .repeat(60));
+  console.log("📥 PayHere Notify Webhook Received");
+  console.log("=" .repeat(60));
+  console.log("Request body:", JSON.stringify(body, null, 2));
+  
   try {
     const verified = verifyMd5(body);
+    console.log("🔐 MD5 Verification:", verified ? "✅ PASSED" : "❌ FAILED");
+    
+    if (!verified) {
+      console.error("⚠️  MD5 verification failed!");
+      return res.sendStatus(200); // Still return 200 to PayHere
+    }
+    
+    console.log("Status Code:", body.status_code);
+    console.log("Customer Token:", body.customer_token);
+    console.log("User ID (custom_1):", body.custom_1);
+    
     if (verified && body.status_code === "2" && body.customer_token && body.custom_1) {
+      console.log("✅ All conditions met, proceeding to save card...");
+      
       let savedCard = await SavedCard.findOne({ token: body.customer_token });
-      if (!savedCard) {
+      
+      if (savedCard) {
+        console.log("ℹ️  Card already exists in database:", savedCard._id);
+      } else {
+        console.log("💾 Saving new card to database...");
+        
         let expiry_month = null;
         let expiry_year = null;
         if (body.card_expiry && body.card_expiry.includes("/")) {
@@ -95,7 +128,8 @@ export async function notify(req, res) {
             expiry_year = parts[1];
           }
         }
-        savedCard = await SavedCard.create({
+        
+        const cardData = {
           userId: body.custom_1,
           token: body.customer_token,
           orderId: body.order_id,
@@ -104,13 +138,30 @@ export async function notify(req, res) {
           method: body.method || "",
           expiry_month: expiry_month || null,
           expiry_year: expiry_year || null,
-        });
-        console.log("Saved new card:", savedCard);
+        };
+        
+        console.log("Card data to save:", cardData);
+        
+        savedCard = await SavedCard.create(cardData);
+        console.log("✅ Card saved successfully!");
+        console.log("Saved card ID:", savedCard._id);
+        console.log("User ID:", savedCard.userId);
+        console.log("Token:", savedCard.token.substring(0, 10) + "...");
       }
+    } else {
+      console.log("⚠️  Conditions not met for saving card:");
+      console.log("  - Verified:", verified);
+      console.log("  - Status Code:", body.status_code, "(expected: 2)");
+      console.log("  - Customer Token:", body.customer_token ? "Present" : "Missing");
+      console.log("  - User ID:", body.custom_1 ? "Present" : "Missing");
     }
+    
+    console.log("=" .repeat(60));
     res.sendStatus(200);
   } catch (err) {
-    console.error("Notify error:", err.message);
+    console.error("❌ Notify error:", err.message);
+    console.error("Stack trace:", err.stack);
+    console.log("=" .repeat(60));
     res.sendStatus(500);
   }
 }

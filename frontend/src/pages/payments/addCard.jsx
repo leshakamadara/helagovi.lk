@@ -1,4 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import api from "../../lib/axios";
 
 const addCard = () => {
   const [firstName, setFirstName] = useState("");
@@ -7,30 +10,54 @@ const addCard = () => {
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
+  // ✅ Pre-fill form with user data
+  useEffect(() => {
+    if (!user) {
+      setMessage("Please log in to add a card");
+      setTimeout(() => navigate('/login'), 2000);
+      return;
+    }
+    
+    setFirstName(user.firstName || "");
+    setLastName(user.lastName || "");
+    setEmail(user.email || "");
+    setPhone(user.phone || "");
+  }, [user, navigate]);
 
   const handlePreapprove = async () => {
+    if (!user || !user._id) {
+      setMessage("User not authenticated. Please log in.");
+      return;
+    }
+    
+    // Validation
+    if (!firstName || !lastName || !email || !phone) {
+      setMessage("Please fill in all required fields");
+      return;
+    }
+    
     setIsLoading(true);
     setMessage("");
 
     try {
-      const params = new URLSearchParams(window.location.search);
-      const SuserId = params.get("userId");
-
-      const response = await fetch("http://localhost:5001/api/payments/preapprove", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: SuserId,
-          first_name: firstName,
-          last_name: lastName,
-          email,
-          phone,
-          address: "",
-          city: "",
-        }),
+      console.log("Initiating preapproval for user:", user._id);
+      
+      const response = await api.post("/payments/preapprove", {
+        userId: user._id || user.id,
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        phone,
+        address: "",
+        city: "",
       });
 
-      const data = await response.json();
+      const data = response.data;
+      console.log("Preapproval response:", data);
       if (data.url && data.params) {
         const form = document.createElement("form");
         form.action = data.url;
