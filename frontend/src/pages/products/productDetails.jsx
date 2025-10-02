@@ -499,7 +499,7 @@ const ProductDetails = () => {
                       </div>
                       <div className="flex-1">
                         <div className="text-sm text-gray-600">Total Price</div>
-                        <div className="text-2xl font-bold text-green-600">
+                        <div className="text-2xl font-bold text-emerald-600">
                           Rs. {(product.price * quantity).toLocaleString()}
                         </div>
                       </div>
@@ -533,7 +533,7 @@ const ProductDetails = () => {
                         }}
                         disabled={addingToCart}
                         size="lg"
-                        className="h-12 text-base font-medium bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
+                        className="h-12 text-base font-medium bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
                       >
                         {addingToCart ? (
                           <>
@@ -607,7 +607,7 @@ const ProductDetails = () => {
               <div className="flex items-start space-x-3 sm:space-x-4 flex-1">
                 <Avatar className="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0">
                   <AvatarImage src={product.farmer.profilePicture} alt={`${product.farmer.firstName} ${product.farmer.lastName}`} />
-                  <AvatarFallback className="bg-[#35D399] text-white text-sm sm:text-lg font-semibold">
+                  <AvatarFallback className="bg-emerald-100 text-emerald-700 text-sm sm:text-lg font-semibold">
                     {product.farmer.firstName && product.farmer.lastName 
                       ? `${product.farmer.firstName[0]}${product.farmer.lastName[0]}`.toUpperCase()
                       : product.farmer.firstName 
@@ -660,14 +660,14 @@ const ProductDetails = () => {
               {/* Action Buttons */}
               <div className="flex flex-row space-x-3 w-full sm:w-auto">
                 <Button 
-                  className="flex-1 sm:flex-none sm:w-32 text-sm sm:text-base h-9 sm:h-10"
+                  className="flex-1 sm:flex-none sm:w-36 text-sm sm:text-base h-9 sm:h-10"
                   size="sm"
                 >
                   Contact Farmer
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="flex-1 sm:flex-none sm:w-32 text-sm sm:text-base h-9 sm:h-10"
+                  className="flex-1 sm:flex-none sm:w-36 text-sm sm:text-base h-9 sm:h-10"
                   size="sm"
                 >
                   View Profile
