@@ -125,51 +125,21 @@ const ChargePage = () => {
         amount: parseFloat(amount),
         currency,
       });
-      
       const data = res.data;
       console.log("Charge response:", data);
 
-      if (data.success || (data.data && data.data.status_code === 2)) {
+      
+      if (data.success || res.status === 200) {
         setMessage("✅ Payment Successful");
         setResult(data);
-        
-        // Navigate to success page
-        setTimeout(() => {
-          navigate("/success", { 
-            state: { 
-              order, 
-              chargeResult: data,
-              transactionDetails: {
-                paymentMethod: 'Saved Card',
-                transactionId: data.data?.payment_id || orderId,
-                status: 'completed'
-              }
-            } 
-          });
-        }, 1500);
+        navigate("/success", { state: { order, chargeResult: data } });
       } else {
-        const errorMsg = data.data?.status_message || data.message || "Payment failed";
-        setMessage(`⚠️ ${errorMsg}`);
+        setMessage("⚠️ Payment Failed");
         setResult(data);
       }
     } catch (err) {
-      console.error("Charge error:", {
-        message: err.message,
-        response: err.response?.data,
-        status: err.response?.status
-      });
-      
-      const errorMessage = err.response?.data?.error || 
-                          err.response?.data?.message || 
-                          err.message || 
-                          "Error occurred while charging";
-      
-      setMessage(`❌ ${errorMessage}`);
-      
-      // Show more detailed error if available
-      if (err.response?.data?.details) {
-        console.error("Detailed error:", err.response.data.details);
-      }
+      console.error("Charge error:", err);
+      setMessage("❌ Error occurred while charging");
     } finally {
       setIsCharging(false);
     }

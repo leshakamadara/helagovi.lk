@@ -2,17 +2,13 @@ import express from "express";
 import crypto from "crypto";
 import axios from "axios";
 import SavedCard from "../models/SavedCard.js";
-
-
+import qs from "qs";
 
 const MERCHANT_ID = process.env.PAYHERE_MERCHANT_ID || "1232059";
-const MERCHANT_SECRET = process.env.PAYHERE_MERCHANT_SECRET || "MjE3Njk1NDAyNTEwNjY0Mjc4MzIzNDQxNTIwMTYzNTk4MTk2NjA2";
-const PAYHERE_APP_ID = process.env.PAYHERE_APP_ID || "4OVyIPKMqpM4JFnJsgjrNJ3D0";
-const PAYHERE_APP_SECRET = process.env.PAYHERE_APP_SECRET || "8m37JU8FMHr48febsV1al94ZJ45SNZyPX8LTWkYlVIrC";
-// Use frontend domain for PayHere domain validation
-const PUBLIC_URL = process.env.PUBLIC_URL || "https://www.helagovi.lk";
-// PayHere webhooks go to frontend proxy (no subdomain restrictions)
-const BACKEND_WEBHOOK_URL = process.env.BACKEND_WEBHOOK_URL || "https://www.helagovi.lk";
+const MERCHANT_SECRET = process.env.PAYHERE_MERCHANT_SECRET || "MTUzNjMyNzg3NDMxNDAzNjE3MjgxMDU0MjM1MTI0Mzk2OTQzMDMw";
+const PAYHERE_APP_ID = "4OVyIPKMqpM4JFnJsgjrNJ3D0";
+const PAYHERE_APP_SECRET = "4OZppi0fGZp4eWcPgTbpva8Rjodd2AgzK8MPnQi7VTfA";
+const PUBLIC_URL = "https://coraline-plastery-sheba.ngrok-free.dev";
 const PAYHERE_BASE_URL = "https://sandbox.payhere.lk";
 
 function verifyMd5(params) {
@@ -55,10 +51,9 @@ export async function preapprove(req, res) {
       .toUpperCase();
     const params = {
       merchant_id: MERCHANT_ID,
-      return_url: `${PUBLIC_URL}/card-preapproval-success`,
-      cancel_url: `${PUBLIC_URL}/card-preapproval-cancel`,
-      // ✅ For sandbox, PayHere can POST to any URL. Use your actual backend URL
-      notify_url: `https://helagovi-lk.onrender.com/api/payments/notify`,
+      return_url: `${PUBLIC_URL}/success`,
+      cancel_url: `${PUBLIC_URL}/cancel`,
+      notify_url: `${PUBLIC_URL}/api/payments/notify`,
       order_id,
       items,
       currency,
@@ -73,15 +68,6 @@ export async function preapprove(req, res) {
       hash,
       custom_1: userId,
     };
-    
-    console.log("Preapproval params:", {
-      merchant_id: params.merchant_id,
-      return_url: params.return_url,
-      cancel_url: params.cancel_url,
-      notify_url: params.notify_url,
-      userId: params.custom_1
-    });
-    
     res.json({ url: "https://sandbox.payhere.lk/pay/preapprove", params });
   } catch (err) {
     console.error("Preapprove error:", err.message);
@@ -91,34 +77,11 @@ export async function preapprove(req, res) {
 
 export async function notify(req, res) {
   const body = req.body;
-  console.log("=" .repeat(60));
-  console.log("📥 PayHere Notify Webhook Received");
-  console.log("=" .repeat(60));
-  console.log("Request body:", JSON.stringify(body, null, 2));
-  
   try {
     const verified = verifyMd5(body);
-    console.log("🔐 MD5 Verification:", verified ? "✅ PASSED" : "❌ FAILED");
-    
-    if (!verified) {
-      console.error("⚠️  MD5 verification failed!");
-      return res.sendStatus(200); // Still return 200 to PayHere
-    }
-    
-    console.log("Status Code:", body.status_code);
-    console.log("Customer Token:", body.customer_token);
-    console.log("User ID (custom_1):", body.custom_1);
-    
     if (verified && body.status_code === "2" && body.customer_token && body.custom_1) {
-      console.log("✅ All conditions met, proceeding to save card...");
-      
       let savedCard = await SavedCard.findOne({ token: body.customer_token });
-      
-      if (savedCard) {
-        console.log("ℹ️  Card already exists in database:", savedCard._id);
-      } else {
-        console.log("💾 Saving new card to database...");
-        
+      if (!savedCard) {
         let expiry_month = null;
         let expiry_year = null;
         if (body.card_expiry && body.card_expiry.includes("/")) {
@@ -128,8 +91,7 @@ export async function notify(req, res) {
             expiry_year = parts[1];
           }
         }
-        
-        const cardData = {
+        savedCard = await SavedCard.create({
           userId: body.custom_1,
           token: body.customer_token,
           orderId: body.order_id,
@@ -138,30 +100,13 @@ export async function notify(req, res) {
           method: body.method || "",
           expiry_month: expiry_month || null,
           expiry_year: expiry_year || null,
-        };
-        
-        console.log("Card data to save:", cardData);
-        
-        savedCard = await SavedCard.create(cardData);
-        console.log("✅ Card saved successfully!");
-        console.log("Saved card ID:", savedCard._id);
-        console.log("User ID:", savedCard.userId);
-        console.log("Token:", savedCard.token.substring(0, 10) + "...");
+        });
+        console.log("Saved new card:", savedCard);
       }
-    } else {
-      console.log("⚠️  Conditions not met for saving card:");
-      console.log("  - Verified:", verified);
-      console.log("  - Status Code:", body.status_code, "(expected: 2)");
-      console.log("  - Customer Token:", body.customer_token ? "Present" : "Missing");
-      console.log("  - User ID:", body.custom_1 ? "Present" : "Missing");
     }
-    
-    console.log("=" .repeat(60));
     res.sendStatus(200);
   } catch (err) {
-    console.error("❌ Notify error:", err.message);
-    console.error("Stack trace:", err.stack);
-    console.log("=" .repeat(60));
+    console.error("Notify error:", err.message);
     res.sendStatus(500);
   }
 }
@@ -179,8 +124,6 @@ export async function charge(req, res) {
       return res.status(404).json({ message: "No preapproved token found" });
     }
     const auth = Buffer.from(`${PAYHERE_APP_ID}:${PAYHERE_APP_SECRET}`).toString("base64");
-    
-    console.log("Requesting PayHere access token...");
     const tokenRes = await axios.post(
       "https://sandbox.payhere.lk/merchant/v1/oauth/token",
       "grant_type=client_credentials",
@@ -191,13 +134,7 @@ export async function charge(req, res) {
         },
       }
     );
-    
     const accessToken = tokenRes.data.access_token;
-    console.log("Access token received:", {
-      token_type: tokenRes.data.token_type,
-      expires_in: tokenRes.data.expires_in,
-      scope: tokenRes.data.scope
-    });
     const body = {
       type: "PAYMENT",
       order_id,
@@ -206,8 +143,7 @@ export async function charge(req, res) {
       amount,
       customer_token: savedCard.token,
       custom_1: userId,
-      // ✅ notify_url is optional for charging - omitting it to avoid domain whitelist issues
-      // The charge response already includes payment status synchronously
+      notify_url: `${PUBLIC_URL}/api/payments/charge-notify`,
       itemList: [
         {
           name: items,
@@ -217,52 +153,27 @@ export async function charge(req, res) {
         },
       ],
     };
-    console.log("Calling PayHere charge API with body:", {
-      type: body.type,
-      order_id: body.order_id,
-      amount: body.amount,
-      currency: body.currency,
-      customer_token: body.customer_token.substring(0, 10) + "..."
-    });
-    
-    // ✅ For sandbox, don't send custom Origin/Referer headers
-    // PayHere sandbox doesn't check domain whitelist
     const response = await axios.post(
       "https://sandbox.payhere.lk/merchant/v1/payment/charge",
       body,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
       }
     );
     const data = response.data;
-    console.log("PayHere charge response:", data);
-    
     if (data.status === 1 && data.data.status_code === 2) {
-      console.log("✅ Payment successful", data.data);
-      res.json({ success: true, message: "Payment successful", data: data.data });
+      console.log("Payment successful", data.data);
+      res.json({ message: "Payment successful ", data: data.data });
     } else {
-      console.error("⚠️ Payment failed", data);
-      res.status(400).json({ success: false, message: "Payment failed", data });
+      console.error("Payment failed", data);
+      res.status(400).json({ message: "Payment failed ", data });
     }
   } catch (err) {
-    console.error("❌ Charging error:", {
-      message: err.message,
-      status: err.response?.status,
-      statusText: err.response?.statusText,
-      data: err.response?.data
-    });
-    
-    // Return detailed error for debugging
-    const errorMessage = err.response?.data?.msg || err.response?.data?.message || err.message;
-    res.status(500).json({ 
-      success: false,
-      message: "Charging failed", 
-      error: errorMessage,
-      details: err.response?.data 
-    });
+    console.error("Charging error:", err.response?.data || err.message);
+    res.status(500).json({ message: "Charging failed", error: err.response?.data || err.message });
   }
 }
 
@@ -302,7 +213,7 @@ const getAccessToken = async () => {
   const url = `${PAYHERE_BASE_URL}/merchant/v1/oauth/token`;
   const response = await axios.post(
     url,
-    qs.stringify({ grant_type: "client_credentials" }),
+    "grant_type=client_credentials",
     {
       headers: {
         Authorization: `Basic ${getAuthorizationCode()}`,
