@@ -54,29 +54,14 @@ const BuyerDashboard = () => {
       const [
         productsResponse,
         ordersResponse,
-        favoritesResponse,
         statsResponse
       ] = await Promise.allSettled([
         // Fetch recent products
         api.get('/products?limit=6&sortBy=createdAt&sortOrder=desc'),
-        
         // Fetch user's recent orders
-        api.get(`/orders/user/${user._id}?limit=5&sortBy=createdAt&sortOrder=desc`),
-        
-        // Fetch user's favorite products (if favorites endpoint exists)
-        api.get(`/favorites/${user._id}`).catch(() => ({ data: { data: [] } })),
-        
-        // Fetch user's order statistics
-        api.get(`/orders/user/${user._id}/stats`).catch(() => ({ 
-          data: { 
-            data: {
-              totalOrders: 0,
-              completedOrders: 0,
-              totalSpent: 0,
-              favoriteCount: 0
-            }
-          }
-        }))
+        api.get('/orders/my?limit=5&sortBy=createdAt&sortOrder=desc'),
+        // Fetch order statistics for current user
+        api.get('/orders/stats')
       ])
 
       // Handle products response
@@ -86,42 +71,22 @@ const BuyerDashboard = () => {
 
       // Handle orders response
       if (ordersResponse.status === 'fulfilled' && ordersResponse.value.data?.success) {
-        const orders = ordersResponse.value.data.data || []
-        setRecentOrders(orders)
-        
-        // Calculate stats if stats endpoint failed
-        if (statsResponse.status === 'rejected') {
-          const completedOrders = orders.filter(order => order.status === 'delivered' || order.status === 'completed').length
-          const totalSpent = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0)
-          
-          setStats({
-            totalOrders: orders.length,
-            completedOrders: completedOrders,
-            totalSpent: totalSpent,
-            favoriteCount: 0
-          })
-        }
-      }
-
-      // Handle favorites response
-      if (favoritesResponse.status === 'fulfilled' && favoritesResponse.value.data?.data) {
-        const favorites = favoritesResponse.value.data.data || []
-        setFavoriteProducts(favorites)
-        
-        // Update favorite count in stats
-        setStats(prevStats => ({
-          ...prevStats,
-          favoriteCount: favorites.length
-        }))
+        setRecentOrders(ordersResponse.value.data.data || [])
       }
 
       // Handle stats response
-      if (statsResponse.status === 'fulfilled' && statsResponse.value.data?.data) {
-        setStats(prevStats => ({
-          ...prevStats,
-          ...statsResponse.value.data.data
-        }))
+      if (statsResponse.status === 'fulfilled' && statsResponse.value.data?.success) {
+        const statsData = statsResponse.value.data.data
+        setStats({
+          totalOrders: statsData.statusCounts?.all || 0,
+          completedOrders: statsData.revenue?.completedOrders || 0,
+          totalSpent: statsData.revenue?.total || 0,
+          favoriteCount: 0 // Placeholder, update when favorites endpoint is available
+        })
       }
+
+      // Handle favorites response (placeholder for future implementation)
+      setFavoriteProducts([])
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
@@ -143,7 +108,6 @@ const BuyerDashboard = () => {
 
   const handleRefresh = () => {
     fetchDashboardData()
-  }
   }
 
   const formatCurrency = (amount) => {
