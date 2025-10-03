@@ -279,52 +279,53 @@ export const getAllProducts = async (req, res) => {
 
     // Add sort stage
     pipeline.push({ $sort: sort });
-
-    // Add facet stage for pagination and data processing
+    
+    // Add lookups
     pipeline.push({
-      $facet: {
-        data: [
-          { $skip: skip },
-          { $limit: limitNum },
-          {
-            $lookup: {
-              from: 'categories',
-              localField: 'category',
-              foreignField: '_id',
-              as: 'category'
-            }
-          },
-          {
-            $lookup: {
-              from: 'users',
-              localField: 'farmer',
-              foreignField: '_id',
-              as: 'farmer'
-            }
-          },
-          {
-            $unwind: {
-              path: '$category',
-              preserveNullAndEmptyArrays: true
-            }
-          },
-          {
-            $unwind: {
-              path: '$farmer',
-              preserveNullAndEmptyArrays: true
-            }
-          },
-          {
-            $project: projection
-          }
-        ],
-        totalCount: [{ $count: 'count' }]
+      $lookup: {
+        from: 'categories',
+        localField: 'category',
+        foreignField: '_id',
+        as: 'category'
       }
     });
+    
+    pipeline.push({
+      $lookup: {
+        from: 'users',
+        localField: 'farmer',
+        foreignField: '_id',
+        as: 'farmer'
+      }
+    });
+    
+    pipeline.push({
+      $unwind: {
+        path: '$category',
+        preserveNullAndEmptyArrays: true
+      }
+    });
+    
+    pipeline.push({
+      $unwind: {
+        path: '$farmer',
+        preserveNullAndEmptyArrays: true
+      }
+    });
+    
+    pipeline.push({ $project: projection });
+    pipeline.push({ $skip: skip });
+    pipeline.push({ $limit: limitNum });
 
-    const [result] = await Product.aggregate(pipeline);
-    const products = result.data;
-    const totalProducts = result.totalCount[0]?.count || 0;
+    // Add facet for total count
+    const countPipeline = [
+      { $match: query },
+      { $count: 'total' }
+    ];
+
+    const products = await Product.aggregate(pipeline);
+    const [countResult] = await Product.aggregate(countPipeline);
+    const totalProducts = countResult?.total || 0;
 
     // Calculate pagination info
     const totalPages = Math.ceil(totalProducts / limitNum);

@@ -117,8 +117,8 @@ export const cacheKeys = {
   priceStats: () => 'price-stats',
   categories: () => 'categories:roots',
   products: (page = 1, limit = 12, filters = {}) => {
-    const { category, search, district, minPrice, maxPrice, isOrganic, sortBy } = filters;
-    return `products:${page}:${limit}:${category || 'all'}:${search || ''}:${district || ''}:${minPrice || ''}:${maxPrice || ''}:${isOrganic || ''}:${sortBy || 'newest'}`;
+    const { category, search, district, minPrice, maxPrice, isOrganic, sortBy, sortOrder } = filters;
+    return `products:${page}:${limit}:${category || 'all'}:${search || ''}:${district || ''}:${minPrice || ''}:${maxPrice || ''}:${isOrganic || ''}:${sortBy || 'newest'}:${sortOrder || 'desc'}`;
   },
   userProfile: (userId) => `user:${userId}:profile`,
   productDetails: (productId) => `product:${productId}:details`

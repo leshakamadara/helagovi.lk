@@ -238,7 +238,8 @@ app.use("/api/products", (req, res, next) => {
           minPrice: req.query.minPrice,
           maxPrice: req.query.maxPrice,
           isOrganic: req.query.isOrganic,
-          sortBy: req.query.sortBy
+          sortBy: req.query.sortBy,
+          sortOrder: req.query.sortOrder
         }
       );
     }

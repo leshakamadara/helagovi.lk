@@ -141,8 +141,8 @@ const queryValidation = [
     .withMessage('Limit must be between 1 and 100'),
   
   query('sortBy')
-    .optional()
-    .isIn(['createdAt', 'updatedAt', 'price', 'title', 'harvestDate', 'qualityScore'])
+    .optional()  
+    .isIn(['createdAt', 'updatedAt', 'price', 'title', 'harvestDate', 'qualityScore', 'averageRating'])
     .withMessage('Invalid sort field'),
   
   query('sortOrder')
