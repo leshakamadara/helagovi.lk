@@ -283,7 +283,7 @@ const ProductDetails = () => {
   const generateCertificatePDF = async () => {
     setGeneratingPdf(true);
     try {
-      // Detect mobile for responsive PDF generation
+      // Detect mobile for responsive PDF generation and behavior
       const isMobile = window.innerWidth <= 768;
       const scaleFactor = isMobile ? 1.2 : 1; // Increase sizes on mobile
       
@@ -822,8 +822,30 @@ const ProductDetails = () => {
       // Create blob URL for the PDF
       const pdfBlob = pdf.output('blob');
       const pdfUrl = URL.createObjectURL(pdfBlob);
-      setCertificatePdfUrl(pdfUrl);
-      setShowCertificateModal(true);
+      
+      if (isMobile) {
+        // On mobile, open PDF directly in new tab and focus on it
+        const newTab = window.open(pdfUrl, '_blank');
+        if (newTab) {
+          newTab.focus();
+          toast.success('Certificate opened in new tab', {
+            description: 'Your certificate is now available in a new tab'
+          });
+        } else {
+          // Fallback if popup blocked
+          toast.error('Popup blocked', {
+            description: 'Please allow popups to view the certificate'
+          });
+        }
+        // Clean up the URL after a delay to prevent memory leaks
+        setTimeout(() => {
+          URL.revokeObjectURL(pdfUrl);
+        }, 60000); // Clean up after 1 minute
+      } else {
+        // On desktop, show modal
+        setCertificatePdfUrl(pdfUrl);
+        setShowCertificateModal(true);
+      }
       
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -1014,7 +1036,7 @@ const ProductDetails = () => {
                       ) : (
                         <BadgeCheck className="h-4 w-4 mr-1" />
                       )}
-                      {generatingPdf ? 'Generating...' : 'Certificate'}
+                      {generatingPdf ? 'Generating...' : (window.innerWidth <= 768 ? 'View Certificate' : 'Certificate')}
                     </Button>
                   </div>
                 </div>
