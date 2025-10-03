@@ -8,7 +8,8 @@ const MERCHANT_ID = process.env.PAYHERE_MERCHANT_ID || "1232059";
 const MERCHANT_SECRET = process.env.PAYHERE_MERCHANT_SECRET || "MTUzNjMyNzg3NDMxNDAzNjE3MjgxMDU0MjM1MTI0Mzk2OTQzMDMw";
 const PAYHERE_APP_ID = "4OVyIPKMqpM4JFnJsgjrNJ3D0";
 const PAYHERE_APP_SECRET = "4OZppi0fGZp4eWcPgTbpva8Rjodd2AgzK8MPnQi7VTfA";
-const PUBLIC_URL = "https://coraline-plastery-sheba.ngrok-free.dev";
+const FRONTEND_URL = process.env.FRONTEND_URL || "https://www.helagovi.lk";
+const API_URL = process.env.API_URL || "https://api.helagovi.lk";
 const PAYHERE_BASE_URL = "https://sandbox.payhere.lk";
 
 function verifyMd5(params) {
@@ -51,9 +52,9 @@ export async function preapprove(req, res) {
       .toUpperCase();
     const params = {
       merchant_id: MERCHANT_ID,
-      return_url: `${PUBLIC_URL}/success`,
-      cancel_url: `${PUBLIC_URL}/cancel`,
-      notify_url: `${PUBLIC_URL}/api/payments/notify`,
+      return_url: `${FRONTEND_URL}/CardManagementPage?status=success`,
+      cancel_url: `${FRONTEND_URL}/CardManagementPage?status=cancelled`,
+      notify_url: `${API_URL}/api/payments/notify`,
       order_id,
       items,
       currency,
@@ -143,7 +144,7 @@ export async function charge(req, res) {
       amount,
       customer_token: savedCard.token,
       custom_1: userId,
-      notify_url: `${PUBLIC_URL}/api/payments/charge-notify`,
+      notify_url: `${API_URL}/api/payments/charge-notify`,
       itemList: [
         {
           name: items,
