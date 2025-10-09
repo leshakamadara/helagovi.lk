@@ -57,14 +57,14 @@ app.use(express.urlencoded({ extended: true }));
 app.use((req, res, next) => {
   // Log CORS-related requests
   if (req.headers.origin && !req.headers.origin.includes('localhost')) {
-    console.log(`🌐 CORS Request: ${req.method} ${req.path}`);
+    console.log(` CORS Request: ${req.method} ${req.path}`);
     console.log("Origin:", req.headers.origin);
     console.log("User-Agent:", req.headers['user-agent']);
   }
   
   // Detailed logging for payment requests
   if (req.path.includes('/payments/')) {
-    console.log(`� ${req.method} ${req.path}`);
+    console.log(` ${req.method} ${req.path}`);
     console.log("Request headers:", {
       origin: req.headers.origin,
       referer: req.headers.referer,

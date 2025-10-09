@@ -129,7 +129,7 @@ export const createProduct = async (req, res) => {
       });
     }
 
-    // Check if user's email is verified (skip in development environment)
+    // Check if user's email is verified 
     const isDevelopment = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
     if (!req.user.isVerified && !isDevelopment) {
       return res.status(403).json({

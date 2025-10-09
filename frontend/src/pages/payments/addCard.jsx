@@ -17,12 +17,13 @@ const addCard = () => {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
+  const [formErrors, setFormErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  // ✅ Pre-fill form with user data
+  //  Pre-fill form with user data
   useEffect(() => {
     if (!user) {
       setMessage("Please log in to add a card");
@@ -41,19 +42,34 @@ const addCard = () => {
       setMessage("User not authenticated. Please log in.");
       return;
     }
-    
-    // Validation
-    if (!firstName || !lastName || !email || !phone) {
-      setMessage("Please fill in all required fields");
+
+    // Enhanced Validation
+    const errors = {};
+    if (!firstName.trim()) errors.firstName = "First name is required";
+    if (!lastName.trim()) errors.lastName = "Last name is required";
+    if (!email.trim()) {
+      errors.email = "Email is required";
+    } else if (!/^\S+@\S+\.\S+$/.test(email)) {
+      errors.email = "Invalid email format";
+    }
+    if (!phone.trim()) {
+      errors.phone = "Phone number is required";
+    } else if (!/^\+?\d{9,15}$/.test(phone.replace(/\s+/g, ''))) {
+      errors.phone = "Invalid phone number format";
+    }
+
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      setMessage("Please fix the errors above");
       return;
     }
-    
+
     setIsLoading(true);
     setMessage("");
 
     try {
       console.log("Initiating preapproval for user:", user._id);
-      
+
       const response = await api.post("/payments/preapprove", {
         userId: user._id || user.id,
         first_name: firstName,
@@ -163,6 +179,9 @@ const addCard = () => {
                     onChange={e => setFirstName(e.target.value)}
                     required
                   />
+                  {formErrors.firstName && (
+                    <span className="text-red-600 text-xs">{formErrors.firstName}</span>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Last Name</Label>
@@ -174,6 +193,9 @@ const addCard = () => {
                     onChange={e => setLastName(e.target.value)}
                     required
                   />
+                  {formErrors.lastName && (
+                    <span className="text-red-600 text-xs">{formErrors.lastName}</span>
+                  )}
                 </div>
               </div>
 
@@ -188,6 +210,9 @@ const addCard = () => {
                   onChange={e => setEmail(e.target.value)}
                   required
                 />
+                {formErrors.email && (
+                  <span className="text-red-600 text-xs">{formErrors.email}</span>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -200,6 +225,9 @@ const addCard = () => {
                   onChange={e => setPhone(e.target.value)}
                   required
                 />
+                {formErrors.phone && (
+                  <span className="text-red-600 text-xs">{formErrors.phone}</span>
+                )}
               </div>
 
               {/* Submit Button */}

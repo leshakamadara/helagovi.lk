@@ -1,6 +1,6 @@
 import { Redis } from '@upstash/redis';
 
-// Initialize Redis client only if environment variables are available
+// Initialize Redis client 
 const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN 
   ? new Redis({
       url: process.env.UPSTASH_REDIS_REST_URL,
@@ -32,10 +32,10 @@ export const cache = {
     try {
       const data = await redis.get(key);
       if (data) {
-        console.log(`✅ Cache HIT: ${key}`);
+        console.log(` Cache HIT: ${key}`);
         return typeof data === 'string' ? JSON.parse(data) : data;
       }
-      console.log(`❌ Cache MISS: ${key}`);
+      console.log(` Cache MISS: ${key}`);
       return null;
     } catch (error) {
       console.error('Redis get error:', error);
@@ -52,7 +52,7 @@ export const cache = {
     
     try {
       await redis.setex(key, duration, JSON.stringify(data));
-      console.log(`💾 Cache SET: ${key} (expires in ${duration}s)`);
+      console.log(` Cache SET: ${key} (expires in ${duration}s)`);
       return true;
     } catch (error) {
       console.error('Redis set error:', error);

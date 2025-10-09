@@ -31,7 +31,7 @@ export const formatCurrency = (amount) => {
 
 // Freshness color by days
 export const getFreshnessColor = (days) => {
-  if (days <= 3) return 'text-green-600';
+  if (days <= 5) return 'text-green-600';
   if (days <= 7) return 'text-yellow-600';
   return 'text-red-600';
 };

@@ -291,7 +291,7 @@ const ProductDetails = () => {
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       
-      // shadcn UI inspired colors
+      // colors
       const primaryColor = '#059669'; // emerald-600
       const backgroundColor = '#f8fafc'; // slate-50
       const cardBg = '#ffffff'; // white
