@@ -1,3 +1,11 @@
+import React from 'react';
+import { Route, Routes } from 'react-router-dom';
+import AdminDashboard from './pages/support/admin-dashboard.jsx';
+import SupportDashboard from './pages/support/support-dashboard.jsx';
+import SupportUserPage from './pages/support/support-user-page.jsx';
+import { AppSidebar } from '@/components/app-sidebar';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+
 import { Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
 import { Sprout } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
@@ -53,7 +61,11 @@ import { Toaster } from 'sonner';
 function App() {
   const location = useLocation()
 
+
+
+
   return (
+
     <AuthProvider>
       <CartProvider>
         <div className="min-h-screen bg-gray-50">
@@ -97,6 +109,25 @@ function App() {
                 </>
               </PageTransition>
             } />
+
+    <div className="relative h-screen w-screen">
+      {/* Background gradient */}
+      <div className="absolute inset-0 -z-10 h-full w-full [background:radial-gradient(125%_125%_at_50%_10%,#000_60%,#00FF9D40_100%)]" />
+
+      <SidebarProvider>
+        <AppSidebar variant="inset" />
+        <SidebarInset>
+          <Routes>
+            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+
+            <Route path="/usersupport" element={<SupportUserPage />} />
+
+            <Route path="/supportdashboard" element={<SupportDashboard />} />
+          </Routes>
+        </SidebarInset>
+      </SidebarProvider>
+    </div>
+  );
 
           {/* Debug Route */}
           <Route path="/debug" element={<Debug />} />

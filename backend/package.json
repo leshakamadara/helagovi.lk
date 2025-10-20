@@ -7,6 +7,7 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "lint": "eslint . --fix",
+<<<<<<< HEAD
     "format": "prettier --write .",
     "seed": "node src/lib/seedCategories.js",
     "seed:categories": "node src/lib/seedCategories.js"
@@ -18,6 +19,17 @@
     "express",
     "mongodb",
     "mock-auth"
+=======
+    "format": "prettier --write ."
+  },
+  "keywords": [
+    "support",
+    "ticketing",
+    "nodejs",
+    "express",
+    "mongodb",
+    "socket.io"
+>>>>>>> feature/support-system
   ],
   "author": "",
   "license": "ISC",
@@ -25,6 +37,7 @@
   "dependencies": {
     "@upstash/ratelimit": "^2.0.5",
     "@upstash/redis": "^1.34.9",
+<<<<<<< HEAD
     "axios": "^1.12.2",
     "bcryptjs": "^3.0.2",
     "body-parser": "^2.2.0",
@@ -42,12 +55,28 @@
     "node-fetch": "^3.3.2",
     "nodemailer": "^7.0.6",
     "react-router-dom": "^7.9.1",
+=======
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^4.18.2",
+    "express-validator": "^7.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.14.3",
+    "multer": "^2.0.2",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^7.0.9",
+>>>>>>> feature/support-system
     "slugify": "^1.6.6",
     "socket.io": "^4.8.1",
     "swagger-autogen": "^2.23.7",
     "swagger-jsdoc": "^6.2.8",
+<<<<<<< HEAD
     "swagger-ui-express": "^5.0.1",
     "nodemon": "^3.1.10"
+=======
+    "swagger-ui-express": "^5.0.1"
+>>>>>>> feature/support-system
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
@@ -60,6 +89,10 @@
     "globals": "^16.3.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.5",
+<<<<<<< HEAD
+=======
+    "nodemon": "^3.1.10",
+>>>>>>> feature/support-system
     "prettier": "^3.6.2"
   }
 }

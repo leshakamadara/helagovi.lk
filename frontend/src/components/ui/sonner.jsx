@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useTheme } from "next-themes"
 import { Toaster as Sonner } from "sonner"
 
@@ -5,6 +6,14 @@ const Toaster = ({
   ...props
 }) => {
   const { theme = "system" } = useTheme()
+=======
+'use client';
+import { useTheme } from 'next-themes';
+import { Toaster as Sonner } from 'sonner';
+
+const Toaster = ({ ...props }) => {
+  const { theme = 'system' } = useTheme();
+>>>>>>> feature/support-system
 
   return (
     <Sonner
@@ -13,6 +22,7 @@ const Toaster = ({
       toastOptions={{
         classNames: {
           toast:
+<<<<<<< HEAD
             "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
           description: "group-[.toast]:text-muted-foreground",
           actionButton:
@@ -26,3 +36,19 @@ const Toaster = ({
 }
 
 export { Toaster }
+=======
+            'group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg',
+          description: 'group-[.toast]:text-muted-foreground',
+          actionButton:
+            'group-[.toast]:bg-primary group-[.toast]:text-primary-foreground',
+          cancelButton:
+            'group-[.toast]:bg-muted group-[.toast]:text-muted-foreground',
+        },
+      }}
+      {...props}
+    />
+  );
+};
+
+export { Toaster };
+>>>>>>> feature/support-system

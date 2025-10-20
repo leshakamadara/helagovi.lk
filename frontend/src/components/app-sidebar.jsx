@@ -1,23 +1,27 @@
-import * as React from "react"
+import * as React from 'react';
+import { Link } from 'react-router-dom';
 import {
+  ArrowUpCircleIcon,
+  BarChartIcon,
+  CameraIcon,
+  ClipboardListIcon,
+  DatabaseIcon,
+  FileCodeIcon,
+  FileIcon,
+  FileTextIcon,
+  FolderIcon,
+  HelpCircleIcon,
   LayoutDashboardIcon,
-  Package,
-  Sprout,
-  TrendingUp,
-  Users,
-  ShoppingCart,
-  Settings,
-  HelpCircle,
-  Bell,
-  User,
-  Plus,
-  Truck
-} from "lucide-react"
+  ListIcon,
+  SearchIcon,
+  SettingsIcon,
+  UsersIcon,
+} from 'lucide-react';
 
-import { NavDocuments } from "./nav-documents"
-import { NavMain } from "./nav-main"
-import { NavSecondary } from "./nav-secondary"
-import { NavUser } from "./nav-user"
+import { NavDocuments } from '@/components/nav-documents';
+import { NavMain } from '@/components/nav-main';
+import { NavSecondary } from '@/components/nav-secondary';
+import { NavUser } from '@/components/nav-user';
 import {
   Sidebar,
   SidebarContent,
@@ -26,160 +30,150 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "./ui/sidebar"
+} from '@/components/ui/sidebar';
 
 const data = {
   user: {
-    name: "Farmer",
-    email: "farmer@helagovi.lk",
-    avatar: "/avatars/farmer.jpg",
+    name: 'shadcn',
+    email: 'm@example.com',
+    avatar: '/avatars/shadcn.jpg',
   },
   navMain: [
     {
-      title: "Dashboard",
-      url: "/farmer-dashboard",
+      title: 'Dashboard',
+      url: '/admin-dashboard',
       icon: LayoutDashboardIcon,
     },
     {
-      title: "My Products",
-      url: "/my-products",
-      icon: Package,
+      title: 'Responses',
+      url: '/supportdashboard',
+      icon: ListIcon,
     },
     {
-      title: "Add Product",
-      url: "/create-product",
-      icon: Plus,
+      title: 'Users',
+      url: '/usersupport',
+      icon: BarChartIcon,
     },
     {
-      title: "Orders",
-      url: "/farmer-orders",
-      icon: Truck,
+      title: 'Projects',
+      url: '#',
+      icon: FolderIcon,
     },
     {
-      title: "Analytics",
-      url: "#",
-      icon: TrendingUp,
+      title: 'Team',
+      url: '#',
+      icon: UsersIcon,
     },
   ],
-  navFarming: [
+  navClouds: [
     {
-      title: "Crop Management",
-      icon: Sprout,
-      isActive: false,
-      url: "#",
+      title: 'Capture',
+      icon: CameraIcon,
+      isActive: true,
+      url: '#',
       items: [
         {
-          title: "Current Crops",
-          url: "#",
+          title: 'Active Proposals',
+          url: '#',
         },
         {
-          title: "Planting Schedule",
-          url: "#",
-        },
-        {
-          title: "Harvest Planning",
-          url: "#",
+          title: 'Archived',
+          url: '#',
         },
       ],
     },
     {
-      title: "Sales & Marketing",
-      icon: TrendingUp,
-      url: "#",
+      title: 'Proposal',
+      icon: FileTextIcon,
+      url: '#',
       items: [
         {
-          title: "Market Prices",
-          url: "#",
+          title: 'Active Proposals',
+          url: '#',
         },
         {
-          title: "Buyer Network",
-          url: "#",
-        },
-        {
-          title: "Promotions",
-          url: "#",
+          title: 'Archived',
+          url: '#',
         },
       ],
     },
     {
-      title: "Customer Relations",
-      icon: Users,
-      url: "#",
+      title: 'Prompts',
+      icon: FileCodeIcon,
+      url: '#',
       items: [
         {
-          title: "Customer List",
-          url: "#",
+          title: 'Active Proposals',
+          url: '#',
         },
         {
-          title: "Reviews & Feedback",
-          url: "#",
-        },
-        {
-          title: "Communication",
-          url: "#",
+          title: 'Archived',
+          url: '#',
         },
       ],
     },
   ],
   navSecondary: [
     {
-      title: "Profile Settings",
-      url: "/profile",
-      icon: User,
+      title: 'Settings',
+      url: '#',
+      icon: SettingsIcon,
     },
     {
-      title: "Notifications",
-      url: "#",
-      icon: Bell,
+      title: 'Get Help',
+      url: '#',
+      icon: HelpCircleIcon,
     },
     {
-      title: "Help & Support",
-      url: "#",
-      icon: HelpCircle,
+      title: 'Search',
+      url: '#',
+      icon: SearchIcon,
     },
   ],
-  tools: [
+  documents: [
     {
-      name: "Weather Forecast",
-      url: "#",
-      icon: Sprout,
+      name: 'Data Library',
+      url: '#',
+      icon: DatabaseIcon,
     },
     {
-      name: "Market Insights",
-      url: "#",
-      icon: TrendingUp,
+      name: 'Reports',
+      url: '#',
+      icon: ClipboardListIcon,
     },
     {
-      name: "Farming Tips",
-      url: "#",
-      icon: HelpCircle,
+      name: 'Word Assistant',
+      url: '#',
+      icon: FileIcon,
     },
   ],
-}
+};
 
 export function AppSidebar({ ...props }) {
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <a href="/farmer-dashboard">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-green-600 text-sidebar-primary-foreground">
-                  <Sprout className="size-4" />
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Helagovi.lk</span>
-                  <span className="truncate text-xs">Agricultural Marketplace</span>
-                </div>
-              </a>
+            <SidebarMenuButton
+              asChild
+              className="data-[slot=sidebar-menu-button]:!p-1.5"
+            >
+              <Link to="/admin-dashboard">
+                <img
+                  src="https://res.cloudinary.com/dckoipgrs/image/upload/v1759143086/Logo_uf3yae.png"
+                  alt="Helagovi.lk Logo"
+                  className="h-10 w-10 object-contain"
+                />
+                <span className="text-2xl font-semibold">Helagovi.lk</span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavDocuments items={data.tools} />
+        <NavDocuments items={data.documents} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>

@@ -1,5 +1,5 @@
-"use client";
-import * as React from "react"
+'use client';
+import * as React from 'react';
 
 import {
   SidebarGroup,
@@ -7,12 +7,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "./ui/sidebar"
+} from '@/components/ui/sidebar';
 
-export function NavSecondary({
-  items,
-  ...props
-}) {
+export function NavSecondary({ items, ...props }) {
   return (
     <SidebarGroup {...props}>
       <SidebarGroupContent>
