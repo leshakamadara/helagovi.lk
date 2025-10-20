@@ -6,7 +6,7 @@ import { asyncHandler } from '../middleware/errorHandler.js';
 // @route   GET /api/cart
 // @access  Private (Buyer only)
 export const getCart = asyncHandler(async (req, res) => {
-  const cartItems = await CartItem.find({ buyer: req.user._id })
+  const cartItems = await CartItem.find({ buyer: req.user.id })
     .populate({
       path: 'product',
       populate: {
@@ -74,7 +74,7 @@ export const addToCart = asyncHandler(async (req, res) => {
 
   // Check if item already exists in cart
   const existingCartItem = await CartItem.findOne({
-    buyer: req.user._id,
+    buyer: req.user.id,
     product: productId
   });
 
@@ -135,7 +135,7 @@ export const updateCartItem = asyncHandler(async (req, res) => {
 
   const cartItem = await CartItem.findOne({
     _id: itemId,
-    buyer: req.user._id
+    buyer: req.user.id
   }).populate('product');
 
   if (!cartItem) {
@@ -179,7 +179,7 @@ export const removeFromCart = asyncHandler(async (req, res) => {
 
   const cartItem = await CartItem.findOneAndDelete({
     _id: itemId,
-    buyer: req.user._id
+    buyer: req.user.id
   });
 
   if (!cartItem) {
@@ -199,7 +199,7 @@ export const removeFromCart = asyncHandler(async (req, res) => {
 // @route   DELETE /api/cart
 // @access  Private (Buyer only)
 export const clearCart = asyncHandler(async (req, res) => {
-  await CartItem.deleteMany({ buyer: req.user._id });
+  await CartItem.deleteMany({ buyer: req.user.id });
 
   res.json({
     success: true,
@@ -211,7 +211,7 @@ export const clearCart = asyncHandler(async (req, res) => {
 // @route   GET /api/cart/summary
 // @access  Private (Buyer only)
 export const getCartSummary = asyncHandler(async (req, res) => {
-  const cartItems = await CartItem.find({ buyer: req.user._id });
+  const cartItems = await CartItem.find({ buyer: req.user.id });
 
   const subtotal = cartItems.reduce((total, item) => total + item.totalPrice, 0);
   const itemCount = cartItems.reduce((total, item) => total + item.quantity, 0);

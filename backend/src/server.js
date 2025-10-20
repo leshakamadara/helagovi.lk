@@ -28,21 +28,53 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// Middleware
-app.use(cors({ 
+// CORS Configuration with detailed logging
+const corsOptions = {
   origin: [
     "http://localhost:5173",
-    "https://helagovi-lk-1.onrender.com",
+    "https://helagovi-lk-1.onrender.com", 
     "https://helagovi-lk.onrender.com",
-     "https://www.helagovi.lk",
+    "https://api.helagovi.lk",
+    "https://www.helagovi.lk",
     "https://helagovi.lk"
   ],
-  credentials: true
-}));
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept'],
+  optionsSuccessStatus: 200
+};
+
+console.log("CORS configured for origins:", corsOptions.origin);
+
+// Middleware
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // app.use(ratelimiter); // optional
+
+// CORS and request logging middleware for debugging
+app.use((req, res, next) => {
+  // Log CORS-related requests
+  if (req.headers.origin && !req.headers.origin.includes('localhost')) {
+    console.log(` CORS Request: ${req.method} ${req.path}`);
+    console.log("Origin:", req.headers.origin);
+    console.log("User-Agent:", req.headers['user-agent']);
+  }
+  
+  // Detailed logging for payment requests
+  if (req.path.includes('/payments/')) {
+    console.log(` ${req.method} ${req.path}`);
+    console.log("Request headers:", {
+      origin: req.headers.origin,
+      referer: req.headers.referer,
+      'user-agent': req.headers['user-agent'],
+      host: req.headers.host,
+      'x-forwarded-for': req.headers['x-forwarded-for']
+    });
+  }
+  next();
+});
 
 // Serve static files for uploads
 app.use('/uploads', express.static('uploads'));
@@ -66,15 +98,15 @@ app.get("/api/seed-database", async (req, res) => {
   try {
     console.log("Starting database seeding...");
     await seedCategories();
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       message: "Database seeded successfully with categories",
       timestamp: new Date().toISOString()
     });
   } catch (error) {
     console.error("Database seeding failed:", error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       message: "Database seeding failed",
       error: error.message,
       timestamp: new Date().toISOString()
@@ -206,7 +238,8 @@ app.use("/api/products", (req, res, next) => {
           minPrice: req.query.minPrice,
           maxPrice: req.query.maxPrice,
           isOrganic: req.query.isOrganic,
-          sortBy: req.query.sortBy
+          sortBy: req.query.sortBy,
+          sortOrder: req.query.sortOrder
         }
       );
     }

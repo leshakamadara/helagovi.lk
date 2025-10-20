@@ -383,3 +383,126 @@ export const manualVerifyUser = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Get user statistics (Admin only)
+// @route   GET /api/auth/stats
+// @access  Private/Admin
+export const getUserStats = async (req, res, next) => {
+  try {
+    // Get total users
+    const totalUsers = await User.countDocuments();
+    
+    // Get users by role
+    const usersByRole = await User.aggregate([
+      {
+        $group: {
+          _id: '$role',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+    
+    // Get verified vs unverified
+    const verifiedCount = await User.countDocuments({ isVerified: true });
+    const unverifiedCount = await User.countDocuments({ isVerified: false });
+    
+    // Get recent registrations (last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const recentRegistrations = await User.countDocuments({
+      createdAt: { $gte: sevenDaysAgo }
+    });
+    
+    // Get recent registrations (last 24 hours)
+    const oneDayAgo = new Date();
+    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+    const todayRegistrations = await User.countDocuments({
+      createdAt: { $gte: oneDayAgo }
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalUsers,
+        usersByRole: usersByRole.reduce((acc, item) => {
+          acc[item._id] = item.count;
+          return acc;
+        }, {}),
+        verifiedUsers: verifiedCount,
+        unverifiedUsers: unverifiedCount,
+        recentRegistrations: {
+          last24Hours: todayRegistrations,
+          last7Days: recentRegistrations
+        }
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+// @desc    Get all registered users (Admin only)
+// @route   GET /api/auth/users
+// @access  Private/Admin
+export const getAllUsers = async (req, res, next) => {
+  try {
+    const { 
+      role, 
+      isVerified, 
+      search,
+      page = 1, 
+      limit = 20,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Build query
+    const query = {};
+    if (role) query.role = role;
+    if (isVerified !== undefined) query.isVerified = isVerified === 'true';
+    
+    // Add search functionality
+    if (search) {
+      query.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Build sort object
+    const sort = {};
+    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+    // Get users
+    const users = await User.find(query)
+      .select('-password -verificationToken -resetPasswordToken') // Exclude sensitive fields
+      .sort(sort)
+      .skip(skip)
+      .limit(limitNum);
+
+    // Get total count for pagination
+    const totalUsers = await User.countDocuments(query);
+    const totalPages = Math.ceil(totalUsers / limitNum);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        users,
+        pagination: {
+          currentPage: pageNum,
+          totalPages,
+          totalUsers,
+          hasNextPage: pageNum < totalPages,
+          hasPrevPage: pageNum > 1
+        }
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};

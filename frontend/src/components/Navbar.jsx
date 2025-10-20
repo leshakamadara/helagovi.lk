@@ -75,6 +75,7 @@ import {
 } from './ui/dropdown-menu'
 import { Badge } from './ui/badge'
 import { Input } from './ui/input'
+import { Muted } from './ui/typography'
 import api from '../lib/axios'
 
 const Navbar = () => {
@@ -357,9 +358,9 @@ const Navbar = () => {
                       <div className="p-4">
                         <div className="flex items-center justify-between mb-4">
                           <h3 className="text-lg font-semibold">Shopping Cart</h3>
-                          <span className="text-sm text-gray-500">
+                          <Muted className="text-sm">
                             {itemCount} {itemCount === 1 ? 'item' : 'items'}
-                          </span>
+                          </Muted>
                         </div>
 
                         {cartItems.length > 0 ? (
@@ -437,7 +438,7 @@ const Navbar = () => {
                         ) : (
                           <div className="text-center py-6">
                             <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                            <p className="text-gray-500 mb-3">Your cart is empty</p>
+                            <Muted className="mb-3">Your cart is empty</Muted>
                             <Button
                               onClick={() => {
                                 toggleCartDropdown(false)
@@ -474,16 +475,18 @@ const Navbar = () => {
                         item.divider ? (
                           <DropdownMenuSeparator key={`divider-${index}`} />
                         ) : (
-                          <DropdownMenuItem key={item.to} asChild>
-                            <Link to={item.to} className="flex items-center">
-                              <item.icon className="h-4 w-4 mr-2" />
-                              {item.label}
-                            </Link>
+                          <DropdownMenuItem 
+                            key={item.to} 
+                            onClick={() => navigate(item.to)}
+                            className="flex items-center cursor-pointer"
+                          >
+                            <item.icon className="h-4 w-4 mr-2" />
+                            {item.label}
                           </DropdownMenuItem>
                         )
                       ))}
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={handleLogout}>
+                      <DropdownMenuItem onClick={handleLogout} className="flex items-center cursor-pointer">
                         <LogOut className="h-4 w-4 mr-2" />
                         Logout
                       </DropdownMenuItem>
@@ -500,9 +503,9 @@ const Navbar = () => {
                 // Guest users see login button
                 <Link
                   to="/login"
-                  className="bg-emerald-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-emerald-700"
+                  className="bg-white text-emerald-600 border border-emerald-600 px-4 py-2 rounded-md text-sm font-medium transition-all duration-400 ease-out hover:bg-[#22C55E] hover:text-white hover:border-[#22C55E] hover:rounded-full"
                 >
-                  Login
+                  Sign In
                 </Link>
               )}
             </div>
@@ -515,7 +518,7 @@ const Navbar = () => {
                     <Menu className="h-6 w-6" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-[300px]">
+                <SheetContent side="right" className="w-[320px]">
                   <SheetHeader>
                     <SheetTitle className="flex items-center gap-2">
                       <img 
@@ -527,6 +530,31 @@ const Navbar = () => {
                     </SheetTitle>
                   </SheetHeader>
                   <div className="mt-6 space-y-4">
+                    {/* Cart for buyers on mobile */}
+                    {isAuthenticated && user.role === 'buyer' && (
+                      <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 mb-2">
+                        <div className="flex items-center gap-2">
+                          <ShoppingCart className="h-5 w-5 text-emerald-600" />
+                          <span className="font-medium">Cart</span>
+                          {itemCount > 0 && (
+                            <span className="ml-2 bg-emerald-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                              {itemCount}
+                            </span>
+                          )}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="px-2 py-1"
+                          onClick={() => {
+                            setIsOpen(false)
+                            navigate('/cart')
+                          }}
+                        >
+                          View
+                        </Button>
+                      </div>
+                    )}
                     {/* Mobile Navigation Items */}
                     <div className="space-y-2">
                       {navigationItems.map((item) => (
@@ -540,52 +568,89 @@ const Navbar = () => {
                         </Link>
                       ))}
                     </div>
-                    
                     <hr className="border-gray-200" />
-                    
-                    {isAuthenticated ? (
-                      (user.role === 'buyer' || user.role === 'farmer') ? (
-                        <>
-                          <div className="space-y-2">
-                            {(user.role === 'buyer' ? getBuyerMenuItems() : getFarmerMenuItems()).map((item) => (
-                              <Link
-                                key={item.to}
-                                to={item.to}
-                                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-                                onClick={() => setIsOpen(false)}
-                              >
-                                <item.icon className="h-5 w-5 text-emerald-600" />
-                                <span className="font-medium">{item.label}</span>
-                              </Link>
-                            ))}
-                          </div>
-                          <hr className="border-gray-200" />
-                          <Button
-                            onClick={() => {
-                              handleLogout();
-                              setIsOpen(false);
-                            }}
-                            variant="outline"
-                            className="w-full justify-start gap-3"
-                          >
-                            <LogOut className="h-5 w-5" />
-                            Logout
-                          </Button>
-                        </>
-                      ) : (
+                    {/* Buyer options directly in navigation for mobile */}
+                    {isAuthenticated && user.role === 'buyer' && (
+                      <div className="space-y-2">
+                        {/* Profile section */}
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={user.avatar} />
+                            <AvatarFallback>{getUserInitials()}</AvatarFallback>
+                          </Avatar>
+                          <Muted className="text-sm font-medium">
+                            {user.firstName || user.name || 'User'}
+                          </Muted>
+                        </div>
+                        {/* Buyer menu items */}
+                        {getBuyerMenuItems().map((item, index) => (
+                          item.divider ? (
+                            <hr key={`divider-${index}`} className="border-gray-200 my-2" />
+                          ) : (
+                            <Link
+                              key={item.to}
+                              to={item.to}
+                              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                              onClick={() => setIsOpen(false)}
+                            >
+                              <item.icon className="h-5 w-5 text-emerald-600" />
+                              <span className="font-medium">{item.label}</span>
+                            </Link>
+                          )
+                        ))}
                         <Button
                           onClick={() => {
                             handleLogout();
                             setIsOpen(false);
                           }}
                           variant="outline"
-                          className="w-full justify-start gap-3"
+                          className="w-full justify-start gap-3 mt-2"
                         >
                           <LogOut className="h-5 w-5" />
                           Logout
                         </Button>
-                      )
-                    ) : (
+                      </div>
+                    )}
+                    {/* Farmer mobile menu */}
+                    {isAuthenticated && user.role === 'farmer' && (
+                      <div className="space-y-2">
+                        {/* Profile section */}
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={user.avatar} />
+                            <AvatarFallback>{getUserInitials()}</AvatarFallback>
+                          </Avatar>
+                          <Muted className="text-sm font-medium">
+                            {user.firstName || user.name || 'User'}
+                          </Muted>
+                        </div>
+                        {/* Farmer menu items */}
+                        {getFarmerMenuItems().map((item) => (
+                          <Link
+                            key={item.to}
+                            to={item.to}
+                            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                            onClick={() => setIsOpen(false)}
+                          >
+                            <item.icon className="h-5 w-5 text-emerald-600" />
+                            <span className="font-medium">{item.label}</span>
+                          </Link>
+                        ))}
+                        <Button
+                          onClick={() => {
+                            handleLogout();
+                            setIsOpen(false);
+                          }}
+                          variant="outline"
+                          className="w-full justify-start gap-3 mt-2"
+                        >
+                          <LogOut className="h-5 w-5" />
+                          Logout
+                        </Button>
+                      </div>
+                    )}
+                    {/* Guest users */}
+                    {!isAuthenticated && (
                       <div className="space-y-3">
                         <Button
                           asChild
@@ -594,7 +659,7 @@ const Navbar = () => {
                           onClick={() => setIsOpen(false)}
                         >
                           <Link to="/login">
-                            Login
+                            Sign In
                           </Link>
                         </Button>
                         <Button

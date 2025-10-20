@@ -144,107 +144,92 @@ reviewSchema.virtual('helpfulPercentage').get(function() {
 
 // Static methods
 reviewSchema.statics.getProductReviewStats = async function(productId) {
-  const stats = await this.aggregate([
-    {
-      $match: {
-        product: new mongoose.Types.ObjectId(productId),
-        status: 'approved'
-      }
-    },
-    {
-      $group: {
-        _id: null,
-        totalReviews: { $sum: 1 },
-        averageRating: { $avg: '$rating' },
-        ratingDistribution: {
-          $push: '$rating'
-        }
-      }
-    },
-    {
-      $project: {
-        _id: 0,
-        totalReviews: 1,
-        averageRating: { $round: ['$averageRating', 1] },
-        ratingDistribution: {
-          5: {
-            $size: {
-              $filter: {
-                input: '$ratingDistribution',
-                cond: { $eq: ['$$this', 5] }
-              }
-            }
-          },
-          4: {
-            $size: {
-              $filter: {
-                input: '$ratingDistribution',
-                cond: { $eq: ['$$this', 4] }
-              }
-            }
-          },
-          3: {
-            $size: {
-              $filter: {
-                input: '$ratingDistribution',
-                cond: { $eq: ['$$this', 3] }
-              }
-            }
-          },
-          2: {
-            $size: {
-              $filter: {
-                input: '$ratingDistribution',
-                cond: { $eq: ['$$this', 2] }
-              }
-            }
-          },
-          1: {
-            $size: {
-              $filter: {
-                input: '$ratingDistribution',
-                cond: { $eq: ['$$this', 1] }
-              }
-            }
-          }
-        }
-      }
-    }
-  ]);
+  try {
+    console.log('Getting product review stats for:', productId);
+    
+    // Use a simpler approach with basic queries instead of complex aggregation
+    const reviews = await this.find({
+      product: new mongoose.Types.ObjectId(productId),
+      status: 'approved'
+    }).select('rating');
 
-  return stats[0] || {
-    totalReviews: 0,
-    averageRating: 0,
-    ratingDistribution: {
-      5: 0, 4: 0, 3: 0, 2: 0, 1: 0
+    console.log('Found reviews:', reviews.length);
+
+    if (reviews.length === 0) {
+      return {
+        totalReviews: 0,
+        averageRating: 0,
+        ratingDistribution: {
+          5: 0, 4: 0, 3: 0, 2: 0, 1: 0
+        }
+      };
     }
-  };
+
+    // Calculate stats manually
+    const totalReviews = reviews.length;
+    const averageRating = reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews;
+    
+    const ratingDistribution = {
+      5: 0, 4: 0, 3: 0, 2: 0, 1: 0
+    };
+
+    reviews.forEach(review => {
+      if (ratingDistribution.hasOwnProperty(review.rating)) {
+        ratingDistribution[review.rating]++;
+      }
+    });
+
+    const result = {
+      totalReviews,
+      averageRating: Math.round(averageRating * 10) / 10, // Round to 1 decimal
+      ratingDistribution
+    };
+
+    console.log('Calculated stats:', result);
+    return result;
+
+  } catch (error) {
+    console.error('Error in getProductReviewStats:', error);
+    console.error('Error stack:', error.stack);
+    return {
+      totalReviews: 0,
+      averageRating: 0,
+      ratingDistribution: {
+        5: 0, 4: 0, 3: 0, 2: 0, 1: 0
+      }
+    };
+  }
 };
 
 reviewSchema.statics.canUserReview = async function(productId, buyerId) {
-  // Check if user has purchased this product
-  const Order = mongoose.model('Order');
-  const hasOrder = await Order.findOne({
-    buyer: buyerId,
-    'items.product': productId,
-    status: { $in: ['delivered', 'completed'] }
-  });
+  try {
+    // Check if user has purchased this product
+    const Order = mongoose.model('Order');
+    const hasOrder = await Order.findOne({
+      buyer: buyerId,
+      'items.product': productId,
+      status: { $in: ['delivered', 'completed'] }
+    });
 
-  if (!hasOrder) {
-    return { canReview: false, reason: 'You must purchase this product before reviewing' };
+    if (!hasOrder) {
+      return { canReview: false, reason: 'You must purchase this product before reviewing' };
+    }
+
+    // Check if user has already reviewed this product
+    const existingReview = await this.findOne({
+      product: productId,
+      buyer: buyerId
+    });
+
+    if (existingReview) {
+      return { canReview: false, reason: 'You have already reviewed this product' };
+    }
+
+    return { canReview: true, order: hasOrder._id };
+  } catch (error) {
+    console.error('Error in canUserReview:', error);
+    return { canReview: false, reason: 'Error checking review eligibility' };
   }
-
-  // Check if user has already reviewed this product
-  const existingReview = await this.findOne({
-    product: productId,
-    buyer: buyerId
-  });
-
-  if (existingReview) {
-    return { canReview: false, reason: 'You have already reviewed this product' };
-  }
-
-  return { canReview: true, order: hasOrder._id };
 };
 
 // Instance methods

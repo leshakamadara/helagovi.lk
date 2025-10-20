@@ -4,14 +4,17 @@ import User from '../models/User.js';
 import mongoose from 'mongoose';
 
 /**
- * Create a new order
+ * Crexport const getMyOrders = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userRole = req.user.role; a new order
  */
 export const createOrder = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    const { items, deliveryAddress, paymentMethod, notes } = req.body;
+    const { items, deliveryAddress, paymentMethod, paymentStatus, transactionId, notes } = req.body;
     const buyerId = req.user.id;
 
     // Validate required fields
@@ -34,14 +37,23 @@ export const createOrder = async (req, res) => {
     let totalAmount = 0;
     const productIds = items.map(item => item.productId);
     
+    console.log('Creating order for buyer:', buyerId);
+    console.log('Product IDs:', productIds);
+    console.log('Items:', items);
+    
     // Get all products in one query
     const products = await Product.find({
       _id: { $in: productIds },
       status: 'active'
     }).populate('farmer', 'firstName lastName phone email').session(session);
 
+    console.log('Found products:', products.length, 'Expected:', productIds.length);
+    
     if (products.length !== productIds.length) {
-      throw new Error('One or more products are not available');
+      const foundIds = products.map(p => p._id.toString());
+      const missingIds = productIds.filter(id => !foundIds.includes(id));
+      console.error('Missing products:', missingIds);
+      throw new Error(`One or more products are not available: ${missingIds.join(', ')}`);
     }
 
     // Process each item
@@ -87,11 +99,30 @@ export const createOrder = async (req, res) => {
     const subtotal = totalAmount;
     const total = subtotal + estimatedDeliveryFee;
 
-    // Generate order number
-    const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
-
     // Get unique farmers from items
     const farmerIds = [...new Set(products.map(p => p.farmer._id))];
+
+    // Generate order number before creating the order
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    // Count orders for today to generate sequential number
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const todayOrderCount = await Order.countDocuments({
+      createdAt: {
+        $gte: today,
+        $lt: tomorrow
+      }
+    });
+    
+    const sequentialNumber = String(todayOrderCount + 1).padStart(3, '0');
+    const orderNumber = `ORD-${year}${month}${day}-${sequentialNumber}`;
 
     // Create order object
     const orderData = {
@@ -105,8 +136,10 @@ export const createOrder = async (req, res) => {
       deliveryAddress,
       paymentInfo: {
         method: paymentMethod || 'cash_on_delivery',
-        status: 'pending',
-        amount: total
+        status: paymentStatus || 'pending',
+        transactionId: transactionId || undefined,
+        amount: total,
+        paidAt: paymentStatus === 'paid' ? new Date() : undefined
       },
       notes,
       status: 'pending',
@@ -150,10 +183,25 @@ export const createOrder = async (req, res) => {
     await session.abortTransaction();
     console.error('Create order error:', error);
     
+    // Log detailed validation errors
+    if (error.name === 'ValidationError') {
+      console.error('Validation errors:', Object.keys(error.errors).map(key => ({
+        field: key,
+        message: error.errors[key].message,
+        value: error.errors[key].value
+      })));
+    }
+    
     res.status(400).json({
       success: false,
       message: error.message || 'Failed to create order',
-      error: process.env.NODE_ENV === 'development' ? error : undefined
+      error: process.env.NODE_ENV === 'development' ? error : undefined,
+      details: process.env.NODE_ENV === 'development' && error.name === 'ValidationError' 
+        ? Object.keys(error.errors).map(key => ({
+            field: key,
+            message: error.errors[key].message
+          }))
+        : undefined
     });
   } finally {
     session.endSession();
@@ -165,7 +213,7 @@ export const createOrder = async (req, res) => {
  */
 export const getMyOrders = async (req, res) => {
   try {
-    const userId = req.user.id;
+  const userId = req.user.id;
     const userRole = req.user.role;
     const { status, page = 1, limit = 10 } = req.query;
 
@@ -234,9 +282,7 @@ export const getOrderById = async (req, res) => {
   try {
     const { orderId } = req.params;
     const userId = req.user.id;
-    const userRole = req.user.role;
-
-    const order = await Order.findById(orderId)
+    const userRole = req.user.role;    const order = await Order.findById(orderId)
       .populate('buyer', 'firstName lastName email phone')
       .populate('farmers', 'firstName lastName email phone')
       .populate('items.product', 'title images unit farmer')
@@ -285,9 +331,7 @@ export const getOrderByNumber = async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const userId = req.user.id;
-    const userRole = req.user.role;
-
-    const order = await Order.findByOrderNumber(orderNumber);
+    const userRole = req.user.role;    const order = await Order.findByOrderNumber(orderNumber);
 
     if (!order) {
       return res.status(404).json({
@@ -333,9 +377,7 @@ export const updateOrderStatus = async (req, res) => {
     const { orderId } = req.params;
     const { status, note } = req.body;
     const userId = req.user.id;
-    const userRole = req.user.role;
-
-    const order = await Order.findById(orderId)
+    const userRole = req.user.role;    const order = await Order.findById(orderId)
       .populate('buyer', 'firstName lastName')
       .populate('farmers', 'firstName lastName');
 
@@ -354,7 +396,7 @@ export const updateOrderStatus = async (req, res) => {
     // Define allowed status updates by role
     const allowedStatusUpdates = {
       buyer: ['cancelled'], // Buyers can only cancel
-      farmer: ['confirmed', 'preparing', 'shipped', 'cancelled'], // Farmers can update most statuses
+      farmer: ['confirmed', 'preparing', 'shipped', 'delivered', 'cancelled'], // Farmers can update most statuses including delivered
       admin: ['pending', 'confirmed', 'preparing', 'shipped', 'delivered', 'cancelled', 'refunded'] // Admins can update any status
     };
 
@@ -422,9 +464,7 @@ export const cancelOrder = async (req, res) => {
     const { orderId } = req.params;
     const { reason } = req.body;
     const userId = req.user.id;
-    const userRole = req.user.role;
-
-    const order = await Order.findById(orderId);
+    const userRole = req.user.role;    const order = await Order.findById(orderId);
 
     if (!order) {
       return res.status(404).json({

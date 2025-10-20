@@ -14,26 +14,25 @@ services:
         value: production
       - key: PORT
         value: 5001
-      # Add other environment variables in Render dashboard
+     
 
-  # Frontend Static Site
+  # Frontend Web Service (for SPA routing support)
   - type: web
-    name: helagovi-lk-1
-    env: static
+    name: helagovi-lk-frontend
+    env: node
     region: singapore
     plan: starter
-    buildCommand: npm install && npm run build
-    staticPublishPath: dist
-    rootDir: frontend
+    buildCommand: |
+      cd frontend
+      npm install
+      npm run build
+    startCommand: |
+      cd frontend
+      npx serve -s dist -l $PORT
+    rootDir: .
     envVars:
       - key: NODE_ENV
         value: production
-      # Add other environment variables in Render dashboard
+      - key: PORT
+        value: 10000
 
-# Database (if using Render PostgreSQL - optional)
-# databases:
-#   - name: helagovi-db
-#     databaseName: helagovi
-#     user: helagovi_user
-#     region: singapore
-#     plan: starter

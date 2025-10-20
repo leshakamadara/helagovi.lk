@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import api from '../../lib/axios'
 import {
   ShoppingBag,
   Search,
@@ -31,37 +32,82 @@ const BuyerDashboard = () => {
     totalSpent: 0,
     favoriteCount: 0
   })
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    fetchDashboardData()
-  }, [])
+    if (user) {
+      fetchDashboardData()
+    }
+  }, [user])
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true)
+      setError(null)
       
-      // Fetch recent products
-      const productsResponse = await fetch('/api/products?limit=6&sortBy=createdAt&sortOrder=desc')
-      if (productsResponse.ok) {
-        const productsData = await productsResponse.json()
-        setRecentProducts(productsData.data)
+      if (!user) {
+        setLoading(false)
+        return
       }
 
-      // Initialize empty arrays for now - these will be populated when the backend endpoints are implemented
+      // Parallel API calls for better performance
+      const [
+        productsResponse,
+        ordersResponse,
+        statsResponse
+      ] = await Promise.allSettled([
+        // Fetch recent products
+        api.get('/products?limit=6&sortBy=createdAt&sortOrder=desc'),
+        // Fetch user's recent orders
+        api.get('/orders/my?limit=5&sortBy=createdAt&sortOrder=desc'),
+        // Fetch order statistics for current user
+        api.get('/orders/stats')
+      ])
+
+      // Handle products response
+      if (productsResponse.status === 'fulfilled' && productsResponse.value.data?.success) {
+        setRecentProducts(productsResponse.value.data.data || [])
+      }
+
+      // Handle orders response
+      if (ordersResponse.status === 'fulfilled' && ordersResponse.value.data?.success) {
+        setRecentOrders(ordersResponse.value.data.data || [])
+      }
+
+      // Handle stats response
+      if (statsResponse.status === 'fulfilled' && statsResponse.value.data?.success) {
+        const statsData = statsResponse.value.data.data
+        setStats({
+          totalOrders: statsData.statusCounts?.all || 0,
+          completedOrders: statsData.revenue?.completedOrders || 0,
+          totalSpent: statsData.revenue?.total || 0,
+          favoriteCount: 0 // Placeholder, update when favorites endpoint is available
+        })
+      }
+
+      // Handle favorites response (placeholder for future implementation)
       setFavoriteProducts([])
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error)
+      setError('Failed to load dashboard data. Please try again.')
+      // Set default empty state on error
+      setRecentProducts([])
       setRecentOrders([])
+      setFavoriteProducts([])
       setStats({
         totalOrders: 0,
         completedOrders: 0,
         totalSpent: 0,
         favoriteCount: 0
       })
-
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error)
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleRefresh = () => {
+    fetchDashboardData()
   }
 
   const formatCurrency = (amount) => {
@@ -115,8 +161,39 @@ const BuyerDashboard = () => {
 
       {/* Header */}
       <div className="mb-8">
-        <H1 className="text-gray-900">Welcome back, {user?.firstName || 'Buyer'}!</H1>
-        <P className="text-gray-600">Discover fresh agricultural products directly from local farmers.</P>
+        <div className="flex justify-between items-start">
+          <div>
+            <H1 className="text-gray-900">Welcome back, {user?.firstName || 'Buyer'}!</H1>
+            <P className="text-gray-600">Discover fresh agricultural products directly from local farmers.</P>
+          </div>
+          <Button
+            onClick={handleRefresh}
+            variant="outline"
+            size="sm"
+            disabled={loading}
+            className="flex items-center space-x-2"
+          >
+            <svg className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>Refresh</span>
+          </Button>
+        </div>
+        
+        {error && (
+          <div className="mt-4 bg-red-50 border border-red-200 rounded-md p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <P className="text-sm text-red-800">{error}</P>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Stats Overview */}
@@ -285,7 +362,11 @@ const BuyerDashboard = () => {
           <div className="divide-y divide-gray-200">
             {recentProducts.length > 0 ? (
               recentProducts.slice(0, 4).map((product) => (
-                <div key={product._id} className="px-4 py-4 hover:bg-gray-50 cursor-pointer">
+                <Link 
+                  key={product._id} 
+                  to={`/product-details?id=${product._id}`}
+                  className="block px-4 py-4 hover:bg-gray-50 transition-colors duration-200"
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <img
@@ -298,27 +379,39 @@ const BuyerDashboard = () => {
                         <P className="font-medium text-gray-900">{product.title}</P>
                         <div className="flex items-center space-x-2 text-sm text-gray-500">
                           <MapPin className="h-3 w-3" />
-                          <Muted>{product.district}</Muted>
+                          <Muted>{product.district || product.city}</Muted>
                           {product.farmer && (
                             <Muted>• by {product.farmer.firstName} {product.farmer.lastName}</Muted>
                           )}
                         </div>
+                        {product.freshnessDays && (
+                          <div className="flex items-center space-x-1 text-xs text-green-600 mt-1">
+                            <Clock className="h-3 w-3" />
+                            <span>{product.freshnessDays} days fresh</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="text-right">
                       <P className="font-medium text-green-600">
                         {formatCurrency(product.price)}/{product.unit}
                       </P>
+                      {product.qualityScore && (
+                        <div className="flex items-center text-xs text-yellow-600 mt-1">
+                          <Star className="h-3 w-3 mr-1 fill-current" />
+                          <span>{product.qualityScore}/5</span>
+                        </div>
+                      )}
                       <Button 
                         variant="link"
                         size="sm"
-                        className="mt-1 h-auto p-0 text-xs"
+                        className="mt-1 h-auto p-0 text-xs text-blue-600 hover:text-blue-500"
                       >
                         View Details
                       </Button>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))
             ) : (
               <div className="px-4 py-8 text-center">
@@ -352,25 +445,46 @@ const BuyerDashboard = () => {
           <div className="divide-y divide-gray-200">
             {recentOrders.length > 0 ? (
               recentOrders.map((order) => (
-                <div key={order._id} className="px-4 py-4 hover:bg-gray-50">
+                <Link
+                  key={order._id}
+                  to={`/my-orders?orderId=${order._id}`}
+                  className="block px-4 py-4 hover:bg-gray-50 transition-colors duration-200"
+                >
                   <div className="flex items-center justify-between">
                     <div>
-                      <P className="font-medium text-gray-900">Order #{order.orderNumber}</P>
+                      <P className="font-medium text-gray-900">
+                        Order #{order.orderNumber || order._id?.slice(-8)}
+                      </P>
                       <div className="flex items-center space-x-2 text-sm text-gray-500 mt-1">
                         <Clock className="h-3 w-3" />
                         <Muted>{new Date(order.createdAt).toLocaleDateString()}</Muted>
-                        <Muted>• {order.items} items</Muted>
-                        <Muted>• from {order.farmer.firstName} {order.farmer.lastName}</Muted>
+                        <Muted>• {order.items?.length || order.products?.length || 1} items</Muted>
+                        {order.farmer && (
+                          <Muted>• from {order.farmer.firstName} {order.farmer.lastName}</Muted>
+                        )}
                       </div>
+                      {order.deliveryAddress && (
+                        <div className="flex items-center space-x-1 text-xs text-gray-400 mt-1">
+                          <MapPin className="h-3 w-3" />
+                          <span>{order.deliveryAddress.city}</span>
+                        </div>
+                      )}
                     </div>
                     <div className="text-right">
-                      <P className="font-medium text-gray-900">{formatCurrency(order.total)}</P>
+                      <P className="font-medium text-gray-900">
+                        {formatCurrency(order.totalAmount || order.total || 0)}
+                      </P>
                       <div className="mt-1">
                         {getStatusBadge(order.status)}
                       </div>
+                      {order.estimatedDelivery && (
+                        <Muted className="text-xs mt-1">
+                          Est: {new Date(order.estimatedDelivery).toLocaleDateString()}
+                        </Muted>
+                      )}
                     </div>
                   </div>
-                </div>
+                </Link>
               ))
             ) : (
               <div className="px-4 py-8 text-center">

@@ -3,7 +3,14 @@ import { Lock, CreditCard, ArrowLeft } from 'lucide-react';
 import OrderSummary from '../../components/payOrderSummary';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
 import api from '../../lib/axios'; // Assumes Axios instance is set up here
+import { orderService } from '../../services/orderService';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb';
+import { H1, P } from '../../components/ui/typography';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Alert, AlertDescription } from '../../components/ui/alert';
 
 const PaymentPage = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -11,6 +18,7 @@ const PaymentPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { clearCart } = useCart();
   
   // Get order data from delivery page or use default
   const { orderData } = location.state || {};
@@ -73,7 +81,8 @@ const PaymentPage = () => {
 
   useEffect(() => {
     const script = document.createElement('script');
-    script.src = 'https://www.payhere.lk/lib/payhere.js';
+    // ✅ Use sandbox for testing, live for production
+    script.src = 'https://sandbox.payhere.lk/lib/payhere.js'; // Use sandbox SDK for testing
     script.async = true;
     document.body.appendChild(script);
     return () => document.body.removeChild(script);
@@ -100,7 +109,7 @@ const PaymentPage = () => {
       const data = res.data;
 
       const paymentData = {
-        sandbox: true,
+        sandbox: true, // Always use sandbox for testing virtual payments
         merchant_id: data.merchant_id,
         hash: data.hash,
         return_url: `${PUBLIC_URL}/payment-success`,
@@ -120,20 +129,94 @@ const PaymentPage = () => {
       };
 
       // ✅ PayHere Events
-      window.payhere.onCompleted = function (orderId) {
+      window.payhere.onCompleted = async function (orderId) {
         console.log('Payment completed:', orderId);
-        setIsLoading(false);
-        navigate('/success', { 
-          state: { 
-            orderId, 
-            order,
-            transactionDetails: {
-              paymentMethod: 'PayHere',
-              transactionId: orderId,
-              status: 'completed'
-            }
-          } 
-        });
+        
+        try {
+          // Prepare order data for backend
+          const deliveryAddress = {
+            recipientName: `${orderData.deliveryInfo.firstName} ${orderData.deliveryInfo.lastName}`.trim(),
+            phone: orderData.deliveryInfo.phone.replace(/\s+/g, ''), // Remove spaces
+            street: orderData.deliveryInfo.addressLine1 + (orderData.deliveryInfo.addressLine2 ? ', ' + orderData.deliveryInfo.addressLine2 : ''),
+            city: orderData.deliveryInfo.city.trim(),
+            district: orderData.deliveryInfo.district,
+            postalCode: orderData.deliveryInfo.postalCode.toString().padStart(5, '0'), // Ensure 5 digits
+            specialInstructions: orderData.deliveryInfo.deliveryInstructions || ''
+          };
+
+          // Validate required fields
+          if (!deliveryAddress.recipientName || !deliveryAddress.phone || !deliveryAddress.street || 
+              !deliveryAddress.city || !deliveryAddress.district || !deliveryAddress.postalCode) {
+            throw new Error('Missing required delivery address fields');
+          }
+
+          const orderDataPayload = {
+            items: orderData.items.map(item => ({
+              productId: item.productId,
+              quantity: item.quantity
+            })),
+            deliveryAddress,
+            paymentMethod: 'credit_card', // Map PayHere to credit_card
+            paymentStatus: 'paid',
+            transactionId: orderId,
+            notes: orderData.deliveryInfo.deliveryInstructions || ''
+          };
+
+          console.log('Validated order data:', orderDataPayload);
+
+          console.log('Creating order with data:', orderDataPayload);
+          
+          // Create order in database
+          const orderResponse = await orderService.createOrder(orderDataPayload);
+          const createdOrder = orderResponse.data.order;
+          
+          console.log('Order created successfully:', createdOrder);
+          
+          // Clear the cart after successful order creation
+          try {
+            await clearCart();
+            console.log('Cart cleared successfully');
+          } catch (cartError) {
+            console.warn('Failed to clear cart:', cartError);
+            // Don't fail the order creation if cart clearing fails
+          }
+          
+          setIsLoading(false);
+          navigate('/success', { 
+            state: { 
+              orderId, 
+              order: {
+                ...order,
+                orderNumber: createdOrder.orderNumber,
+                id: createdOrder._id,
+                summary: {
+                  ...order.summary,
+                  total: createdOrder.total
+                }
+              },
+              transactionDetails: {
+                paymentMethod: 'PayHere',
+                transactionId: orderId,
+                status: 'completed'
+              }
+            } 
+          });
+        } catch (orderError) {
+          console.error('Failed to create order:', orderError);
+          setIsLoading(false);
+          alert('Payment was successful, but there was an issue creating your order. Please contact support with transaction ID: ' + orderId);
+          navigate('/success', { 
+            state: { 
+              orderId, 
+              order,
+              transactionDetails: {
+                paymentMethod: 'PayHere',
+                transactionId: orderId,
+                status: 'completed'
+              }
+            } 
+          });
+        }
       };
 
       window.payhere.onDismissed = function () {
@@ -186,112 +269,141 @@ const PaymentPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-8">
+        
+        {/* Breadcrumbs */}
+        <div className="mb-6">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/">Home</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/cart">Cart</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/checkout/delivery">Delivery</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Payment</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+
         {/* Back Button */}
-        <button
+        <Button
+          variant="ghost"
           onClick={() => navigate(-1)}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-6 transition-colors"
+          className="mb-6"
         >
-          <ArrowLeft className="h-5 w-5 mr-2" />
+          <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Delivery Information
-        </button>
+        </Button>
 
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center mr-3">
-              <Lock className="w-5 h-5 text-white" />
-            </div>
-            <h1 className="text-3xl font-bold text-gray-800">Secure Checkout</h1>
-          </div>
-          <p className="text-gray-600">Complete your purchase securely</p>
+        <div className="mb-8">
+          <H1 className="text-gray-900 mb-2">Secure Checkout</H1>
+          <P className="text-gray-600">Complete your purchase securely</P>
           
-          {/* Order Info */}
-          {orderData && (
-            <div className="mt-4 p-4 bg-emerald-50 rounded-lg inline-block">
-              <p className="text-sm text-emerald-700">
-                <strong>Order #{order.orderNumber.slice(-6)}</strong> • 
-                Delivering to <strong>{order.buyer.firstName} {order.buyer.lastName}</strong>
-              </p>
-              <p className="text-xs text-emerald-600 mt-1">
-                {order.buyer.address}, {order.buyer.city}
-              </p>
-            </div>
-          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Order Summary */}
-          <OrderSummary summary={order.summary} />
+          <div className="space-y-4">
+            {orderData && (
+              <Alert className="border-emerald-200 bg-emerald-50">
+                <AlertDescription className="text-emerald-700">
+                  <strong>Order #{order.orderNumber.slice(-6)}</strong> • 
+                  Delivering to <strong>{order.buyer.firstName} {order.buyer.lastName}</strong>
+                  <br />
+                  <span className="text-emerald-600 text-sm">
+                    {order.buyer.address}, {order.buyer.city}
+                  </span>
+                </AlertDescription>
+              </Alert>
+            )}
+            <OrderSummary summary={order.summary} />
+          </div>
 
           {/* Payment Section */}
-          <div className="bg-white shadow-lg rounded-lg p-6">
-            <h3 className="text-xl font-bold text-gray-800 mb-6">Choose Payment Method</h3>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5 text-emerald-600" />
+                Choose Payment Method
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                {/* Primary Payment Button */}
+                <Button
+                  onClick={handlePay}
+                  disabled={isLoading}
+                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white"
+                  size="lg"
+                >
+                  {isLoading && loadingType === 'mobile' ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Processing Payment...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Pay {order.summary.total && `LKR ${order.summary.total.toFixed(2)}`} Now
+                    </>
+                  )}
+                </Button>
 
-            <div className="space-y-4 mb-6">
-              {/* Primary Payment Button */}
-              <button
-                className={`w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center ${
-                  isLoading && loadingType === 'mobile' ? 'opacity-75 cursor-not-allowed' : ''
-                }`}
-                onClick={handlePay}
-                disabled={isLoading}
-              >
-                {isLoading && loadingType === 'mobile' ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    Processing Payment...
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="w-5 h-5 mr-2" />
-                    Pay {order.summary.total && `LKR ${order.summary.total.toFixed(2)}`} Now
-                  </>
-                )}
-              </button>
-
-              {/* Alternative Payment Button */}
-              <button
-                className={`w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center ${
-                  isLoading && loadingType === 'card' ? 'opacity-75 cursor-not-allowed' : ''
-                }`}
-                onClick={handlePayWithCard}
-                disabled={isLoading}
-              >
-                {isLoading && loadingType === 'card' ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    Loading Cards...
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="w-5 h-5 mr-2" />
-                    Pay with Saved Cards
-                  </>
-                )}
-              </button>
-            </div>
-
-            <div className="bg-gray-100 p-4 rounded-lg mb-4">
-              <p className="text-sm text-gray-600 text-center mb-1">
-                💳 We accept Visa, MasterCard, and local bank cards
-              </p>
-              <p className="text-xs text-gray-500 text-center">
-                You can save the card and easily pay through "pay with saved cards"
-              </p>
-            </div>
-
-            <div className="bg-green-50 border border-green-200 p-4 rounded-lg flex items-center">
-              <Lock className="w-5 h-5 text-green-600 mr-3 flex-shrink-0" />
-              <div>
-                <h4 className="font-semibold text-green-800">Secure Payment</h4>
-                <p className="text-xs text-green-600">
-                  Your payment is protected by 256-bit SSL encryption
-                </p>
+                {/* Alternative Payment Button */}
+                <Button
+                  onClick={handlePayWithCard}
+                  disabled={isLoading}
+                  variant="secondary"
+                  className="w-full"
+                  size="lg"
+                >
+                  {isLoading && loadingType === 'card' ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                      Loading Cards...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Pay with Saved Cards
+                    </>
+                  )}
+                </Button>
               </div>
-            </div>
-          </div>
+
+              <Alert>
+                <AlertDescription className="text-center">
+                  <p className="text-sm mb-1">
+                    💳 We accept Visa, MasterCard, and local bank cards
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    You can save the card and easily pay through "pay with saved cards"
+                  </p>
+                </AlertDescription>
+              </Alert>
+
+              <Alert className="border-green-200 bg-green-50">
+                <Lock className="h-4 w-4 text-green-600" />
+                <AlertDescription>
+                  <h4 className="font-semibold text-green-800">Secure Payment</h4>
+                  <p className="text-xs text-green-600 mt-1">
+                    Your payment is protected by 256-bit SSL encryption
+                  </p>
+                </AlertDescription>
+              </Alert>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

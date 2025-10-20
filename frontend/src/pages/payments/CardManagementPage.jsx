@@ -5,7 +5,8 @@ import EditCardForm from '../../components/EditCardModal.jsx';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb';
 import { H1, H2, H3, P, Muted, Large } from '../../components/ui/typography';
 import { Button } from '../../components/ui/button';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 export default function CardManagerPage() {
   const [cards, setCards] = useState([]);
@@ -15,7 +16,13 @@ export default function CardManagerPage() {
   const [notification, setNotification] = useState('');
   const [formData, setFormData] = useState({ card_name: '', expiry_month: '', expiry_year: '' });
 
-  const SESSION_USER_ID = "635";
+  // ✅ Get authentication context and navigation
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
+  // ✅ Use actual logged-in user ID instead of hardcoded value
+  const SESSION_USER_ID = user?._id || user?.id;
+  
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 10 }, (_, i) => currentYear + i);
   const months = [
@@ -31,8 +38,14 @@ export default function CardManagerPage() {
   };
 
   const fetchCards = async () => {
+    if (!SESSION_USER_ID) {
+      console.warn("No user ID available, skipping card fetch");
+      return;
+    }
+    
     setIsLoading(true);
     try {
+      console.log("Fetching cards for user:", SESSION_USER_ID);
       const res = await api.get(`/payments/card/${SESSION_USER_ID}`);
       const data = res.data;
       setCards(Array.isArray(data) ? data : [data]);
@@ -42,7 +55,15 @@ export default function CardManagerPage() {
     } finally { setIsLoading(false); }
   };
 
-  useEffect(() => { fetchCards(); }, []);
+  // ✅ Check if user is logged in and redirect if not
+  useEffect(() => {
+    if (!user) {
+      showNotification("Please log in to manage payment cards", "error");
+      setTimeout(() => navigate('/login'), 2000);
+      return;
+    }
+    fetchCards();
+  }, [user, navigate]);
 
   const handlePreapproval = async () => {
     setIsLoading(true);
@@ -147,18 +168,19 @@ export default function CardManagerPage() {
       </div>
 
       <div className="mb-8">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
             <H1 className="text-gray-900">Payment Cards</H1>
             <P className="text-gray-600">Manage your saved payment methods securely and conveniently</P>
           </div>
           
           <button
-            className="bg-black text-white hover:bg-gray-800 gap-2 shadow-lg px-4 py-2 rounded-lg flex items-center"
+            className="bg-black text-white hover:bg-gray-800 gap-2 shadow-lg px-4 py-2 rounded-lg flex items-center justify-center w-full sm:w-auto transition-colors duration-200"
             onClick={() => handleOpenModal()}
             disabled={isLoading}
           >
-            <Plus className="w-5 h-5" /> {isLoading ? 'Processing...' : 'Add Card'}
+            <Plus className="w-5 h-5" /> 
+            <span className="font-medium">{isLoading ? 'Processing...' : 'Add Card'}</span>
           </button>
         </div>
       </div>
@@ -172,18 +194,22 @@ export default function CardManagerPage() {
             <P className="text-gray-500 mb-6">
               Add your first payment card to get started with secure checkout
             </P>
-            <button className="bg-black text-white hover:bg-gray-800 gap-2 px-4 py-2 rounded-lg flex items-center mx-auto" onClick={() => handleOpenModal()}>
-              <Plus className="w-5 h-5 mr-2" /> Add Your First Card
+            <button 
+              className="bg-black text-white hover:bg-gray-800 gap-2 px-6 py-3 rounded-lg flex items-center justify-center mx-auto w-full sm:w-auto transition-colors duration-200"
+              onClick={() => handleOpenModal()}
+            >
+              <Plus className="w-5 h-5 mr-2" /> 
+              <span className="font-medium">Add Your First Card</span>
             </button>
           </div>
         )}
 
         {cards.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {cards.map(card => (
               <div key={card._id} className="relative group">
                 <div 
-                  className={`w-96 h-60 rounded-2xl shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-3xl ${getCardGradient(card.method)}`}
+                  className={`w-full max-w-sm mx-auto h-60 rounded-2xl shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-3xl ${getCardGradient(card.method)}`}
                 >
                   <div className="p-6 text-white h-full flex flex-col justify-between">
                     <div className="flex justify-between items-start">

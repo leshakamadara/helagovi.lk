@@ -239,22 +239,23 @@ const FarmerDashboard = () => {
 
         <main className="space-y-4">
           {/* Welcome Section */}
-          <div className="flex items-center justify-between space-y-2">
-            <H1 className="text-green-700">
-              Welcome back, {user?.firstName || 'Farmer'}! 🌾
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+            <H1 className="text-black-700">
+              Welcome back, {user?.firstName || 'Farmer'}! 
             </H1>
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2">
               <Button 
                 variant="outline" 
                 onClick={fetchDashboardData}
                 disabled={loading}
                 title="Refresh Dashboard"
+                className="w-full sm:w-auto"
               >
                 <TrendingUp className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
-              <Link to="/create-product">
-                <Button>
+              <Link to="/create-product" className="w-full sm:w-auto">
+                <Button className="w-full">
                   <Plus className="mr-2 h-4 w-4" />
                   Add Product
                 </Button>
@@ -369,18 +370,18 @@ const FarmerDashboard = () => {
             </Card>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+          <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
             {/* Recent Products */}
-            <Card className="col-span-4">
+            <Card className="lg:col-span-4">
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <div>
                     <CardTitle>Recent Products</CardTitle>
                     <CardDescription>
                       Your latest product listings and their performance
                     </CardDescription>
                   </div>
-                  <Link to="/my-products">
+                  <Link to="/my-products" className="self-start sm:self-auto">
                     <Button variant="outline" size="sm">
                       View All
                     </Button>
@@ -407,52 +408,56 @@ const FarmerDashboard = () => {
                       const imageUrl = primaryImage?.url || 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg';
                       
                       return (
-                        <div key={product._id} className="flex items-center space-x-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                        <div key={product._id} className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                           {/* Product Image */}
-                          <div className="flex-shrink-0">
+                          <div className="flex-shrink-0 mx-auto sm:mx-0">
                             <img
                               src={imageUrl}
                               alt={product.title}
-                              className="w-16 h-16 object-cover rounded-lg"
+                              className="w-20 h-20 sm:w-16 sm:h-16 object-cover rounded-lg"
                               onError={(e) => {
                                 e.target.src = 'https://res.cloudinary.com/dckoipgrs/image/upload/v1758703047/helagovi/phmyhhixdps9vqrh9a7g.jpg';
                               }}
                             />
                           </div>
                           
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2">
+                          <div className="flex-1 min-w-0 text-center sm:text-left">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 justify-center sm:justify-start">
                               <h4 className="text-sm font-bold text-gray-900">{product.title}</h4>
                               {product.isOrganic && (
-                                <Badge variant="outline" className="text-green-600 border-green-600">
+                                <Badge variant="outline" className="text-green-600 border-green-600 self-center sm:self-auto">
                                   <Sprout className="h-3 w-3 mr-1" />
                                   Organic
                                 </Badge>
                               )}
                             </div>
-                            <div className="flex items-center space-x-4 mt-1 text-sm text-gray-500">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mt-1 text-sm text-gray-500 justify-center sm:justify-start">
                               <span>{formatCurrency(product.price)} per {product.unit}</span>
-                              <span className="flex items-center">
+                              <span className="flex items-center justify-center sm:justify-start">
                                 {getStatusIcon(product.status)}
                                 <span className="ml-1 capitalize">{product.status}</span>
                               </span>
                               <span>{product.availableQuantity || 0}/{product.initialQuantity || 0} {product.unit}</span>
-                              <span className="flex items-center">
+                            </div>
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mt-1 text-xs text-gray-500 justify-center sm:justify-start">
+                              <span className="flex items-center justify-center sm:justify-start">
                                 <MapPin className="h-3 w-3 mr-1" />
                                 {product.district || 'Not set'}
                               </span>
-                              <span className="text-xs">{formatDate(product.createdAt)}</span>
+                              <span>{formatDate(product.createdAt)}</span>
                             </div>
                           </div>
-                          <div className="flex space-x-2">
-                            <Link to={`/product-details?id=${product._id}`}>
-                              <Button variant="outline" size="sm" title="View Product">
-                                View
+                          <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2 justify-center sm:justify-end">
+                            <Link to={`/product-details?id=${product._id}`} className="w-full sm:w-auto">
+                              <Button variant="outline" size="sm" title="View Product" className="w-full sm:w-auto">
+                                <Eye className="h-4 w-4 mr-1" />
+                                <span>View</span>
                               </Button>
                             </Link>
-                            <Link to={`/edit-product?id=${product._id}`}>
-                              <Button variant="outline" size="sm" title="Edit Product">
-                                Edit
+                            <Link to={`/edit-product?id=${product._id}`} className="w-full sm:w-auto">
+                              <Button variant="outline" size="sm" title="Edit Product" className="w-full sm:w-auto">
+                                <Edit className="h-4 w-4 mr-1" />
+                                <span>Edit</span>
                               </Button>
                             </Link>
                           </div>
@@ -465,7 +470,7 @@ const FarmerDashboard = () => {
             </Card>
 
             {/* Quick Actions */}
-            <Card className="col-span-3">
+            <Card className="lg:col-span-3">
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>
                 <CardDescription>
@@ -553,14 +558,14 @@ const FarmerDashboard = () => {
           {/* Recent Orders Section */}
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div>
                   <CardTitle>Recent Orders</CardTitle>
                   <CardDescription>
                     Your latest customer orders and their status
                   </CardDescription>
                 </div>
-                <Link to="/farmer-orders">
+                <Link to="/farmer-orders" className="self-start sm:self-auto">
                   <Button variant="outline" size="sm">
                     View All Orders
                   </Button>
@@ -577,9 +582,9 @@ const FarmerDashboard = () => {
                   </div>
                 ) : (
                   recentOrders.map((order) => (
-                    <div key={order._id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                    <div key={order._id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors gap-4">
                       <div className="flex-1">
-                        <div className="flex items-center space-x-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
                           <div>
                             <p className="font-medium text-sm">Order #{order.orderNumber}</p>
                             <p className="text-xs text-gray-500">
@@ -587,20 +592,21 @@ const FarmerDashboard = () => {
                             </p>
                           </div>
                         </div>
-                        <div className="mt-2 flex items-center space-x-4 text-sm text-gray-600">
+                        <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-600">
                           <span>{order.items?.length || 0} item(s)</span>
                           <span>{formatCurrency(order.total)}</span>
                           <Badge 
-                            className={`px-2 py-1 text-xs rounded-full ${getOrderStatusColor(order.status)}`}
+                            className={`px-2 py-1 text-xs rounded-full self-start sm:self-auto ${getOrderStatusColor(order.status)}`}
                           >
                             {order.status}
                           </Badge>
                         </div>
                       </div>
-                      <div className="flex space-x-2">
+                      <div className="flex justify-center sm:justify-end">
                         <Link to={`/order-details/${order._id}`}>
                           <Button variant="outline" size="sm" title="View Order">
-                            <Eye className="h-4 w-4" />
+                            <Eye className="h-4 w-4 mr-1" />
+                            <span>View</span>
                           </Button>
                         </Link>
                       </div>

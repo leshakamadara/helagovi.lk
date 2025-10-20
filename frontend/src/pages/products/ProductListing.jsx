@@ -403,10 +403,7 @@ const ProductListing = () => {
             <div className="flex items-center gap-1">
               <Star className="w-3 h-3 text-yellow-400 fill-current" />
               <span className="text-xs text-muted-foreground">
-                {product.averageRating ? product.averageRating.toFixed(1) : '0.0'} 
-                {product.totalReviews > 0 && (
-                  <span className="ml-1">({product.totalReviews})</span>
-                )}
+                {product.averageRating ? product.averageRating.toFixed(1) : '0.0'}
               </span>
             </div>
           </div>
@@ -559,7 +556,7 @@ const ProductListing = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb Navigation */}
-        <div className="mb-6">
+        <div className="mb-8">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>

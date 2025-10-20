@@ -3,6 +3,8 @@ import Product from '../models/Product.js';
 import Order from '../models/Order.js';
 import User from '../models/User.js';
 import mongoose from 'mongoose';
+import { validationResult } from 'express-validator';
+import { updateProductReviewStats } from '../lib/updateProductReviewStats.js';
 
 // Get all reviews for a product
 export const getProductReviews = async (req, res) => {
@@ -43,17 +45,30 @@ export const getProductReviews = async (req, res) => {
     const skip = (pageNum - 1) * limitNum;
 
     // Get reviews with pagination
-    const [reviews, totalReviews, reviewStats] = await Promise.all([
-      Review.find(query)
-        .populate('buyer', 'firstName lastName avatar')
-        .populate('farmer', 'firstName lastName')
-        .sort(sort)
-        .skip(skip)
-        .limit(limitNum)
-        .lean(),
-      Review.countDocuments(query),
-      Review.getProductReviewStats(productId)
-    ]);
+    const reviews = await Review.find(query)
+      .populate('buyer', 'firstName lastName avatar')
+      .populate('farmer', 'firstName lastName')
+      .sort(sort)
+      .skip(skip)
+      .limit(limitNum)
+      .lean();
+
+    const totalReviews = await Review.countDocuments(query);
+
+    // Try to get review stats, but don't fail if it errors
+    let reviewStats = {
+      totalReviews: totalReviews,
+      averageRating: 0,
+      ratingDistribution: {
+        5: 0, 4: 0, 3: 0, 2: 0, 1: 0
+      }
+    };
+
+    try {
+      reviewStats = await Review.getProductReviewStats(productId);
+    } catch (error) {
+      console.warn('Failed to get review stats:', error);
+    }
 
     const totalPages = Math.ceil(totalReviews / limitNum);
 
@@ -86,6 +101,19 @@ export const getProductReviews = async (req, res) => {
 // Create a new review
 export const createReview = async (req, res) => {
   try {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      console.log('Validation errors for createReview:', errors.array());
+      console.log('Request body:', req.body);
+      console.log('Request params:', req.params);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
     const { productId } = req.params;
     const { rating, title, comment, images = [] } = req.body;
     const buyerId = req.user.id;
@@ -108,10 +136,10 @@ export const createReview = async (req, res) => {
 
     // Check if user can review this product
     const reviewEligibility = await Review.canUserReview(productId, buyerId);
-    if (!reviewEligibility.canReview) {
+    if (!reviewEligibility || !reviewEligibility.canReview) {
       return res.status(403).json({
         success: false,
-        message: reviewEligibility.reason
+        message: reviewEligibility?.reason || 'You cannot review this product'
       });
     }
 
@@ -135,13 +163,14 @@ export const createReview = async (req, res) => {
       .populate('farmer', 'firstName lastName')
       .populate('product', 'title');
 
-    // Update product's average rating (we'll add this virtual later)
-    // This could be done in a background job for better performance
-    const reviewStats = await Review.getProductReviewStats(productId);
-    await Product.findByIdAndUpdate(productId, {
-      averageRating: reviewStats.averageRating,
-      totalReviews: reviewStats.totalReviews
-    });
+    // Update product's average rating and review count (don't fail the entire operation if this fails)
+    try {
+      await updateProductReviewStats(productId);
+      console.log('Product review stats updated successfully after review creation');
+    } catch (statsError) {
+      console.warn('Failed to update product review stats, but review creation was successful:', statsError);
+      // Don't fail the entire operation - the review creation was successful
+    }
 
     res.status(201).json({
       success: true,
@@ -170,9 +199,37 @@ export const createReview = async (req, res) => {
 // Update a review
 export const updateReview = async (req, res) => {
   try {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      console.log('Validation errors:', errors.array());
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
     const { reviewId } = req.params;
     const { rating, title, comment, images } = req.body;
-    const userId = req.user.id;
+    const userId = req.user?.id;
+
+    console.log('updateReview called:', {
+      reviewId,
+      rating,
+      title,
+      comment,
+      images: images?.length,
+      userId,
+      user: req.user
+    });
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User ID not found in request'
+      });
+    }
 
     if (!mongoose.isValidObjectId(reviewId)) {
       return res.status(400).json({
@@ -181,16 +238,23 @@ export const updateReview = async (req, res) => {
       });
     }
 
+    console.log('Looking for review with ID:', reviewId);
     const review = await Review.findById(reviewId);
+    console.log('Found review:', review ? 'Yes' : 'No', review?._id);
+    
     if (!review) {
+      console.log('Review not found with ID:', reviewId);
       return res.status(404).json({
         success: false,
         message: 'Review not found'
       });
     }
 
+    console.log('Review buyer:', review.buyer, 'Current user:', userId);
+    
     // Check if user owns this review
     if (!review.buyer.equals(userId)) {
+      console.log('User does not own this review');
       return res.status(403).json({
         success: false,
         message: 'You can only update your own reviews'
@@ -198,25 +262,45 @@ export const updateReview = async (req, res) => {
     }
 
     // Update fields
-    if (rating !== undefined) review.rating = parseInt(rating);
-    if (title) review.title = title.trim();
-    if (comment) review.comment = comment.trim();
-    if (images !== undefined) review.images = images;
+    console.log('Updating review fields...');
+    if (rating !== undefined) {
+      console.log('Updating rating from', review.rating, 'to', rating);
+      review.rating = parseInt(rating);
+    }
+    if (title) {
+      console.log('Updating title from', review.title, 'to', title);
+      review.title = title.trim();
+    }
+    if (comment) {
+      console.log('Updating comment...');
+      review.comment = comment.trim();
+    }
+    if (images !== undefined) {
+      console.log('Updating images, count:', images?.length);
+      review.images = images;
+    }
 
+    console.log('Saving review...');
     await review.save();
+    console.log('Review saved successfully');
 
-    // Update product's average rating
-    const reviewStats = await Review.getProductReviewStats(review.product);
-    await Product.findByIdAndUpdate(review.product, {
-      averageRating: reviewStats.averageRating,
-      totalReviews: reviewStats.totalReviews
-    });
+    // Update product's average rating and review count (don't fail the entire operation if this fails)
+    try {
+      console.log('Updating product review stats for product:', review.product);
+      await updateProductReviewStats(review.product);
+      console.log('Product review stats updated successfully after review update');
+    } catch (statsError) {
+      console.warn('Failed to update product review stats, but review update was successful:', statsError);
+      // Don't fail the entire operation - the review update was successful
+    }
 
+    console.log('Fetching updated review with population...');
     const updatedReview = await Review.findById(reviewId)
       .populate('buyer', 'firstName lastName avatar')
       .populate('farmer', 'firstName lastName')
       .populate('product', 'title');
 
+    console.log('Sending success response...');
     res.status(200).json({
       success: true,
       message: 'Review updated successfully',
@@ -225,6 +309,7 @@ export const updateReview = async (req, res) => {
 
   } catch (error) {
     console.error('Update review error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
       message: 'Failed to update review',
@@ -267,12 +352,14 @@ export const deleteReview = async (req, res) => {
     const productId = review.product;
     await review.deleteOne();
 
-    // Update product's average rating
-    const reviewStats = await Review.getProductReviewStats(productId);
-    await Product.findByIdAndUpdate(productId, {
-      averageRating: reviewStats.averageRating,
-      totalReviews: reviewStats.totalReviews
-    });
+    // Update product's average rating and review count
+    try {
+      await updateProductReviewStats(productId);
+      console.log('Product review stats updated successfully after review deletion');
+    } catch (statsError) {
+      console.warn('Failed to update product review stats after deletion:', statsError);
+      // Don't fail the entire operation - the review deletion was successful
+    }
 
     res.status(200).json({
       success: true,
@@ -487,3 +574,4 @@ export const checkReviewEligibility = async (req, res) => {
     });
   }
 };
+

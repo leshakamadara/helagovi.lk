@@ -126,6 +126,9 @@ productSchema.virtual('soldPercentage').get(function() {
 
 // Virtual for primary image
 productSchema.virtual('primaryImage').get(function() {
+  if (!this.images || !Array.isArray(this.images) || this.images.length === 0) {
+    return null;
+  }
   const primary = this.images.find(img => img.isPrimary);
   return primary || this.images[0] || null;
 });
