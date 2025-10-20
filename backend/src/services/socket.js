@@ -38,44 +38,50 @@ const initializeSocket = (server) => {
     });
 
     // Send message
-    socket.on('sendMessage', async ({ senderId, receiverId, ticketId, message }) => {
-      try {
-        // Save message in DB
-        const newMessage = new Message({
-          senderId,
-          receiverId,
-          ticketId,
-          message,
-        });
+    socket.on(
+      'sendMessage',
+      async ({ senderId, receiverId, ticketId, message }) => {
+        try {
+          // Save message in DB
+          const newMessage = new Message({
+            senderId,
+            receiverId,
+            ticketId,
+            message,
+          });
 
-        await newMessage.save();
-        await newMessage.populate(['senderId', 'receiverId', 'ticketId']);
+          await newMessage.save();
+          await newMessage.populate(['senderId', 'receiverId', 'ticketId']);
 
-        const messageData = {
-          _id: newMessage._id,
-          senderId: newMessage.senderId,
-          receiverId: newMessage.receiverId,
-          ticketId: newMessage.ticketId,
-          message: newMessage.message,
-          isRead: newMessage.isRead,
-          timestamp: newMessage.createdAt,
-        };
+          const messageData = {
+            _id: newMessage._id,
+            senderId: newMessage.senderId,
+            receiverId: newMessage.receiverId,
+            ticketId: newMessage.ticketId,
+            message: newMessage.message,
+            isRead: newMessage.isRead,
+            timestamp: newMessage.createdAt,
+          };
 
-        // Emit message to correct room/user
-        if (ticketId) {
-          io.to(`ticket_${ticketId}`).emit('receiveMessage', messageData);
-        } else if (receiverId) {
-          io.to(`user_${receiverId}`).emit('receiveMessage', messageData);
-        } else {
-          io.to(agentRoom).emit('receiveMessage', messageData);
+          // Emit message to correct room/user
+          if (ticketId) {
+            io.to(`ticket_${ticketId}`).emit('receiveMessage', messageData);
+          } else if (receiverId) {
+            io.to(`user_${receiverId}`).emit('receiveMessage', messageData);
+          } else {
+            io.to(agentRoom).emit('receiveMessage', messageData);
+          }
+
+          socket.emit('messageSent', {
+            success: true,
+            messageId: newMessage._id,
+          });
+        } catch (error) {
+          console.error('Error sending message:', error);
+          socket.emit('error', { message: 'Failed to send message' });
         }
-
-        socket.emit('messageSent', { success: true, messageId: newMessage._id });
-      } catch (error) {
-        console.error('Error sending message:', error);
-        socket.emit('error', { message: 'Failed to send message' });
-      }
-    });
+      },
+    );
 
     // Typing indicator
     socket.on('typing', ({ userId, ticketId, isTyping }) => {

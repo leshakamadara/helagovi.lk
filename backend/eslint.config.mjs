@@ -1,29 +1,27 @@
-import js from "@eslint/js";
-import globals from "globals";
-import { defineConfig } from "eslint/config";
+import js from '@eslint/js';
+import globals from 'globals';
+import importPlugin from 'eslint-plugin-import';
+import prettier from 'eslint-config-prettier';
+import prettierPlugin from 'eslint-plugin-prettier';
 
 export default [
   {
-    files: ["**/*.{js,mjs,cjs,jsx}"],
+    files: ['**/*.{js,mjs,cjs}'],
     languageOptions: {
       globals: {
-        ...globals.node, // for backend
-        ...globals.browser, // if needed
+        ...globals.node,
       },
-      ecmaVersion: "latest",
-      sourceType: "module",
+      ecmaVersion: 'latest',
+      sourceType: 'module',
     },
     plugins: {
-      react: pluginReact,
       import: importPlugin,
+      prettier: prettierPlugin,
     },
-    extends: [
-      js.configs.recommended,
-      airbnb,
-      prettier, // turn off rules that conflict with Prettier
-    ],
     rules: {
-      "prettier/prettier": "error", // enforce Prettier formatting
+      ...js.configs.recommended.rules,
+      ...prettier.rules,
+      'prettier/prettier': 'error',
     },
   },
 ];

@@ -1,9 +1,7 @@
 
-<div align="center">
-  <img src="https://framerusercontent.com/images/tQEEeKRa0oOBXHoksVNKvgBJZc.png" alt="Helagovi.lk Logo" width="200"/>
-</div>
+# 🛠️ Helagovi.lk Support System
 
-# 🛠️ Helagovi.lk Git Workflow
+A comprehensive support ticketing system built with React and Node.js.
 
 ---
 
@@ -38,10 +36,10 @@ git checkout -b feature/order-management
 
 ## Example Feature Branch Names
 
-* `feature/order-management`
-* `feature/product-listing`
-* `feature/user-management`
-* `feature/payment`
+* `feature/ticket-management`
+* `feature/support-dashboard`
+* `feature/user-support-interface`
+* `feature/ticket-escalation`
 
 * **Local branch created first**
 * **Push to GitHub** after you start committing changes
@@ -169,6 +167,17 @@ git rebase dev   # or git merge dev
 
 ---
 
+## 🎯 Features
+
+- **Support Ticketing System**: Create, manage, and track support tickets
+- **Real-time Chat**: Live messaging between users and support agents
+- **Admin Dashboard**: Comprehensive dashboard for support team management
+- **User Support Interface**: Clean interface for users to submit and track tickets
+- **Ticket Escalation**: Automated escalation workflow for urgent tickets
+- **Role-based Access**: Different access levels for users and support agents
+
+---
+
 ## 🎯 Quick Command Reference
 
 | Action                    | Command                        |
@@ -189,3 +198,4 @@ git rebase dev   # or git merge dev
 2. **Create feature branch locally** → work → push → PR → merge to dev.
 3. **Dependencies:** Install **both frontend and backend** before starting.
 4. **Never commit directly to main** — always work on feature branch first.
+5. **Project Focus:** This is a support ticketing system with real-time chat capabilities.

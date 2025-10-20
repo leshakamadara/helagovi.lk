@@ -11,26 +11,30 @@ export const assignTicket = async (ticketId, category) => {
     // Fetch available agents
     const availableAgents = await User.find({
       role: 'agent',
-      isActive: true
+      isActive: true,
     });
 
-    if (availableAgents.length === 0) throw new Error('No available agents found');
+    if (availableAgents.length === 0)
+      throw new Error('No available agents found');
 
     // Match agents with expertise for the category
-    const categoryExperts = availableAgents.filter(agent => agent.expertise?.includes(category));
+    const categoryExperts = availableAgents.filter((agent) =>
+      agent.expertise?.includes(category),
+    );
 
     // Use experts if available, otherwise use all agents
-    const candidateAgents = categoryExperts.length > 0 ? categoryExperts : availableAgents;
+    const candidateAgents =
+      categoryExperts.length > 0 ? categoryExperts : availableAgents;
 
     // Get workload for each candidate agent
     const agentWorkloads = await Promise.all(
-      candidateAgents.map(async agent => {
+      candidateAgents.map(async (agent) => {
         const activeTickets = await Ticket.countDocuments({
           assignedTo: agent._id,
-          status: { $in: ['Open', 'In Progress', 'Escalated'] }
+          status: { $in: ['Open', 'In Progress', 'Escalated'] },
         });
         return { agent, workload: activeTickets };
-      })
+      }),
     );
 
     // Sort by workload (ascending) to find least-loaded agent
@@ -45,10 +49,16 @@ export const assignTicket = async (ticketId, category) => {
     // Populate agent details for response
     await ticket.populate('assignedTo createdBy');
 
-    console.log(`✅ Ticket ${ticketId} assigned to agent ${selectedAgent.name}`);
+    console.log(
+      `✅ Ticket ${ticketId} assigned to agent ${selectedAgent.name}`,
+    );
     console.log(`   Category: ${category}`);
-    console.log(`   Agent workload: ${agentWorkloads[0].workload} active tickets`);
-    console.log(`   Expert match: ${categoryExperts.includes(selectedAgent) ? 'Yes' : 'No'}`);
+    console.log(
+      `   Agent workload: ${agentWorkloads[0].workload} active tickets`,
+    );
+    console.log(
+      `   Expert match: ${categoryExperts.includes(selectedAgent) ? 'Yes' : 'No'}`,
+    );
 
     return {
       success: true,
@@ -58,9 +68,9 @@ export const assignTicket = async (ticketId, category) => {
         name: selectedAgent.name,
         email: selectedAgent.email,
         expertise: selectedAgent.expertise,
-        currentWorkload: agentWorkloads[0].workload
+        currentWorkload: agentWorkloads[0].workload,
       },
-      message: `Ticket assigned to ${selectedAgent.name}`
+      message: `Ticket assigned to ${selectedAgent.name}`,
     };
   } catch (error) {
     console.error('❌ Ticket assignment error:', error.message);
@@ -73,21 +83,23 @@ export const getAgentWorkloads = async () => {
   try {
     const agents = await User.find({ role: 'agent', isActive: true });
     const workloads = await Promise.all(
-      agents.map(async agent => {
+      agents.map(async (agent) => {
         const activeTickets = await Ticket.countDocuments({
           assignedTo: agent._id,
-          status: { $in: ['Open', 'In Progress', 'Escalated'] }
+          status: { $in: ['Open', 'In Progress', 'Escalated'] },
         });
-        const totalTickets = await Ticket.countDocuments({ assignedTo: agent._id });
+        const totalTickets = await Ticket.countDocuments({
+          assignedTo: agent._id,
+        });
         return {
           agentId: agent._id,
           name: agent.name,
           email: agent.email,
           expertise: agent.expertise || [],
           activeTickets,
-          totalTickets
+          totalTickets,
         };
-      })
+      }),
     );
     return workloads;
   } catch (error) {
@@ -100,7 +112,7 @@ export const autoAssignUnassignedTickets = async () => {
   try {
     const unassignedTickets = await Ticket.find({
       assignedTo: null,
-      status: { $in: ['Open', 'In Progress'] }
+      status: { $in: ['Open', 'In Progress'] },
     });
 
     const results = [];

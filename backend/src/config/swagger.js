@@ -13,8 +13,8 @@ const options = {
     servers: [
       {
         url: process.env.NODE_ENV === 'production' 
-          ? 'https://yourapp.com/api' 
-          : 'http://localhost:5000/api',
+          ? 'https://helagovi-lk.onrender.com/api' 
+          : 'http://localhost:5001/api',
         description: process.env.NODE_ENV === 'production' ? 'Production' : 'Development'
       },
     ],

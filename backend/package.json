@@ -7,16 +7,15 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "lint": "eslint . --fix",
-    "format": "prettier --write .",
-    "seed:categories": "node src/lib/seedCategories.js"
+    "format": "prettier --write ."
   },
   "keywords": [
-    "agriculture",
-    "marketplace",
+    "support",
+    "ticketing",
     "nodejs",
     "express",
     "mongodb",
-    "mock-auth"
+    "socket.io"
   ],
   "author": "",
   "license": "ISC",
@@ -24,12 +23,16 @@
   "dependencies": {
     "@upstash/ratelimit": "^2.0.5",
     "@upstash/redis": "^1.34.9",
+    "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^4.18.2",
     "express-validator": "^7.2.1",
+    "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.14.3",
+    "multer": "^2.0.2",
     "node-cron": "^4.2.1",
+    "nodemailer": "^7.0.9",
     "slugify": "^1.6.6",
     "socket.io": "^4.8.1",
     "swagger-autogen": "^2.23.7",

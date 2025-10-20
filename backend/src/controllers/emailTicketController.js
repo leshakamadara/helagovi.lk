@@ -91,9 +91,15 @@ const processIncomingEmail = async (emailData) => {
 
     if (subjectLower.includes('payment') || subjectLower.includes('billing')) {
       category = 'Payment';
-    } else if (subjectLower.includes('product') || subjectLower.includes('feature')) {
+    } else if (
+      subjectLower.includes('product') ||
+      subjectLower.includes('feature')
+    ) {
       category = 'Product';
-    } else if (subjectLower.includes('account') || subjectLower.includes('login')) {
+    } else if (
+      subjectLower.includes('account') ||
+      subjectLower.includes('login')
+    ) {
       category = 'Account';
     }
 

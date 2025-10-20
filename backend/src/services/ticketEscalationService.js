@@ -41,7 +41,9 @@ const escalateOldTickets = async () => {
       console.log(`   Created By: ${ticket.createdBy?.name || 'Unknown'}`);
 
       if (ticket.assignedTo) {
-        console.log(`   📧 NOTIFY AGENT: ${ticket.assignedTo.name} (${ticket.assignedTo.email})`);
+        console.log(
+          `   📧 NOTIFY AGENT: ${ticket.assignedTo.name} (${ticket.assignedTo.email})`,
+        );
       } else {
         console.log(`   ⚠️  NO AGENT ASSIGNED - NOTIFY ADMIN`);
       }
@@ -58,7 +60,9 @@ const escalateOldTickets = async () => {
 const startEscalationWorkflow = () => {
   // Run every 10 minutes: '*/10 * * * *'
   cron.schedule('*/10 * * * *', async () => {
-    console.log(`[${new Date().toISOString()}] Starting escalation workflow...`);
+    console.log(
+      `[${new Date().toISOString()}] Starting escalation workflow...`,
+    );
     await escalateOldTickets();
   });
 
