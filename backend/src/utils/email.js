@@ -39,6 +39,8 @@ export const testEmailConnection = async () => {
 };
 
 // Send verification email
+export const sendVerificationEmail = async (email, token, firstName) => {
+  const verificationUrl = `${process.env.CLIENT_URL}/verify-email?token=${token}`;
 
   const mailOptions = {
     from: `"Helagovi.lk" <${process.env.EMAIL_USER}>`,
