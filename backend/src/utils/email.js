@@ -268,6 +268,15 @@ export const sendPromotionalEmail = async (email, firstName, promotionData = {})
             </a>
           </p>
 
+          <p style="text-align: center; margin: 20px 0;">
+            <a href="https://helagovi.lk"
+               style="background-color: #FF9800; color: white; padding: 12px 25px;
+                      text-decoration: none; border-radius: 8px; display: inline-block;
+                      font-weight: bold; font-size: 14px; box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);">
+              Join Now
+            </a>
+          </p>
+
           <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 30px 0;">
             <h3 style="color: #333; margin-top: 0;">Why choose Helagovi.lk?</h3>
             <ul style="color: #666; margin: 10px 0 0 20px; padding: 0;">
@@ -289,6 +298,7 @@ export const sendPromotionalEmail = async (email, firstName, promotionData = {})
           <div style="margin-top: 15px;">
             <a href="https://www.helagovi.lk" style="color: #4CAF50; text-decoration: none; margin: 0 10px;">Visit Helagovi.lk</a> |
             <a href="https://www.helagovi.lk/products" style="color: #4CAF50; text-decoration: none; margin: 0 10px;">Shop Now</a> |
+            <a href="https://helagovi.lk" style="color: #FF9800; text-decoration: none; margin: 0 10px;">Join Now</a> |
             <a href="https://www.helagovi.lk/contact" style="color: #4CAF50; text-decoration: none; margin: 0 10px;">Contact Us</a>
           </div>
           <p style="margin: 10px 0 0 0; color: #999; font-size: 12px;">
