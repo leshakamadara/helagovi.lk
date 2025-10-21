@@ -1070,7 +1070,7 @@ const SupportDashboard = () => {
                                         </span>
                                       </div>
                                       <div className="text-xs text-muted-foreground">
-                                        Press Enter to send
+                                        
                                       </div>
                                     </div>
                                     <div className="flex items-center space-x-2">
