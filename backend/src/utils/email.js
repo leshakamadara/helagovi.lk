@@ -7,17 +7,38 @@ dotenv.config();
 // Create transporter
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
-  port: parseInt(process.env.EMAIL_PORT),
-  secure: false,
+  port: parseInt(process.env.EMAIL_PORT) || 587,
+  secure: false, // true for 465, false for other ports
+  requireTLS: true, // Force TLS
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  // Add connection timeout
+  connectionTimeout: 10000, // 10 seconds
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
 });
 
+// Test email connection
+export const testEmailConnection = async () => {
+  try {
+    console.log('Testing email connection...');
+    console.log('EMAIL_HOST:', process.env.EMAIL_HOST);
+    console.log('EMAIL_PORT:', process.env.EMAIL_PORT);
+    console.log('EMAIL_USER:', process.env.EMAIL_USER ? 'Set' : 'Not set');
+    console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? 'Set' : 'Not set');
+
+    await transporter.verify();
+    console.log('Email connection successful!');
+    return { success: true, message: 'Email connection verified' };
+  } catch (error) {
+    console.error('Email connection failed:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 // Send verification email
-export const sendVerificationEmail = async (email, token, firstName) => {
-  const verificationUrl = `${process.env.CLIENT_URL}/verify-email?token=${token}`;
 
   const mailOptions = {
     from: `"Helagovi.lk" <${process.env.EMAIL_USER}>`,

@@ -5,10 +5,26 @@ import {
   sendTicketConfirmationEmail,
   sendPromotionalEmail,
   sendJoinUsEmail,
-  sendCustomEmail
+  sendCustomEmail,
+  testEmailConnection
 } from '../utils/email.js';
 
 const router = express.Router();
+
+// Test email connection
+router.get('/test-connection', async (req, res) => {
+  try {
+    const result = await testEmailConnection();
+    if (result.success) {
+      res.json({ success: true, message: result.message });
+    } else {
+      res.status(500).json({ success: false, error: result.error });
+    }
+  } catch (error) {
+    console.error('Error testing email connection:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 // Send test verification email
 router.post('/test/verification', async (req, res) => {
