@@ -253,7 +253,7 @@ const SupportDashboard = () => {
         socketService.disconnect();
       };
     }
-  }, [authToken]);
+  }, [authToken, selectedTicket]);
 
   // Join/leave ticket rooms when selected ticket changes
   useEffect(() => {

@@ -132,7 +132,7 @@ const UserSupportPage = () => {
         socketService.disconnect();
       };
     }
-  }, [authToken, currentUser]);
+  }, [authToken, currentUser, selectedTicket]);
 
   // Join/leave ticket rooms when selected ticket changes
   useEffect(() => {
