@@ -162,12 +162,7 @@ const SupportDashboard = () => {
       );
 
       // Send via socket for real-time updates
-      socketService.sendMessage(
-        response.data.message.senderId._id,
-        response.data.message.receiverId?._id,
-        ticketId,
-        message
-      );
+      socketService.sendMessage(response.data.message);
 
       // Add message to local state
       setMessages((prev) => [...prev, response.data.message]);

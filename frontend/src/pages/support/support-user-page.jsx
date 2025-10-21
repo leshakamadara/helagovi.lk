@@ -346,12 +346,7 @@ const UserSupportPage = () => {
       );
 
       // Send via socket for real-time updates
-      socketService.sendMessage(
-        response.data.message.senderId._id,
-        response.data.message.receiverId?._id,
-        ticketId,
-        newMessage
-      );
+      socketService.sendMessage(response.data.message);
 
       setNewMessage('');
 
