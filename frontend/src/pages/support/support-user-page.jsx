@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SiteHeader } from '@/components/site-header';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import {
   Card,
   CardContent,
@@ -45,6 +45,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import api from '@/lib/axios';
+import socketService from '@/lib/socket';
 
 const UserSupportPage = () => {
   const [userTickets, setUserTickets] = useState([]);
@@ -81,24 +82,94 @@ const UserSupportPage = () => {
     }
   }, [authToken]);
 
+  // Socket connection and real-time messaging
+  useEffect(() => {
+    if (authToken && currentUser) {
+      // Connect to socket server
+      socketService.connect(authToken);
+
+      // Join user room for personal messages
+      socketService.joinUserRoom(currentUser.id);
+
+      // Listen for incoming messages
+      const handleReceiveMessage = (messageData) => {
+        console.log('Received real-time message:', messageData);
+
+        // Update messages if we're viewing the relevant ticket
+        if (selectedTicket && selectedTicket._id === messageData.ticketId) {
+          setMessages((prev) => {
+            // Check if message already exists to avoid duplicates
+            const messageExists = prev.some(msg => msg._id === messageData._id);
+            if (messageExists) return prev;
+
+            return [...prev, messageData];
+          });
+        }
+
+        // Update ticket message count in the tickets list
+        setUserTickets((prev) =>
+          prev.map((ticket) =>
+            ticket._id === messageData.ticketId
+              ? { ...ticket, messages: [...(ticket.messages || []), messageData] }
+              : ticket,
+          ),
+        );
+      };
+
+      socketService.onReceiveMessage(handleReceiveMessage);
+
+      return () => {
+        socketService.removeAllListeners();
+        socketService.disconnect();
+      };
+    }
+  }, [authToken, currentUser]);
+
+  // Join/leave ticket rooms when selected ticket changes
+  useEffect(() => {
+    if (selectedTicket && socketService.isSocketConnected) {
+      socketService.joinTicketRoom(selectedTicket._id);
+    }
+
+    return () => {
+      if (selectedTicket && socketService.isSocketConnected) {
+        socketService.leaveTicketRoom(selectedTicket._id);
+      }
+    };
+  }, [selectedTicket]);
+
   const fetchCurrentUser = async () => {
     try {
-      // Decode JWT token to get user info (simple decode, not secure)
-      const payload = JSON.parse(atob(authToken.split('.')[1]));
+      const response = await api.get('/profile', {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      const userData = response.data.data.user;
       setCurrentUser({
-        id: payload.id,
-        name: payload.name || 'User',
-        email: payload.email || '',
-        role: payload.role || 'user',
+        id: userData._id,
+        name: `${userData.firstName} ${userData.lastName}`.trim(),
+        email: userData.email,
+        role: userData.role,
       });
     } catch (error) {
-      console.error('Error decoding token:', error);
-      setCurrentUser({
-        id: 'unknown',
-        name: 'User',
-        email: '',
-        role: 'user',
-      });
+      console.error('Error fetching current user:', error);
+      // Fallback to JWT decoding if profile fetch fails
+      try {
+        const payload = JSON.parse(atob(authToken.split('.')[1]));
+        setCurrentUser({
+          id: payload.id,
+          name: payload.name || 'User',
+          email: payload.email || '',
+          role: payload.role || 'user',
+        });
+      } catch (decodeError) {
+        console.error('Error decoding token:', decodeError);
+        setCurrentUser({
+          id: 'unknown',
+          name: 'User',
+          email: '',
+          role: 'user',
+        });
+      }
     }
   };
 
@@ -310,10 +381,34 @@ const UserSupportPage = () => {
 
   return (
     <div>
-      <SiteHeader />
-      <div className="flex flex-1 flex-col">
-        <div className="@container/main flex flex-1 flex-col gap-2">
-          <div className="flex flex-1 flex-col gap-2 p-4 lg:p-6 min-h-0">
+      <div className="max-w-7xl mx-auto py-6 px-2 sm:px-4 lg:px-6">
+        {/* Breadcrumbs */}
+        <div className="mb-6">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/">Home</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/buyer-dashboard">Dashboard</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Support</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+
+        <div className="mb-4">
+          <h1 className="text-4xl font-extrabold text-gray-900">Support Center</h1>
+          <p className="text-gray-600 mt-2">Get help and support for your account</p>
+        </div>
+
+        <div className="flex flex-1 flex-col">
+          <div className="@container/main flex flex-1 flex-col gap-2">
+            <div className="flex flex-1 flex-col gap-2 p-4 lg:p-6 min-h-0">
             {/* Stats Cards */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Card className="@container/card">
@@ -405,28 +500,29 @@ const UserSupportPage = () => {
               </Card>
             </div>
 
+            {/* New Ticket Button */}
+            <div className="flex justify-end my-2">
+              <Button
+                onClick={() => setIsCreateOpen(true)}
+                className="bg-primary hover:bg-primary/90 text-white shadow-sm"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                New Ticket
+              </Button>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 items-stretch">
               {/* Tickets List */}
               <div className="lg:col-span-1 flex flex-col">
                 <Card className="h-full flex flex-col border-0 shadow-sm">
                   <CardHeader className="pb-4 flex-shrink-0 bg-white">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <CardTitle className="text-xl font-semibold text-gray-900">
-                          Your Tickets
-                        </CardTitle>
-                        <CardDescription className="text-sm text-gray-600 mt-1">
-                          Track and manage your support requests
-                        </CardDescription>
-                      </div>
-                      <Button
-                        size="sm"
-                        onClick={() => setIsCreateOpen(true)}
-                        className="bg-primary hover:bg-primary/90 text-white shadow-sm"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        New Ticket
-                      </Button>
+                    <div className="mb-4">
+                      <CardTitle className="text-xl font-semibold text-gray-900">
+                        Your Tickets
+                      </CardTitle>
+                      <CardDescription className="text-sm text-gray-600 mt-1">
+                        Track and manage your support requests
+                      </CardDescription>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="relative flex-1">
@@ -546,7 +642,7 @@ const UserSupportPage = () => {
                                         {ticket.title}
                                       </h3>
                                       <span className="text-xs text-muted-foreground font-mono bg-muted/50 px-2 py-0.5 rounded">
-                                        {ticket.ticketNumber}
+                                        TKT - {ticket.ticketNumber?.toString().padStart(3, '0') || '001'}
                                       </span>
                                     </div>
                                     <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
@@ -664,7 +760,7 @@ const UserSupportPage = () => {
                                   {selectedTicket.title}
                                 </CardTitle>
                                 <span className="text-sm text-muted-foreground font-mono bg-muted/50 px-3 py-1 rounded">
-                                  {selectedTicket.ticketNumber}
+                                  TKT - {selectedTicket.ticketNumber?.toString().padStart(3, '0') || '001'}
                                 </span>
                               </div>
                               <div className="flex items-center space-x-3 mt-2">
@@ -853,7 +949,7 @@ const UserSupportPage = () => {
                                         </span>
                                       </div>
                                       <div className="text-xs text-muted-foreground">
-                                        Press Enter to send
+                                        
                                       </div>
                                     </div>
                                     <div className="flex items-center space-x-2">
@@ -1135,6 +1231,7 @@ const UserSupportPage = () => {
             </Dialog>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

@@ -39,14 +39,33 @@ initializeSocket(server);
 
 // CORS Configuration with detailed logging
 const corsOptions = {
-  origin: [
-    "http://localhost:5173",
-    "https://helagovi-lk-1.onrender.com", 
-    "https://helagovi-lk.onrender.com",
-    "https://api.helagovi.lk",
-    "https://www.helagovi.lk",
-    "https://helagovi.lk"
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    const allowedOrigins = [
+      "http://localhost:5173", // Development frontend
+      "http://localhost:3000", // Development preview
+      "https://helagovi-lk-1.onrender.com", // Render deployment
+      "https://helagovi-lk.onrender.com", // Render deployment
+      "https://api.helagovi.lk", // Production API domain
+      "https://www.helagovi.lk", // Production frontend domain
+      "https://helagovi.lk", // Production frontend domain (without www)
+      "https://helagovi-lk-frontend.onrender.com", // Render frontend service
+    ];
+
+    // Allow all subdomains of helagovi.lk
+    if (origin.endsWith('.helagovi.lk') || origin === 'https://helagovi.lk') {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    console.log(`CORS blocked origin: ${origin}`);
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept'],

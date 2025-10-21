@@ -61,7 +61,9 @@ import {
   MapPin,
   Leaf,
   Trash2,
-  CreditCard
+  CreditCard,
+  HelpCircle,
+  Headset
 } from 'lucide-react'
 import { Button } from './ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet'
@@ -251,7 +253,9 @@ const Navbar = () => {
     { to: '/buyer-dashboard', label: 'Dashboard', icon: BarChart3 },
     { divider: true },
     { to: '/CardManagementPage', label: 'Manage Cards', icon: CreditCard },
-    { to: '/payment-history', label: 'Payment History', icon: Wallet }
+    { to: '/payment-history', label: 'Payment History', icon: Wallet },
+    { divider: true },
+    { to: '/usersupport', label: 'Get Support', icon: Headset }
   ]
 
   const getFarmerMenuItems = () => [
@@ -260,7 +264,9 @@ const Navbar = () => {
     { to: '/my-products', label: 'My Products', icon: Package },
     { to: '/farmer-dashboard', label: 'Dashboard', icon: BarChart3 },
     { to: '/farmer/wallet', label: 'Wallet', icon: Wallet },
-    { to: '/create-product', label: 'Add Product', icon: Plus }
+    { to: '/create-product', label: 'Add Product', icon: Plus },
+    { divider: true },
+    { to: '/usersupport', label: 'Get Support', icon: Headset }
   ]
 
   const getDashboardLink = () => {
@@ -289,7 +295,7 @@ const Navbar = () => {
     
     // Hide search bar for buyers on profile pages
     if (user?.role === 'buyer') {
-      const profileRoutes = ['/profile', '/my-orders', '/favorites', '/buyer-dashboard','/CardManagementPage','/payment-history']
+      const profileRoutes = ['/profile', '/my-orders', '/favorites', '/buyer-dashboard','/CardManagementPage','/payment-history','/usersupport']
       return profileRoutes.includes(location.pathname)
     }
     

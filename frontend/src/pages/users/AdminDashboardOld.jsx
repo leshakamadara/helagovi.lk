@@ -2,7 +2,7 @@ import { useAuth } from '../../context/AuthContext'
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb'
 import { H1, H3, P, Muted } from '../../components/ui/typography'
 
-const AdminDashboard = () => {
+const AdminDashboardOld = () => {
   const { user } = useAuth()
 
   return (
@@ -50,4 +50,4 @@ const AdminDashboard = () => {
   )
 }
 
-export default AdminDashboard
+export default AdminDashboardOld

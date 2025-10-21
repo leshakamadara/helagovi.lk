@@ -13,6 +13,7 @@ import {
   HelpCircleIcon,
   LayoutDashboardIcon,
   ListIcon,
+  MessageSquareIcon,
   SearchIcon,
   SettingsIcon,
   UsersIcon,
@@ -31,6 +32,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { useAuth } from '@/context/AuthContext';
 
 const data = {
   user: {
@@ -47,11 +49,11 @@ const data = {
     {
       title: 'Responses',
       url: '/supportdashboard',
-      icon: ListIcon,
+      icon: MessageSquareIcon,
     },
     {
       title: 'Users',
-      url: '/usersupport',
+      url: '#',
       icon: BarChartIcon,
     },
     {
@@ -150,6 +152,11 @@ const data = {
 };
 
 export function AppSidebar({ ...props }) {
+  const { user } = useAuth();
+
+  // Hide documents section for admin users
+  const shouldShowDocuments = user?.role !== 'admin';
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -173,11 +180,11 @@ export function AppSidebar({ ...props }) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
+        {shouldShowDocuments && <NavDocuments items={data.documents} />}
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   );

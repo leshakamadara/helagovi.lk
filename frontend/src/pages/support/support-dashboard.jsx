@@ -49,6 +49,7 @@ import {
 } from 'lucide-react';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
+import socketService from '@/lib/socket';
 
 const SupportDashboard = () => {
   const [tickets, setTickets] = useState([]);
@@ -189,6 +190,68 @@ const SupportDashboard = () => {
     }
   }, [authToken]);
 
+  // Socket connection and real-time messaging
+  useEffect(() => {
+    if (authToken) {
+      // Connect to socket server
+      socketService.connect(authToken);
+
+      // Listen for incoming messages
+      const handleReceiveMessage = (messageData) => {
+        console.log('Received real-time message:', messageData);
+
+        // Update messages if we're viewing the relevant ticket
+        if (selectedTicket && selectedTicket._id === messageData.ticketId) {
+          setMessages((prev) => {
+            // Check if message already exists to avoid duplicates
+            const messageExists = prev.some(msg => msg._id === messageData._id);
+            if (messageExists) return prev;
+
+            return [...prev, messageData];
+          });
+
+          // Update ticket message count in the tickets list
+          setTickets((prev) =>
+            prev.map((ticket) =>
+              ticket._id === messageData.ticketId
+                ? { ...ticket, messages: [...(ticket.messages || []), messageData] }
+                : ticket,
+            ),
+          );
+        } else {
+          // Update ticket message count even if not viewing the ticket
+          setTickets((prev) =>
+            prev.map((ticket) =>
+              ticket._id === messageData.ticketId
+                ? { ...ticket, messages: [...(ticket.messages || []), messageData] }
+                : ticket,
+            ),
+          );
+        }
+      };
+
+      socketService.onReceiveMessage(handleReceiveMessage);
+
+      return () => {
+        socketService.removeAllListeners();
+        socketService.disconnect();
+      };
+    }
+  }, [authToken]);
+
+  // Join/leave ticket rooms when selected ticket changes
+  useEffect(() => {
+    if (selectedTicket && socketService.isSocketConnected) {
+      socketService.joinTicketRoom(selectedTicket._id);
+    }
+
+    return () => {
+      if (selectedTicket && socketService.isSocketConnected) {
+        socketService.leaveTicketRoom(selectedTicket._id);
+      }
+    };
+  }, [selectedTicket]);
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'Open':
@@ -240,7 +303,8 @@ const SupportDashboard = () => {
     const matchesSearch =
       searchTerm === '' ||
       ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ticket.createdBy?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ticket.createdBy?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       ticket.description.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesStatus && matchesSearch;
   });
@@ -554,11 +618,9 @@ const SupportDashboard = () => {
                                   <div className="flex-shrink-0 mt-1">
                                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary/20">
                                       <span className="text-sm font-semibold text-primary">
-                                        {ticket.customer.name
-                                          .split(' ')
-                                          .map((n) => n[0])
-                                          .join('')
-                                          .slice(0, 2)}
+                                        {ticket.createdBy?.firstName && ticket.createdBy?.lastName
+                                          ? `${ticket.createdBy.firstName[0]}${ticket.createdBy.lastName[0]}`
+                                          : 'U'}
                                       </span>
                                     </div>
                                   </div>
@@ -568,7 +630,7 @@ const SupportDashboard = () => {
                                         {ticket.title}
                                       </h3>
                                       <span className="text-xs text-muted-foreground font-mono bg-muted/50 px-2 py-0.5 rounded">
-                                        TK-{ticket._id?.slice(-6) || 'XXXXXX'}
+                                        TKT - {ticket.ticketNumber?.toString().padStart(3, '0') || '001'}
                                       </span>
                                     </div>
                                     <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
@@ -673,11 +735,9 @@ const SupportDashboard = () => {
                             <div className="flex-shrink-0 mt-1">
                               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary/20">
                                 <span className="text-base font-semibold text-primary">
-                                  {selectedTicket.customer.name
-                                    .split(' ')
-                                    .map((n) => n[0])
-                                    .join('')
-                                    .slice(0, 2)}
+                                  {selectedTicket.createdBy?.firstName && selectedTicket.createdBy?.lastName
+                                    ? `${selectedTicket.createdBy.firstName[0]}${selectedTicket.createdBy.lastName[0]}`
+                                    : 'U'}
                                 </span>
                               </div>
                             </div>
@@ -687,7 +747,7 @@ const SupportDashboard = () => {
                                   {selectedTicket.title}
                                 </CardTitle>
                                 <span className="text-sm text-muted-foreground font-mono bg-muted/50 px-3 py-1 rounded">
-                                  {selectedTicket.ticketNumber}
+                                  TKT - {selectedTicket.ticketNumber?.toString().padStart(3, '0') || '001'}
                                 </span>
                               </div>
                               <div className="flex items-center space-x-3 mt-2">
@@ -757,10 +817,10 @@ const SupportDashboard = () => {
                               </div>
                               <div className="ml-6">
                                 <p className="font-medium text-foreground">
-                                  {selectedTicket.customer.name}
+                                  {selectedTicket.createdBy?.firstName} {selectedTicket.createdBy?.lastName}
                                 </p>
                                 <p className="text-muted-foreground text-xs">
-                                  {selectedTicket.customer.email}
+                                  {selectedTicket.createdBy?.email}
                                 </p>
                               </div>
                             </div>

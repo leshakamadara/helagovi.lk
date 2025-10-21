@@ -28,6 +28,10 @@ const ticketSchema = new Schema(
       enum: ['Low', 'Medium', 'High'],
       default: 'Medium',
     },
+    ticketNumber: {
+      type: Number,
+      unique: true,
+    },
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',
@@ -42,6 +46,16 @@ const ticketSchema = new Schema(
     timestamps: true,
   },
 );
+
+// Pre-save middleware to generate ticket number
+ticketSchema.pre('save', async function(next) {
+  if (!this.ticketNumber) {
+    // Find the highest ticket number and increment
+    const lastTicket = await this.constructor.findOne({}, {}, { sort: { 'ticketNumber': -1 } });
+    this.ticketNumber = lastTicket && lastTicket.ticketNumber ? lastTicket.ticketNumber + 1 : 1;
+  }
+  next();
+});
 
 const Ticket = model('Ticket', ticketSchema);
 
