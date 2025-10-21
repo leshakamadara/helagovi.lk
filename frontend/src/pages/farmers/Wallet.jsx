@@ -19,9 +19,11 @@ import {
 } from 'lucide-react'
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb'
 import { H1, H2, H3, P, Muted, Large } from '../../components/ui/typography'
+import { api } from '../../lib/axios.js'; 
+
 
 const FarmerWallet = () => {
-  const { user } = useAuth()
+  const { user } = useAuth();
   const [walletData, setWalletData] = useState({
     availableBalance: 0,
     pendingBalance: 0,
@@ -41,178 +43,91 @@ const FarmerWallet = () => {
   })
   const [withdrawing, setWithdrawing] = useState(false)
 
+  const SESSION_USER_ID = user?._id || user?.id;
+  
+  const API_BASE = 'http://localhost:5001/api/payments' 
+
   useEffect(() => {
     fetchWalletData()
     fetchWithdrawals()
   }, [])
 
-  const fetchWalletData = async () => {
-    try {
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/wallet', {
-      //   headers: {
-      //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-      //   }
-      // })
-      
-      // Mock data for now
-      const mockWalletData = {
-        availableBalance: 45750,
-        pendingBalance: 12300,
-        totalEarnings: 125500,
-        lastWithdrawal: {
-          amount: 25000,
-          date: '2024-01-15T00:00:00.000Z',
-          status: 'completed'
-        }
-      }
-      
-      setWalletData(mockWalletData)
-    } catch (error) {
-      console.error('Error fetching wallet data:', error)
-    }
+
+const fetchWalletData = async () => {
+  try {
+    const { data } = await api.get(`/payments/${SESSION_USER_ID}`);
+    setWalletData(data);
+  } catch (error) {
+    console.error('Error fetching wallet data:', error.response?.data || error.message);
+  }
+};
+
+
+const fetchWithdrawals = async () => {
+  try {
+    setLoading(true);
+    const { data } = await api.get(`/payments/withdrawals/${SESSION_USER_ID}`);
+    setWithdrawals(data);
+  } catch (error) {
+    console.error('Error fetching withdrawals:', error.response?.data || error.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+const handleWithdrawRequest = async () => {
+  if (!withdrawAmount || parseFloat(withdrawAmount) <= 0) {
+    alert('Please enter a valid amount');
+    return;
   }
 
-  const fetchWithdrawals = async () => {
-    try {
-      setLoading(true)
-      
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/wallet/withdrawals', {
-      //   headers: {
-      //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-      //   }
-      // })
-      
-      // Mock data for now
-      const mockWithdrawals = [
-        {
-          _id: '1',
-          amount: 25000,
-          status: 'completed',
-          method: 'bank_transfer',
-          bankDetails: {
-            bankName: 'Commercial Bank',
-            accountNumber: '****1234'
-          },
-          requestedAt: '2024-01-15T10:00:00.000Z',
-          processedAt: '2024-01-16T14:30:00.000Z',
-          transactionId: 'TXN123456789'
-        },
-        {
-          _id: '2',
-          amount: 15500,
-          status: 'pending',
-          method: 'bank_transfer',
-          bankDetails: {
-            bankName: 'People\'s Bank',
-            accountNumber: '****5678'
-          },
-          requestedAt: '2024-01-20T09:15:00.000Z',
-          estimatedCompletion: '2024-01-22T00:00:00.000Z'
-        },
-        {
-          _id: '3',
-          amount: 8750,
-          status: 'failed',
-          method: 'bank_transfer',
-          bankDetails: {
-            bankName: 'Bank of Ceylon',
-            accountNumber: '****9012'
-          },
-          requestedAt: '2024-01-10T16:45:00.000Z',
-          failureReason: 'Invalid account details'
-        }
-      ]
-      
-      setWithdrawals(mockWithdrawals)
-    } catch (error) {
-      console.error('Error fetching withdrawals:', error)
-    } finally {
-      setLoading(false)
-    }
+  if (parseFloat(withdrawAmount) > walletData.availableBalance) {
+    alert('Insufficient balance');
+    return;
   }
 
-  const handleWithdrawRequest = async () => {
-    if (!withdrawAmount || parseFloat(withdrawAmount) <= 0) {
-      alert('Please enter a valid amount')
-      return
-    }
-
-    if (parseFloat(withdrawAmount) > walletData.availableBalance) {
-      alert('Insufficient balance')
-      return
-    }
-
-    if (!bankDetails.bankName || !bankDetails.accountNumber || !bankDetails.accountHolderName) {
-      alert('Please provide complete bank details')
-      return
-    }
-
-    try {
-      setWithdrawing(true)
-      
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/wallet/withdraw', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      //     'Content-Type': 'application/json'
-      //   },
-      //   body: JSON.stringify({
-      //     amount: parseFloat(withdrawAmount),
-      //     bankDetails
-      //   })
-      // })
-      
-      // Mock successful withdrawal request
-      const newWithdrawal = {
-        _id: Date.now().toString(),
-        amount: parseFloat(withdrawAmount),
-        status: 'pending',
-        method: 'bank_transfer',
-        bankDetails: {
-          bankName: bankDetails.bankName,
-          accountNumber: `****${bankDetails.accountNumber.slice(-4)}`
-        },
-        requestedAt: new Date().toISOString(),
-        estimatedCompletion: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString()
-      }
-
-      setWithdrawals(prev => [newWithdrawal, ...prev])
-      setWalletData(prev => ({
-        ...prev,
-        availableBalance: prev.availableBalance - parseFloat(withdrawAmount),
-        pendingBalance: prev.pendingBalance + parseFloat(withdrawAmount)
-      }))
-
-      setShowWithdrawModal(false)
-      setWithdrawAmount('')
-      setBankDetails({
-        bankName: '',
-        accountNumber: '',
-        accountHolderName: '',
-        branchCode: ''
-      })
-      
-      alert('Withdrawal request submitted successfully!')
-    } catch (error) {
-      alert('Failed to submit withdrawal request')
-    } finally {
-      setWithdrawing(false)
-    }
+  if (!bankDetails.bankName || !bankDetails.accountNumber || !bankDetails.accountHolderName) {
+    alert('Please provide complete bank details');
+    return;
   }
+
+  try {
+    setWithdrawing(true);
+    const { data: newWithdrawal } = await api.post(`/payments/withdraw`, {
+      userId: SESSION_USER_ID,
+      amount: parseFloat(withdrawAmount),
+      bankDetails
+    });
+
+    setWithdrawals(prev => [newWithdrawal, ...prev]);
+    setWalletData(prev => ({
+      ...prev,
+      availableBalance: prev.availableBalance - parseFloat(withdrawAmount),
+      pendingBalance: prev.pendingBalance + parseFloat(withdrawAmount)
+    }));
+
+    setShowWithdrawModal(false);
+    setWithdrawAmount('');
+    setBankDetails({ bankName: '', accountNumber: '', accountHolderName: '', branchCode: '' });
+    alert('Withdrawal request submitted successfully!');
+  } catch (error) {
+    alert(error.response?.data?.message || 'Failed to submit withdrawal request');
+    console.error('Withdrawal error:', error.response?.data || error.message);
+  } finally {
+    setWithdrawing(false);
+  }
+};
+
+
+
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'completed':
-        return <CheckCircle className="h-5 w-5 text-green-600" />
-      case 'pending':
-        return <Clock className="h-5 w-5 text-yellow-600" />
-      case 'failed':
-        return <XCircle className="h-5 w-5 text-red-600" />
-      default:
-        return <AlertCircle className="h-5 w-5 text-gray-600" />
+      case 'completed': return <CheckCircle className="h-5 w-5 text-green-600" />
+      case 'pending': return <Clock className="h-5 w-5 text-yellow-600" />
+      case 'failed': return <XCircle className="h-5 w-5 text-red-600" />
+      default: return <AlertCircle className="h-5 w-5 text-gray-600" />
     }
   }
 
@@ -223,7 +138,6 @@ const FarmerWallet = () => {
       failed: 'bg-red-100 text-red-800',
       processing: 'bg-blue-100 text-blue-800'
     }
-
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[status] || 'bg-gray-100 text-gray-800'}`}>
         {getStatusIcon(status)}
@@ -233,30 +147,18 @@ const FarmerWallet = () => {
   }
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-LK', {
-      style: 'currency',
-      currency: 'LKR',
-      minimumFractionDigits: 0
-    }).format(amount)
+    return new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR', minimumFractionDigits: 0 }).format(amount)
   }
 
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+    return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-      </div>
-    )
-  }
+  if (loading) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+    </div>
+  )
 
   return (
     <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
@@ -470,6 +372,7 @@ const FarmerWallet = () => {
                       Request Withdrawal
                     </h3>
                     <div className="mt-4 space-y-4">
+                      {/* Amount Input */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
                           Amount (LKR)
@@ -488,6 +391,7 @@ const FarmerWallet = () => {
                         </p>
                       </div>
 
+                      {/* Bank Name */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
                           Bank Name
@@ -508,6 +412,7 @@ const FarmerWallet = () => {
                         </select>
                       </div>
 
+                      {/* Account Holder Name */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
                           Account Holder Name
@@ -521,6 +426,7 @@ const FarmerWallet = () => {
                         />
                       </div>
 
+                      {/* Account Number */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
                           Account Number
@@ -534,6 +440,7 @@ const FarmerWallet = () => {
                         />
                       </div>
 
+                      {/* Branch Code */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
                           Branch Code (Optional)
@@ -547,6 +454,7 @@ const FarmerWallet = () => {
                         />
                       </div>
 
+                      {/* Info Box */}
                       <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
                         <div className="flex">
                           <AlertCircle className="h-5 w-5 text-yellow-600 mr-2 flex-shrink-0" />
@@ -555,15 +463,18 @@ const FarmerWallet = () => {
                               <strong>Processing Time:</strong> 1-3 business days
                             </p>
                             <p className="text-yellow-700 mt-1">
-                              Minimum withdrawal amount is LKR 100. Processing fees may apply.
+                               Processing fees may apply.
                             </p>
                           </div>
                         </div>
                       </div>
+
                     </div>
                   </div>
                 </div>
               </div>
+
+              {/* Modal Buttons */}
               <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                 <button
                   onClick={handleWithdrawRequest}
@@ -579,6 +490,7 @@ const FarmerWallet = () => {
                   Cancel
                 </button>
               </div>
+
             </div>
           </div>
         </div>
