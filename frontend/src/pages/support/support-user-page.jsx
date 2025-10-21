@@ -940,6 +940,7 @@ const UserSupportPage = () => {
                                   {messages.map((message, index) => {
                                     const isUser =
                                       message.senderId._id === currentUser?.id;
+                                    const isAgent = message.senderId?.role === 'admin';
                                     return (
                                       <div
                                         key={message._id}
@@ -956,7 +957,9 @@ const UserSupportPage = () => {
                                             <span className="text-xs font-medium opacity-90">
                                               {isUser
                                                 ? 'You'
-                                                : message.senderId.name}
+                                                : isAgent
+                                                  ? 'Support Agent'
+                                                  : message.senderId.name}
                                             </span>
                                             <span className="text-xs opacity-70">
                                               {new Date(
