@@ -6,7 +6,7 @@ dotenv.config();
 
 // Create transporter
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
+  host: process.env.EMAIL_HOST || 'smtp-mail.outlook.com', // Default to Outlook
   port: parseInt(process.env.EMAIL_PORT) || 587,
   secure: false, // true for 465, false for other ports
   requireTLS: true, // Force TLS
