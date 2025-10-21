@@ -14,10 +14,13 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-  // Add connection timeout
-  connectionTimeout: 10000, // 10 seconds
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
+  // Add connection timeout and debugging
+  connectionTimeout: 30000, // 30 seconds
+  greetingTimeout: 30000,
+  socketTimeout: 30000,
+  // Add debug logging
+  debug: true,
+  logger: true,
 });
 
 // Test email connection
