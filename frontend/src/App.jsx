@@ -1,4 +1,10 @@
-import { Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
+import React from 'react';
+import { Route, Routes, Navigate, Link, useLocation } from 'react-router-dom';
+import AdminDashboard from './pages/support/admin-dashboard.jsx';
+import SupportDashboard from './pages/support/support-dashboard.jsx';
+import SupportUserPage from './pages/support/support-user-page.jsx';
+import { AppSidebar } from '@/components/app-sidebar';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { Sprout } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
 import { AuthProvider } from './context/AuthContext'
@@ -17,7 +23,7 @@ import ResetPassword from './pages/users/ResetPassword'
 import VerifyEmail from './pages/users/VerifyEmail'
 import FarmerDashboard from './pages/users/FarmerDashboardNew'
 import BuyerDashboard from './pages/users/BuyerDashboard'
-import AdminDashboard from './pages/users/AdminDashboard'
+import AdminDashboardOld from './pages/users/AdminDashboardOld'
 
 import ProductCreationForm from "./pages/products/createProduct";
 import ProductDetails from "./pages/products/productDetails";
@@ -53,7 +59,11 @@ import { Toaster } from 'sonner';
 function App() {
   const location = useLocation()
 
+
+
+
   return (
+
     <AuthProvider>
       <CartProvider>
         <div className="min-h-screen bg-gray-50">
@@ -98,11 +108,47 @@ function App() {
               </PageTransition>
             } />
 
+            {/* Support/Admin Routes with Sidebar */}
+            <Route path="/admin-dashboard" element={
+              <div className="relative h-screen w-screen">
+                {/* Background gradient */}
+                <div className="absolute inset-0 -z-10 h-full w-full [background:radial-gradient(125%_125%_at_50%_10%,#000_60%,#00FF9D40_100%)]" />
+                <SidebarProvider>
+                  <AppSidebar variant="inset" />
+                  <SidebarInset>
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  </SidebarInset>
+                </SidebarProvider>
+              </div>
+            } />
+
+            <Route path="/usersupport" element={
+              <ProtectedRoute>
+                <MainLayout showFooter={false}>
+                  <SupportUserPage />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/supportdashboard" element={
+              <div className="relative h-screen w-screen">
+                {/* Background gradient */}
+                <div className="absolute inset-0 -z-10 h-full w-full [background:radial-gradient(125%_125%_at_50%_10%,#000_60%,#00FF9D40_100%)]" />
+                <SidebarProvider>
+                  <AppSidebar variant="inset" />
+                  <SidebarInset>
+                    <SupportDashboard />
+                  </SidebarInset>
+                </SidebarProvider>
+              </div>
+            } />
+
           {/* Debug Route */}
           <Route path="/debug" element={<Debug />} />
 
           {/* Animation Demo Route */}
-          <Route path="/animation-demo" element={<AnimationDemo />} />
           <Route path="/animation-demo" element={<AnimationDemo />} />
 
           {/* Protected Routes - with individual navbar */}
@@ -127,13 +173,6 @@ function App() {
               <>
                 <Navbar />
                 <BuyerDashboard />
-              </>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin-dashboard" element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <>
-                <AdminDashboard />
               </>
             </ProtectedRoute>
           } />

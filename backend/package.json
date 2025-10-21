@@ -14,10 +14,13 @@
   "keywords": [
     "agriculture",
     "marketplace",
+    "support",
+    "ticketing",
     "nodejs",
     "express",
     "mongodb",
-    "mock-auth"
+    "mock-auth",
+    "socket.io"
   ],
   "author": "",
   "license": "ISC",
@@ -28,12 +31,13 @@
     "axios": "^1.12.2",
     "bcryptjs": "^3.0.2",
     "body-parser": "^2.2.0",
-    "cloudinary": "^1.41.0",
+    "cloudinary": "^1.41.3",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
     "dotenv": "^16.6.1",
     "express": "^4.21.2",
     "express-validator": "^7.2.1",
+    "framer-motion": "^12.23.24",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.18.1",
     "multer": "^2.0.2",
@@ -46,8 +50,7 @@
     "socket.io": "^4.8.1",
     "swagger-autogen": "^2.23.7",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1",
-    "nodemon": "^3.1.10"
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
@@ -60,6 +63,7 @@
     "globals": "^16.3.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.5",
+    "nodemon": "^3.1.10",
     "prettier": "^3.6.2"
   }
 }

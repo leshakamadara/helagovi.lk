@@ -3,6 +3,9 @@ import dotenv from "dotenv";
 import cors from "cors";
 import { connectDB } from "./config/db.js";
 import errorHandler from "./middleware/errorHandler.js";
+import http from "http";
+import initializeSocket from "./services/socket.js";
+import { startEscalationWorkflow } from "./services/ticketEscalationService.js";
 
 // import ratelimiter from "./middleware/rateLimiter.js"; // optional
 
@@ -20,6 +23,8 @@ import profileRoutes from "./routes/profile.js";
 import { seedCategories } from "./lib/seedCategories.js";
 import { cache, CACHE_DURATION, cacheKeys } from "./lib/cache.js";
 import { cacheMiddleware, cacheInvalidationMiddleware } from "./middleware/cache.js";
+import supportRoutes from "./routes/supportRoutes.js";
+import ticketRoutes from "./routes/ticketRoutes.js";
 
 
 
@@ -27,17 +32,40 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5001;
+const server = http.createServer(app);
+
+// Initialize Socket.IO for support system
+initializeSocket(server);
 
 // CORS Configuration with detailed logging
 const corsOptions = {
-  origin: [
-    "http://localhost:5173",
-    "https://helagovi-lk-1.onrender.com", 
-    "https://helagovi-lk.onrender.com",
-    "https://api.helagovi.lk",
-    "https://www.helagovi.lk",
-    "https://helagovi.lk"
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    const allowedOrigins = [
+      "http://localhost:5173", // Development frontend
+      "http://localhost:3000", // Development preview
+      "https://helagovi-lk-1.onrender.com", // Render deployment
+      "https://helagovi-lk.onrender.com", // Render deployment
+      "https://api.helagovi.lk", // Production API domain
+      "https://www.helagovi.lk", // Production frontend domain
+      "https://helagovi.lk", // Production frontend domain (without www)
+      "https://helagovi-lk-frontend.onrender.com", // Render frontend service
+    ];
+
+    // Allow all subdomains of helagovi.lk
+    if (origin.endsWith('.helagovi.lk') || origin === 'https://helagovi.lk') {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    console.log(`CORS blocked origin: ${origin}`);
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept'],
@@ -204,6 +232,10 @@ app.delete("/api/cache/clear/:pattern?", async (req, res) => {
 });
 
 // Routes
+// Support system routes
+app.use("/api/support", supportRoutes);
+app.use("/api/tickets", ticketRoutes);
+
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 
@@ -317,11 +349,15 @@ app.use(errorHandler);
 
 
 // Connect DB and start server
+// Connect DB and start server (with escalation workflow for support system)
 connectDB().then(() => {
-  app.listen(PORT, () => console.log(`Server running on port ${PORT} with database`));
+  // Start the escalation workflow for support system
+  startEscalationWorkflow();
+  // Start HTTP server (with socket.io)
+  server.listen(PORT, () => console.log(`Server running on port ${PORT} with database`));
 }).catch((error) => {
   console.log('Database connection failed, starting server without DB:', error.message);
-  app.listen(PORT, () => console.log(`Server running on port ${PORT} WITHOUT database`));
+  server.listen(PORT, () => console.log(`Server running on port ${PORT} WITHOUT database`));
 });
 
 

@@ -2,7 +2,7 @@
 services:
   # Backend API Service
   - type: web
-    name: helagovi-lk
+    name: helagovi-lk-api
     env: node
     region: singapore
     plan: starter
@@ -13,10 +13,13 @@ services:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 5001
-     
+        value: 10000
+      - key: PUBLIC_URL
+        value: https://api.helagovi.lk
+      - key: FRONTEND_URL
+        value: https://www.helagovi.lk
 
-  # Frontend Web Service (for SPA routing support)
+  # Frontend Web Service
   - type: web
     name: helagovi-lk-frontend
     env: node
@@ -35,4 +38,8 @@ services:
         value: production
       - key: PORT
         value: 10000
+      - key: VITE_API_URL
+        value: https://api.helagovi.lk/api
+      - key: VITE_SOCKET_URL
+        value: wss://api.helagovi.lk
 
