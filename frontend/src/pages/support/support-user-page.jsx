@@ -614,7 +614,7 @@ const UserSupportPage = () => {
                       </Select>
                     </div>
                   </CardHeader>
-                  <CardContent className="flex-1 overflow-y-auto p-0">
+                  <CardContent className="flex-1 overflow-y-auto p-0 min-h-0">
                     {loading ? (
                       <div className="flex items-center justify-center h-64">
                         <div className="text-center">
@@ -911,11 +911,11 @@ const UserSupportPage = () => {
                           </div>
                         </div>
                       </CardHeader>
-                      <CardContent className="flex-1 flex flex-col p-0">
-                        <div className="space-y-6 flex-1 flex flex-col p-6">
+                      <CardContent className="flex flex-col p-0 h-[calc(100vh-16rem)]">
+                        <div className="flex flex-col h-full p-6">
                           {/* Messages */}
-                          <div className="flex-1 flex flex-col">
-                            <div className="flex items-center justify-between mb-4">
+                          <div className="flex-1 flex flex-col min-h-0">
+                            <div className="flex items-center justify-between mb-4 flex-shrink-0">
                               <h4 className="font-semibold text-foreground flex items-center">
                                 <MessageCircle className="h-4 w-4 mr-2" />
                                 Conversation
@@ -925,7 +925,7 @@ const UserSupportPage = () => {
                                 {messages.length === 1 ? 'message' : 'messages'}
                               </span>
                             </div>
-                            <div className="flex-1 overflow-y-auto border rounded-lg bg-muted/30">
+                            <div className="flex-1 overflow-y-auto border rounded-lg bg-muted/30 min-h-0">
                               {messages.length === 0 ? (
                                 <div className="flex items-center justify-center h-32">
                                   <div className="text-center">
@@ -985,7 +985,7 @@ const UserSupportPage = () => {
                           {/* Message Input */}
                           {selectedTicket.status !== 'Closed' &&
                             selectedTicket.status !== 'Resolved' && (
-                              <div className="space-y-3 flex-shrink-0">
+                              <div className="flex-shrink-0 mt-4">
                                 <div className="border rounded-lg shadow-sm">
                                   <Textarea
                                     placeholder="Type your response to the customer..."
@@ -1048,7 +1048,7 @@ const UserSupportPage = () => {
 
                           {(selectedTicket.status === 'Closed' ||
                             selectedTicket.status === 'Resolved') && (
-                            <div className="text-center py-8 bg-green-50 rounded-lg border border-green-200 flex-shrink-0">
+                            <div className="text-center py-8 bg-green-50 rounded-lg border border-green-200 flex-shrink-0 mt-4">
                               <CheckCircle className="h-12 w-12 mx-auto mb-3 text-green-600" />
                               <h3 className="font-semibold text-green-900 text-lg mb-1">
                                 Ticket {selectedTicket.status}
