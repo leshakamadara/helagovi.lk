@@ -206,22 +206,22 @@ const SupportDashboard = () => {
 
       // Listen for incoming messages
       const handleReceiveMessage = (messageData) => {
-        console.log('Received real-time message:', messageData);
-        console.log('Current selectedTicket:', selectedTicket?._id);
-        console.log('Message ticketId:', messageData.ticketId);
+        console.log('Admin dashboard - Received real-time message:', messageData);
+        console.log('Admin dashboard - Current selectedTicket:', selectedTicket?._id);
+        console.log('Admin dashboard - Message ticketId:', messageData.ticketId);
 
         // Update messages if we're viewing the relevant ticket
         if (selectedTicket && selectedTicket._id === messageData.ticketId) {
-          console.log('Adding message to UI');
+          console.log('Admin dashboard - Adding message to UI');
           setMessages((prev) => {
             // Check if message already exists to avoid duplicates
             const messageExists = prev.some(msg => msg._id === messageData._id);
             if (messageExists) {
-              console.log('Message already exists, skipping');
+              console.log('Admin dashboard - Message already exists, skipping');
               return prev;
             }
 
-            console.log('Adding new message to state');
+            console.log('Admin dashboard - Adding new message to state');
             return [...prev, messageData];
           });
 
@@ -234,7 +234,7 @@ const SupportDashboard = () => {
             ),
           );
         } else {
-          console.log('Not adding message - wrong ticket or no ticket selected');
+          console.log('Admin dashboard - Not adding message - wrong ticket or no ticket selected');
           // Still update the ticket message count even if not viewing the ticket
           setTickets((prev) =>
             prev.map((ticket) =>
@@ -253,7 +253,61 @@ const SupportDashboard = () => {
         socketService.disconnect();
       };
     }
-  }, [authToken, selectedTicket]);
+  }, [authToken]);
+
+  // Update message handler when selectedTicket changes
+  useEffect(() => {
+    if (!socketService.socket) return;
+
+    const handleReceiveMessage = (messageData) => {
+      console.log('Admin dashboard - Received real-time message:', messageData);
+      console.log('Admin dashboard - Current selectedTicket:', selectedTicket?._id);
+      console.log('Admin dashboard - Message ticketId:', messageData.ticketId);
+
+      // Update messages if we're viewing the relevant ticket
+      if (selectedTicket && selectedTicket._id === messageData.ticketId) {
+        console.log('Admin dashboard - Adding message to UI');
+        setMessages((prev) => {
+          // Check if message already exists to avoid duplicates
+          const messageExists = prev.some(msg => msg._id === messageData._id);
+          if (messageExists) {
+            console.log('Admin dashboard - Message already exists, skipping');
+            return prev;
+          }
+
+          console.log('Admin dashboard - Adding new message to state');
+          return [...prev, messageData];
+        });
+
+        // Update ticket message count in the tickets list
+        setTickets((prev) =>
+          prev.map((ticket) =>
+            ticket._id === messageData.ticketId
+              ? { ...ticket, messages: [...(ticket.messages || []), messageData] }
+              : ticket,
+          ),
+        );
+      } else {
+        console.log('Admin dashboard - Not adding message - wrong ticket or no ticket selected');
+        // Still update the ticket message count even if not viewing the ticket
+        setTickets((prev) =>
+          prev.map((ticket) =>
+            ticket._id === messageData.ticketId
+              ? { ...ticket, messages: [...(ticket.messages || []), messageData] }
+              : ticket,
+          ),
+        );
+      }
+    };
+
+    // Remove old handler and add new one
+    socketService.removeAllListeners();
+    socketService.onReceiveMessage(handleReceiveMessage);
+
+    return () => {
+      // Don't remove listeners here as the socket connection useEffect handles cleanup
+    };
+  }, [selectedTicket]);
 
   // Join/leave ticket rooms when selected ticket changes
   useEffect(() => {
@@ -475,7 +529,7 @@ const SupportDashboard = () => {
                       <p className="text-sm font-medium text-gray-600">
                         Open Tickets
                       </p>
-                      <p className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums ext-gray-900">
+                      <p className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums text-gray-900">
                         {stats.open}
                       </p>
                     </div>
