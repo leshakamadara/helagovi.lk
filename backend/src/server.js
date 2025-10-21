@@ -7,6 +7,9 @@ import http from "http";
 import initializeSocket from "./services/socket.js";
 import { startEscalationWorkflow } from "./services/ticketEscalationService.js";
 
+// Load environment variables FIRST
+dotenv.config();
+
 // import ratelimiter from "./middleware/rateLimiter.js"; // optional
 
 // Import route placeholders
@@ -25,10 +28,7 @@ import { cache, CACHE_DURATION, cacheKeys } from "./lib/cache.js";
 import { cacheMiddleware, cacheInvalidationMiddleware } from "./middleware/cache.js";
 import supportRoutes from "./routes/supportRoutes.js";
 import ticketRoutes from "./routes/ticketRoutes.js";
-
-
-
-dotenv.config();
+import emailRoutes from "./routes/emailRoutes.js";
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -235,6 +235,7 @@ app.delete("/api/cache/clear/:pattern?", async (req, res) => {
 // Support system routes
 app.use("/api/support", supportRoutes);
 app.use("/api/tickets", ticketRoutes);
+app.use("/api/email", emailRoutes);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);

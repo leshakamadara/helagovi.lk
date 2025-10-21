@@ -1,6 +1,7 @@
 import Ticket from '../models/Ticket.js';
 import { assignTicket } from '../services/assignTicketService.js';
 import Message from '../models/Message.js';
+import { sendTicketConfirmationEmail } from '../utils/email.js';
 
 // Create new ticket
 export const createTicket = async (req, res) => {
@@ -9,13 +10,36 @@ export const createTicket = async (req, res) => {
       ...req.body,
       createdBy: req.user.id // Use authenticated user ID
     };
-    
+
     const ticket = new Ticket(ticketData);
     await ticket.save();
     await ticket.populate('createdBy assignedTo');
 
     // Auto-assign ticket to agent
     const assignmentResult = await assignTicket(ticket._id, ticket.category);
+
+    // Send confirmation email to the user
+    try {
+      const userEmail = ticket.createdBy.email;
+      const userName = ticket.createdBy.firstName
+        ? `${ticket.createdBy.firstName} ${ticket.createdBy.lastName || ''}`.trim()
+        : ticket.createdBy.name || 'User';
+
+      await sendTicketConfirmationEmail(userEmail, {
+        _id: ticket._id,
+        ticketNumber: ticket.ticketNumber,
+        title: ticket.title,
+        category: ticket.category,
+        priority: ticket.priority,
+        status: ticket.status,
+        createdAt: ticket.createdAt
+      }, userName);
+
+      console.log(`Ticket confirmation email sent to ${userEmail}`);
+    } catch (emailError) {
+      console.error('Failed to send ticket confirmation email:', emailError);
+      // Don't fail the ticket creation if email fails
+    }
 
     res.status(201).json({
       ticket,

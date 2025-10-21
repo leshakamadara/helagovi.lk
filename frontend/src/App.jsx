@@ -37,6 +37,7 @@ import Cart from "./pages/buyers/Cart";
 import FarmerWallet from "./pages/farmers/Wallet";
 import Debug from "./pages/Debug";
 import AnimationDemo from './pages/AnimationDemo';
+import EmailTester from './pages/EmailTester';
 
 // Payment routes
 import BillingHistory from './pages/payments/addCard.jsx'
@@ -93,18 +94,12 @@ function App() {
             } />
             <Route path="/reset-password" element={
               <PageTransition>
-                <>
-                  <Navbar />
-                  <ResetPassword />
-                </>
+                <ResetPassword />
               </PageTransition>
             } />
             <Route path="/verify-email" element={
               <PageTransition>
-                <>
-                  <Navbar />
-                  <VerifyEmail />
-                </>
+                <VerifyEmail />
               </PageTransition>
             } />
 
@@ -150,6 +145,9 @@ function App() {
 
           {/* Animation Demo Route */}
           <Route path="/animation-demo" element={<AnimationDemo />} />
+
+          {/* Email Tester Route - Public Access */}
+          <Route path="/email-tester" element={<EmailTester />} />
 
           {/* Protected Routes - with individual navbar */}
           <Route path="/profile" element={
