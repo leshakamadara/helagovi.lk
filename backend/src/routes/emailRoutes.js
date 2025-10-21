@@ -19,6 +19,14 @@ router.post('/test/verification', async (req, res) => {
       return res.status(400).json({ error: 'Email is required' });
     }
 
+    // Check if email environment variables are configured
+    if (!process.env.EMAIL_HOST || !process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      return res.status(500).json({
+        error: 'Email service not configured',
+        details: 'Missing email environment variables (EMAIL_HOST, EMAIL_USER, EMAIL_PASS)'
+      });
+    }
+
     await sendVerificationEmail(email, 'test-verification-token-12345', firstName);
 
     res.json({
@@ -52,6 +60,14 @@ router.post('/test/promotional', async (req, res) => {
 
     if (!email) {
       return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Check if email environment variables are configured
+    if (!process.env.EMAIL_HOST || !process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      return res.status(500).json({
+        error: 'Email service not configured',
+        details: 'Missing email environment variables (EMAIL_HOST, EMAIL_USER, EMAIL_PASS)'
+      });
     }
 
     const promotionData = {
@@ -97,6 +113,14 @@ router.post('/test/join-us', async (req, res) => {
       return res.status(400).json({ error: 'Email is required' });
     }
 
+    // Check if email environment variables are configured
+    if (!process.env.EMAIL_HOST || !process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      return res.status(500).json({
+        error: 'Email service not configured',
+        details: 'Missing email environment variables (EMAIL_HOST, EMAIL_USER, EMAIL_PASS)'
+      });
+    }
+
     const joinData = {
       title,
       message,
@@ -124,15 +148,30 @@ router.post('/test/join-us', async (req, res) => {
 // Send test custom email
 router.post('/test/custom', async (req, res) => {
   try {
-    const { email, subject, htmlContent, fromName } = req.body;
+    const {
+      email,
+      subject,
+      htmlContent,
+      textContent
+    } = req.body;
 
-    if (!email || !subject || !htmlContent) {
-      return res.status(400).json({
-        error: 'Email, subject, and htmlContent are required'
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    if (!subject || !htmlContent) {
+      return res.status(400).json({ error: 'Subject and HTML content are required' });
+    }
+
+    // Check if email environment variables are configured
+    if (!process.env.EMAIL_HOST || !process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      return res.status(500).json({
+        error: 'Email service not configured',
+        details: 'Missing email environment variables (EMAIL_HOST, EMAIL_USER, EMAIL_PASS)'
       });
     }
 
-    await sendCustomEmail(email, subject, htmlContent, fromName);
+    await sendCustomEmail(email, subject, htmlContent, textContent);
 
     res.json({
       success: true,
