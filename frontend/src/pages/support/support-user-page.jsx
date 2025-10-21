@@ -338,6 +338,8 @@ const UserSupportPage = () => {
   };
 
   const handleSendMessage = async (ticketId) => {
+    console.log('User page - handleSendMessage called with ticketId:', ticketId);
+    console.log('User page - current selectedTicket:', selectedTicket?._id);
     if (!newMessage.trim()) return;
 
     try {
@@ -387,7 +389,9 @@ const UserSupportPage = () => {
   };
 
   const handleTicketClick = async (ticket) => {
+    console.log('User page - Ticket clicked:', ticket._id);
     setSelectedTicket(ticket);
+    console.log('User page - selectedTicket set to:', ticket._id);
     await fetchTicketMessages(ticket._id);
   };
 

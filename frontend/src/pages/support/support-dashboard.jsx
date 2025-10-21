@@ -153,6 +153,8 @@ const SupportDashboard = () => {
   };
 
   const sendMessage = async (ticketId, message) => {
+    console.log('Admin dashboard - sendMessage called with ticketId:', ticketId);
+    console.log('Admin dashboard - current selectedTicket:', selectedTicket?._id);
     try {
       setSendingMessage(true);
       const response = await api.post(
@@ -233,6 +235,14 @@ const SupportDashboard = () => {
           );
         } else {
           console.log('Not adding message - wrong ticket or no ticket selected');
+          // Still update the ticket message count even if not viewing the ticket
+          setTickets((prev) =>
+            prev.map((ticket) =>
+              ticket._id === messageData.ticketId
+                ? { ...ticket, messages: [...(ticket.messages || []), messageData] }
+                : ticket,
+            ),
+          );
         }
       };
 
@@ -419,7 +429,9 @@ const SupportDashboard = () => {
   };
 
   const handleTicketClick = async (ticket) => {
+    console.log('Admin dashboard - Ticket clicked:', ticket._id);
     setSelectedTicket(ticket);
+    console.log('Admin dashboard - selectedTicket set to:', ticket._id);
     await fetchTicketDetails(ticket._id);
   };
 
