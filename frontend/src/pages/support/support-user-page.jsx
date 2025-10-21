@@ -93,17 +93,26 @@ const UserSupportPage = () => {
 
       // Listen for incoming messages
       const handleReceiveMessage = (messageData) => {
-        console.log('Received real-time message:', messageData);
+        console.log('User page - Received real-time message:', messageData);
+        console.log('User page - Current selectedTicket:', selectedTicket?._id);
+        console.log('User page - Message ticketId:', messageData.ticketId);
 
         // Update messages if we're viewing the relevant ticket
         if (selectedTicket && selectedTicket._id === messageData.ticketId) {
+          console.log('User page - Adding message to UI');
           setMessages((prev) => {
             // Check if message already exists to avoid duplicates
             const messageExists = prev.some(msg => msg._id === messageData._id);
-            if (messageExists) return prev;
+            if (messageExists) {
+              console.log('User page - Message already exists, skipping');
+              return prev;
+            }
 
+            console.log('User page - Adding new message to state');
             return [...prev, messageData];
           });
+        } else {
+          console.log('User page - Not adding message - wrong ticket or no ticket selected');
         }
 
         // Update ticket message count in the tickets list

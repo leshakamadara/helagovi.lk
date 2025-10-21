@@ -205,14 +205,21 @@ const SupportDashboard = () => {
       // Listen for incoming messages
       const handleReceiveMessage = (messageData) => {
         console.log('Received real-time message:', messageData);
+        console.log('Current selectedTicket:', selectedTicket?._id);
+        console.log('Message ticketId:', messageData.ticketId);
 
         // Update messages if we're viewing the relevant ticket
         if (selectedTicket && selectedTicket._id === messageData.ticketId) {
+          console.log('Adding message to UI');
           setMessages((prev) => {
             // Check if message already exists to avoid duplicates
             const messageExists = prev.some(msg => msg._id === messageData._id);
-            if (messageExists) return prev;
+            if (messageExists) {
+              console.log('Message already exists, skipping');
+              return prev;
+            }
 
+            console.log('Adding new message to state');
             return [...prev, messageData];
           });
 
@@ -225,14 +232,7 @@ const SupportDashboard = () => {
             ),
           );
         } else {
-          // Update ticket message count even if not viewing the ticket
-          setTickets((prev) =>
-            prev.map((ticket) =>
-              ticket._id === messageData.ticketId
-                ? { ...ticket, messages: [...(ticket.messages || []), messageData] }
-                : ticket,
-            ),
-          );
+          console.log('Not adding message - wrong ticket or no ticket selected');
         }
       };
 

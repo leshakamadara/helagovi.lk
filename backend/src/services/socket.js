@@ -45,10 +45,13 @@ const initializeSocket = (server) => {
           // Message is already saved via HTTP API, just broadcast it
           const { senderId, receiverId, ticketId, message, _id, isRead, timestamp } = messageData;
 
+          console.log('Backend received messageData:', messageData);
+          console.log('Broadcasting to ticketId:', ticketId);
+
           // Emit message to correct room/user
           if (ticketId) {
             io.to(`ticket_${ticketId}`).emit('receiveMessage', messageData);
-            console.log(`Broadcasted message to ticket_${ticketId}:`, messageData);
+            console.log(`✅ Broadcasted message to ticket_${ticketId}:`, messageData);
           } else if (receiverId) {
             io.to(`user_${receiverId}`).emit('receiveMessage', messageData);
             console.log(`Broadcasted message to user_${receiverId}:`, messageData);
