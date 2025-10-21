@@ -3,6 +3,43 @@ import Withdrawal from "../models/withdrawel.js";
 import mongoose from "mongoose";
 
 
+
+
+
+export const creditFarmerWallet = async (req, res) => {
+  try {
+    const { farmerId, amount } = req.body;
+
+    if (!farmerId || !amount || amount <= 0) {
+      return res.status(400).json({ message: "Invalid farmer ID or amount" });
+    }
+
+    
+    let wallet = await Wallet.findOne({ userId: farmerId });
+    if (!wallet) {
+      wallet = new Wallet({ userId: farmerId });
+    }
+
+  
+    wallet.availableBalance = (wallet.availableBalance || 0) + amount;
+    wallet.totalEarnings = (wallet.totalEarnings || 0) + amount;
+
+    await wallet.save();
+
+    res.status(200).json({
+      message: "Farmer wallet updated successfully",
+      wallet
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to update farmer wallet", error });
+  }
+};
+
+
+
+
+
 export const getWallet = async (req, res) => {
   try {
     const { userId } = req.params;
