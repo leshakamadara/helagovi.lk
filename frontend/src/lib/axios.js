@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const baseURL = import.meta.env.VITE_API_URL ||
   (import.meta.env.PROD
-    ? 'https://helagovi-lk.onrender.com/api'
+    ? 'https://api.helagovi.lk/api'
     : 'http://localhost:5001/api');
 
 console.log('API Base URL:', baseURL);
