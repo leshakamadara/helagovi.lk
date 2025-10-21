@@ -161,6 +161,14 @@ const SupportDashboard = () => {
         { headers: { Authorization: `Bearer ${authToken}` } },
       );
 
+      // Send via socket for real-time updates
+      socketService.sendMessage(
+        response.data.message.senderId._id,
+        response.data.message.receiverId?._id,
+        ticketId,
+        message
+      );
+
       // Add message to local state
       setMessages((prev) => [...prev, response.data.message]);
       setNewMessage('');
@@ -195,6 +203,9 @@ const SupportDashboard = () => {
     if (authToken) {
       // Connect to socket server
       socketService.connect(authToken);
+
+      // Join agent room for admin/support users
+      socketService.socket?.emit('joinRoom', { userRole: 'agent' });
 
       // Listen for incoming messages
       const handleReceiveMessage = (messageData) => {

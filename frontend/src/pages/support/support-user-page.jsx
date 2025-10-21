@@ -335,7 +335,7 @@ const UserSupportPage = () => {
       setSendingMessage(true);
       setError(null);
 
-      await api.post(
+      const response = await api.post(
         `/tickets/${ticketId}/messages`,
         {
           message: newMessage,
@@ -343,6 +343,14 @@ const UserSupportPage = () => {
         {
           headers: { Authorization: `Bearer ${authToken}` },
         },
+      );
+
+      // Send via socket for real-time updates
+      socketService.sendMessage(
+        response.data.message.senderId._id,
+        response.data.message.receiverId?._id,
+        ticketId,
+        newMessage
       );
 
       setNewMessage('');

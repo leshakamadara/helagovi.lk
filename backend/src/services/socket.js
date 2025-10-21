@@ -37,48 +37,47 @@ const initializeSocket = (server) => {
       }
     });
 
-    // Send message
+    // Send message (for real-time broadcasting only - message should already be saved via API)
     socket.on(
       'sendMessage',
       async ({ senderId, receiverId, ticketId, message }) => {
         try {
-          // Save message in DB
-          const newMessage = new Message({
+          // Find the message that was just saved via API (by content and recent timestamp)
+          const recentMessage = await Message.findOne({
             senderId,
-            receiverId,
             ticketId,
             message,
-          });
+            createdAt: { $gte: new Date(Date.now() - 5000) } // Within last 5 seconds
+          }).populate(['senderId', 'receiverId', 'ticketId']).sort({ createdAt: -1 });
 
-          await newMessage.save();
-          await newMessage.populate(['senderId', 'receiverId', 'ticketId']);
+          if (recentMessage) {
+            const messageData = {
+              _id: recentMessage._id,
+              senderId: recentMessage.senderId,
+              receiverId: recentMessage.receiverId,
+              ticketId: recentMessage.ticketId,
+              message: recentMessage.message,
+              isRead: recentMessage.isRead,
+              timestamp: recentMessage.createdAt,
+            };
 
-          const messageData = {
-            _id: newMessage._id,
-            senderId: newMessage.senderId,
-            receiverId: newMessage.receiverId,
-            ticketId: newMessage.ticketId,
-            message: newMessage.message,
-            isRead: newMessage.isRead,
-            timestamp: newMessage.createdAt,
-          };
+            // Emit message to correct room/user
+            if (ticketId) {
+              io.to(`ticket_${ticketId}`).emit('receiveMessage', messageData);
+            } else if (receiverId) {
+              io.to(`user_${receiverId}`).emit('receiveMessage', messageData);
+            } else {
+              io.to(agentRoom).emit('receiveMessage', messageData);
+            }
 
-          // Emit message to correct room/user
-          if (ticketId) {
-            io.to(`ticket_${ticketId}`).emit('receiveMessage', messageData);
-          } else if (receiverId) {
-            io.to(`user_${receiverId}`).emit('receiveMessage', messageData);
-          } else {
-            io.to(agentRoom).emit('receiveMessage', messageData);
+            socket.emit('messageSent', {
+              success: true,
+              messageId: recentMessage._id,
+            });
           }
-
-          socket.emit('messageSent', {
-            success: true,
-            messageId: newMessage._id,
-          });
         } catch (error) {
-          console.error('Error sending message:', error);
-          socket.emit('error', { message: 'Failed to send message' });
+          console.error('Error broadcasting message:', error);
+          socket.emit('error', { message: 'Failed to broadcast message' });
         }
       },
     );

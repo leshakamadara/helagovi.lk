@@ -53,14 +53,14 @@ class SocketService {
   // Join a user room for personal messages
   joinUserRoom(userId) {
     if (this.socket && this.isConnected) {
-      this.socket.emit('joinUserRoom', userId);
+      this.socket.emit('joinRoom', { userId, userRole: 'user' });
     }
   }
 
   // Join a ticket room for ticket-specific messages
   joinTicketRoom(ticketId) {
     if (this.socket && this.isConnected) {
-      this.socket.emit('joinTicketRoom', ticketId);
+      this.socket.emit('joinRoom', { ticketId });
     }
   }
 
@@ -106,6 +106,13 @@ class SocketService {
   sendStopTyping(ticketId, userId) {
     if (this.socket && this.isConnected) {
       this.socket.emit('stopTyping', { ticketId, userId });
+    }
+  }
+
+  // Send message via socket
+  sendMessage(senderId, receiverId, ticketId, message) {
+    if (this.socket && this.isConnected) {
+      this.socket.emit('sendMessage', { senderId, receiverId, ticketId, message });
     }
   }
 
