@@ -284,21 +284,12 @@ orderSchema.pre('save', async function(next) {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     
-    // Count orders for today to generate sequential number
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    // Use timestamp with milliseconds and random number for uniqueness
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const sequentialPart = String(timestamp).slice(-6) + random; // Last 6 digits of timestamp + 3 random digits
     
-    const todayOrderCount = await this.constructor.countDocuments({
-      createdAt: {
-        $gte: today,
-        $lt: tomorrow
-      }
-    });
-    
-    const sequentialNumber = String(todayOrderCount + 1).padStart(3, '0');
-    this.orderNumber = `ORD-${year}${month}${day}-${sequentialNumber}`;
+    this.orderNumber = `ORD-${year}${month}${day}-${sequentialPart}`;
   }
   
   // Calculate totals
@@ -349,6 +340,45 @@ orderSchema.post('save', async function(doc) {
       } catch (error) {
         console.error(`Error updating product quantity for ${item.product}:`, error);
       }
+    }
+  }
+  
+  // Credit farmer wallets when order is delivered
+  if (doc.status === 'delivered') {
+    try {
+      const Wallet = mongoose.model('Wallet');
+      
+      // Group items by farmer and calculate earnings
+      const farmerEarnings = {};
+      for (const item of doc.items) {
+        const farmerId = item.productSnapshot.farmer.id.toString();
+        const earnings = item.subtotal; // Farmer gets the full item subtotal
+        
+        if (!farmerEarnings[farmerId]) {
+          farmerEarnings[farmerId] = 0;
+        }
+        farmerEarnings[farmerId] += earnings;
+      }
+      
+      // Credit each farmer's wallet
+      for (const [farmerId, earnings] of Object.entries(farmerEarnings)) {
+        try {
+          let wallet = await Wallet.findOne({ userId: farmerId });
+          if (!wallet) {
+            wallet = new Wallet({ userId: farmerId });
+          }
+          
+          wallet.availableBalance = (wallet.availableBalance || 0) + earnings;
+          wallet.totalEarnings = (wallet.totalEarnings || 0) + earnings;
+          
+          await wallet.save();
+          console.log(`✅ Credited LKR ${earnings} to farmer ${farmerId} for order ${doc.orderNumber}`);
+        } catch (walletError) {
+          console.error(`Error crediting wallet for farmer ${farmerId}:`, walletError);
+        }
+      }
+    } catch (error) {
+      console.error('Error crediting farmer wallets:', error);
     }
   }
   
@@ -526,6 +556,70 @@ orderSchema.methods.calculateDeliveryFee = function() {
   this.deliveryFee = baseDeliveryFee + additionalFee;
   
   return this.deliveryFee;
+};
+
+// One-time script to credit wallets for existing delivered orders
+// Run this once to update existing balances
+orderSchema.statics.creditExistingDeliveredOrders = async function() {
+  try {
+    console.log('Starting wallet credit for existing delivered orders...');
+
+    const deliveredOrders = await this.find({ status: 'delivered' });
+    console.log(`Found ${deliveredOrders.length} delivered orders to process`);
+
+    const Wallet = mongoose.model('Wallet');
+    let totalCredited = 0;
+
+    // Group all earnings by farmer across all delivered orders
+    const farmerTotalEarnings = {};
+
+    for (const order of deliveredOrders) {
+      for (const item of order.items) {
+        const farmerId = item.productSnapshot.farmer.id.toString();
+        const earnings = item.subtotal;
+
+        if (!farmerTotalEarnings[farmerId]) {
+          farmerTotalEarnings[farmerId] = 0;
+        }
+        farmerTotalEarnings[farmerId] += earnings;
+      }
+    }
+
+    // Credit each farmer's wallet with the total they should have
+    for (const [farmerId, totalEarnings] of Object.entries(farmerTotalEarnings)) {
+      try {
+        let wallet = await Wallet.findOne({ userId: farmerId });
+        if (!wallet) {
+          wallet = new Wallet({ userId: farmerId });
+        }
+
+        // Calculate how much is missing
+        const currentEarnings = wallet.totalEarnings || 0;
+        const missingEarnings = totalEarnings - currentEarnings;
+
+        if (missingEarnings > 0) {
+          wallet.availableBalance = (wallet.availableBalance || 0) + missingEarnings;
+          wallet.totalEarnings = (wallet.totalEarnings || 0) + missingEarnings;
+          await wallet.save();
+          totalCredited += missingEarnings;
+          console.log(`✅ Credited LKR ${missingEarnings} to farmer ${farmerId} for delivered orders`);
+        } else if (missingEarnings < 0) {
+          console.log(`⚠️  Farmer ${farmerId} has LKR ${Math.abs(missingEarnings)} more than expected`);
+        } else {
+          console.log(`ℹ️  Farmer ${farmerId} wallet is already up to date`);
+        }
+      } catch (walletError) {
+        console.error(`Error crediting wallet for farmer ${farmerId}:`, walletError);
+      }
+    }
+
+    console.log(`✅ Completed! Total credited: LKR ${totalCredited}`);
+    return { success: true, totalCredited, ordersProcessed: deliveredOrders.length };
+
+  } catch (error) {
+    console.error('Error in creditExistingDeliveredOrders:', error);
+    return { success: false, error: error.message };
+  }
 };
 
 const Order = model('Order', orderSchema);

@@ -40,6 +40,7 @@ const FarmerDashboard = () => {
     totalProducts: 0,
     activeProducts: 0,
     soldProducts: 0,
+    soldProductsThisMonth: 0,
     totalRevenue: 0,
     averagePrice: 0,
     totalQuantityListed: 0,
@@ -47,6 +48,7 @@ const FarmerDashboard = () => {
     ordersThisMonth: 0,
     customersReached: 0
   })
+  const [pendingOrdersRevenue, setPendingOrdersRevenue] = React.useState(0)
   const [recentProducts, setRecentProducts] = React.useState([])
   const [recentOrders, setRecentOrders] = React.useState([])
   const [loading, setLoading] = React.useState(true)
@@ -55,6 +57,7 @@ const FarmerDashboard = () => {
   React.useEffect(() => {
     if (user && user.role === 'farmer') {
       fetchDashboardData()
+      fetchPendingOrdersRevenue()
     }
   }, [user])
 
@@ -108,14 +111,22 @@ const FarmerDashboard = () => {
         const ordersThisMonth = orders.filter(order => {
           const orderDate = new Date(order.createdAt)
           return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear
-        }).length
+        })
+
+        const ordersThisMonthCount = ordersThisMonth.length
+
+        // Calculate products sold this month (total items in orders this month)
+        const soldProductsThisMonth = ordersThisMonth.reduce((total, order) => {
+          return total + (order.items?.length || 0)
+        }, 0)
 
         // Calculate unique customers reached
         const uniqueCustomers = new Set(orders.map(order => order.buyer?._id || order.buyer)).size
 
         setStats(prevStats => ({
           ...prevStats,
-          ordersThisMonth,
+          ordersThisMonth: ordersThisMonthCount,
+          soldProductsThisMonth,
           customersReached: uniqueCustomers
         }))
       }
@@ -127,6 +138,32 @@ const FarmerDashboard = () => {
       setLoading(false)
     }
   }
+
+  const fetchPendingOrdersRevenue = async () => {
+    try {
+      const { data } = await api.get('/orders/my?limit=1000');
+      if (data.success && data.data.orders) {
+        // Filter orders that are not delivered
+        const pendingOrders = data.data.orders.filter(order => 
+          order.status !== 'delivered'
+        );
+        // Calculate total revenue from pending orders (not delivered)
+        const totalPendingRevenue = pendingOrders.reduce((sum, order) => {
+          // Sum up the farmer's share from each order
+          const farmerItems = order.items.filter(item => 
+            item.productSnapshot.farmer.id === user._id
+          );
+          const farmerRevenue = farmerItems.reduce((itemSum, item) => 
+            itemSum + item.subtotal, 0
+          );
+          return sum + farmerRevenue;
+        }, 0);
+        setPendingOrdersRevenue(totalPendingRevenue);
+      }
+    } catch (error) {
+      console.error('Error fetching pending orders revenue:', error.response?.data || error.message);
+    }
+  };
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -312,7 +349,7 @@ const FarmerDashboard = () => {
                   Strong sales performance <TrendingUpIcon className="size-4" />
                 </div>
                 <div className="text-muted-foreground">
-                  {stats.soldProducts} products sold this month
+                  {stats.soldProductsThisMonth} products sold this month
                 </div>
               </CardFooter>
             </Card>
@@ -346,25 +383,25 @@ const FarmerDashboard = () => {
             <Card className="@container/card">
               <CardHeader className="relative pb-2">
                 <CardDescription className="flex items-center">
-                  <ShoppingCart className="h-4 w-4 mr-2 text-orange-600" />
-                  Orders This Month
+                  <Clock className="h-4 w-4 mr-2 text-orange-600" />
+                  Pending Orders
                 </CardDescription>
                 <CardTitle className="text-2xl font-semibold tabular-nums">
-                  {stats.ordersThisMonth}
+                  {formatCurrency(pendingOrdersRevenue)}
                 </CardTitle>
                 <div className="absolute right-4 top-4">
                   <Badge variant="outline" className="flex gap-1 rounded-lg text-xs">
                     <TrendingUpIcon className="size-3" />
-                    {stats.ordersThisMonth > 0 ? 'Active' : 'No orders'}
+                    {pendingOrdersRevenue > 0 ? 'Pending' : 'No pending'}
                   </Badge>
                 </div>
               </CardHeader>
               <CardFooter className="flex-col items-start gap-1 text-sm">
                 <div className="line-clamp-1 flex gap-2 font-medium">
-                  Steady order flow <TrendingUpIcon className="size-4" />
+                  Upcoming earnings <TrendingUpIcon className="size-4" />
                 </div>
                 <div className="text-muted-foreground">
-                  Consistent demand
+                  Revenue from pending orders
                 </div>
               </CardFooter>
             </Card>
