@@ -75,6 +75,7 @@ const FarmerOrders = () => {
   useEffect(() => {
     fetchOrders()
     fetchOrderStats()
+    fetchAnalytics()
   }, [])
 
   useEffect(() => {
@@ -83,30 +84,50 @@ const FarmerOrders = () => {
 
   const fetchOrderStats = async () => {
     try {
-      const response = await orderService.getOrderStatistics();
-      if (response.success && response.data) {
-        const { statusCounts, revenue } = response.data;
-        setOrderStats({
-          all: statusCounts.all,
-          pending: statusCounts.pending,
-          confirmed: statusCounts.confirmed,
-          preparing: statusCounts.preparing,
-          shipped: statusCounts.shipped,
-          delivered: statusCounts.delivered,
-          cancelled: statusCounts.cancelled
-        });
-        
-        // Update analytics with accurate data
-        setAnalytics(prev => ({
-          ...prev,
-          totalRevenue: revenue.total,
-          averageOrderValue: revenue.averageOrderValue
-        }));
+      // Use the same data as fetchAnalytics for consistency
+      const response = await orderService.getMyOrders({ limit: 1000 })
+      if (response.success && response.data.orders) {
+        // Filter out test orders same as in fetchOrders
+        const validOrders = response.data.orders.filter(order => {
+          const orderDate = new Date(order.createdAt)
+          const now = new Date()
+          
+          // Exclude orders from the future (test data)
+          if (orderDate > now) {
+            return false
+          }
+          
+          // Exclude orders with test buyer names
+          const buyerName = `${order.buyer?.firstName || ''} ${order.buyer?.lastName || ''}`.toLowerCase()
+          if (buyerName.includes('test') || buyerName.includes('dummy') || buyerName.includes('sample')) {
+            return false
+          }
+          
+          // Exclude orders with suspicious order numbers (future timestamps)
+          if (order.orderNumber && order.orderNumber.includes('1758640665029')) {
+            return false
+          }
+          
+          return true
+        })
+
+        // Count orders by status for filter tabs
+        const statusCounts = {
+          all: validOrders.length,
+          pending: validOrders.filter(order => order.status === 'pending').length,
+          confirmed: validOrders.filter(order => order.status === 'confirmed').length,
+          preparing: validOrders.filter(order => order.status === 'preparing').length,
+          shipped: validOrders.filter(order => order.status === 'shipped').length,
+          delivered: validOrders.filter(order => order.status === 'delivered').length,
+          cancelled: validOrders.filter(order => order.status === 'cancelled').length
+        }
+
+        setOrderStats(statusCounts)
       } else {
-        console.warn('Failed to fetch order statistics: Invalid response', response);
+        console.warn('Failed to fetch orders for stats: Invalid response', response)
       }
     } catch (error) {
-      console.warn('Failed to fetch order statistics:', error);
+      console.warn('Failed to fetch order statistics:', error)
       // Don't show error to user, just log it since this is supplementary data
     }
   }
@@ -140,15 +161,30 @@ const FarmerOrders = () => {
           return true
         })
         
-        // Exclude cancelled orders from revenue calculation
-        const revenueOrders = validOrders.filter(order => order.status !== 'cancelled')
-        const totalRevenue = revenueOrders.reduce((sum, order) => sum + order.total, 0)
+        // Calculate farmer's earnings from delivered orders (what they actually earn)
+        const deliveredOrders = validOrders.filter(order => order.status === 'delivered')
+        const totalFarmerEarnings = deliveredOrders.reduce((sum, order) => {
+          // Sum up the farmer's share from each delivered order
+          const farmerItems = order.items.filter(item => 
+            item.productSnapshot.farmer.id === user._id
+          )
+          const farmerEarnings = farmerItems.reduce((itemSum, item) => 
+            itemSum + item.subtotal, 0
+          )
+          return sum + farmerEarnings
+        }, 0)
+        
+        // Calculate total orders (all valid orders, not just delivered)
         const totalOrders = validOrders.length
+        
+        // Calculate pending orders
         const pendingOrders = validOrders.filter(order => order.status === 'pending').length
-        const averageOrderValue = revenueOrders.length > 0 ? totalRevenue / revenueOrders.length : 0
+        
+        // Calculate average earnings per delivered order
+        const averageOrderValue = deliveredOrders.length > 0 ? totalFarmerEarnings / deliveredOrders.length : 0
 
         setAnalytics({
-          totalRevenue,
+          totalRevenue: totalFarmerEarnings,
           totalOrders,
           pendingOrders,
           averageOrderValue
@@ -493,7 +529,7 @@ const FarmerOrders = () => {
               <TrendingUp className="h-6 w-6 text-blue-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+              <p className="text-sm font-medium text-gray-600">Total Earnings</p>
               <p className="text-2xl font-bold text-gray-900">{formatCurrency(analytics.totalRevenue || 0)}</p>
             </div>
           </div>
@@ -529,7 +565,7 @@ const FarmerOrders = () => {
               <Package className="h-6 w-6 text-purple-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Avg. Order Value</p>
+              <p className="text-sm font-medium text-gray-600">Avg. Order Earnings</p>
               <p className="text-2xl font-bold text-gray-900">{formatCurrency(analytics.averageOrderValue || 0)}</p>
             </div>
           </div>

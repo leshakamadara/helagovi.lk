@@ -66,11 +66,11 @@ const FarmerDashboard = () => {
       setLoading(true)
       setError(null)
       
-      // Fetch farmer's product statistics
+      // Fetch farmer's product statistics and orders
       const [statsResponse, productsResponse, ordersResponse] = await Promise.all([
         api.get('/products/stats/overview'),
         api.get('/products/my/products?limit=5&sortBy=createdAt&sortOrder=desc'),
-        api.get('/orders/my?limit=5&sortBy=createdAt&sortOrder=desc')
+        api.get('/orders/my?limit=1000&sortBy=createdAt&sortOrder=desc') // Get all orders for accurate calculations
       ])
 
       // Set statistics from backend
@@ -85,7 +85,7 @@ const FarmerDashboard = () => {
           totalProducts: backendStats.totalProducts || 0,
           activeProducts: backendStats.activeProducts || 0,
           soldProducts: backendStats.soldProducts || 0,
-          totalRevenue: backendStats.totalRevenue || 0,
+          totalRevenue: 0, // Will be calculated from orders
           averagePrice: backendStats.averagePrice || 0,
           totalQuantityListed: backendStats.totalQuantityListed || 0,
           totalQuantitySold: backendStats.totalQuantitySold || 0,
@@ -99,35 +99,94 @@ const FarmerDashboard = () => {
         setRecentProducts(productsResponse.data.data || [])
       }
 
-      // Set recent orders and calculate monthly stats
+      // Set recent orders and calculate monthly stats and revenue
       if (ordersResponse.data.success) {
-        const orders = ordersResponse.data.data.orders || []
-        setRecentOrders(orders)
+        const allOrders = ordersResponse.data.data.orders || []
+        
+        // Filter out test orders same as in farmer orders page
+        const validOrders = allOrders.filter(order => {
+          const orderDate = new Date(order.createdAt)
+          const now = new Date()
+          
+          // Exclude orders from the future (test data)
+          if (orderDate > now) {
+            return false
+          }
+          
+          // Exclude orders with test buyer names
+          const buyerName = `${order.buyer?.firstName || ''} ${order.buyer?.lastName || ''}`.toLowerCase()
+          if (buyerName.includes('test') || buyerName.includes('dummy') || buyerName.includes('sample')) {
+            return false
+          }
+          
+          // Exclude orders with suspicious order numbers (future timestamps)
+          if (order.orderNumber && order.orderNumber.includes('1758640665029')) {
+            return false
+          }
+          
+          return true
+        })
+        
+        setRecentOrders(validOrders.slice(0, 5)) // Show only recent 5
         
         // Calculate orders this month
         const currentMonth = new Date().getMonth()
         const currentYear = new Date().getFullYear()
         
-        const ordersThisMonth = orders.filter(order => {
+        const ordersThisMonth = validOrders.filter(order => {
           const orderDate = new Date(order.createdAt)
           return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear
         })
 
         const ordersThisMonthCount = ordersThisMonth.length
 
-        // Calculate products sold this month (total items in orders this month)
+        // Calculate products sold this month (total quantity sold in orders this month)
         const soldProductsThisMonth = ordersThisMonth.reduce((total, order) => {
-          return total + (order.items?.length || 0)
+          // Sum up quantities of farmer's items in this month's orders
+          const farmerItems = order.items.filter(item => 
+            item.productSnapshot.farmer.id === user._id
+          )
+          const farmerQuantity = farmerItems.reduce((itemSum, item) => 
+            itemSum + item.quantity, 0
+          )
+          return total + farmerQuantity
+        }, 0)
+
+        // Calculate total products sold (from all delivered orders)
+        const allDeliveredOrders = validOrders.filter(order => order.status === 'delivered')
+        const totalProductsSold = allDeliveredOrders.reduce((total, order) => {
+          const farmerItems = order.items.filter(item => 
+            item.productSnapshot.farmer.id === user._id
+          )
+          const farmerQuantity = farmerItems.reduce((itemSum, item) => 
+            itemSum + item.quantity, 0
+          )
+          return total + farmerQuantity
         }, 0)
 
         // Calculate unique customers reached
-        const uniqueCustomers = new Set(orders.map(order => order.buyer?._id || order.buyer)).size
+        const uniqueCustomers = new Set(validOrders.map(order => order.buyer?._id || order.buyer)).size
+
+        // Calculate farmer's actual earnings from delivered orders
+        const deliveredOrders = validOrders.filter(order => order.status === 'delivered')
+        const totalFarmerEarnings = deliveredOrders.reduce((sum, order) => {
+          // Sum up the farmer's share from each delivered order
+          const farmerItems = order.items.filter(item => 
+            item.productSnapshot.farmer.id === user._id
+          )
+          const farmerEarnings = farmerItems.reduce((itemSum, item) => 
+            itemSum + item.subtotal, 0
+          )
+          return sum + farmerEarnings
+        }, 0)
 
         setStats(prevStats => ({
           ...prevStats,
           ordersThisMonth: ordersThisMonthCount,
           soldProductsThisMonth,
-          customersReached: uniqueCustomers
+          customersReached: uniqueCustomers,
+          totalRevenue: totalFarmerEarnings,
+          soldProducts: totalProductsSold // Update total sold products with actual quantity sold
         }))
       }
     } catch (error) {
