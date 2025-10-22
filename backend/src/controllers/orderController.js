@@ -192,7 +192,7 @@ export const createOrder = async (req, res) => {
       success: false,
       message: error.message || 'Failed to create order',
       error: process.env.NODE_ENV === 'development' ? error : undefined,
-      details: process.env.NODE_ENV === 'development' && error.name === 'ValidationError' 
+      details: error.name === 'ValidationError' 
         ? Object.keys(error.errors).map(key => ({
             field: key,
             message: error.errors[key].message
