@@ -21,6 +21,7 @@ import {
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb'
 import { H1, H2, H3, P, Muted, Large } from '../../components/ui/typography'
 import ReviewModal from '../../components/ReviewModal'
+import RefundModal from '../../components/RefundModal'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
@@ -49,6 +50,8 @@ const BuyerOrders = () => {
   const [reviewModalOpen, setReviewModalOpen] = useState(false)
   const [selectedOrderForReview, setSelectedOrderForReview] = useState(null)
   const [existingReviews, setExistingReviews] = useState({})
+  const [refundModalOpen, setRefundModalOpen] = useState(false)
+  const [selectedOrderForRefund, setSelectedOrderForRefund] = useState(null)
 
   // PDF Generation Function
   const generateOrderPDF = async (order) => {
@@ -343,6 +346,11 @@ const BuyerOrders = () => {
   const handleWriteReview = (order) => {
     setSelectedOrderForReview(order)
     setReviewModalOpen(true)
+  }
+
+  const handleRefundRequest = (order) => {
+    setSelectedOrderForRefund(order)
+    setRefundModalOpen(true)
   }
 
   const checkExistingReviews = async (orders) => {
@@ -668,6 +676,21 @@ const BuyerOrders = () => {
                         Track Order
                       </button>
                     )}
+                    
+                    {order.status === 'cancelled' && order.paymentInfo?.status === 'refunded' && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                        Refunded
+                      </span>
+                    )}
+                    
+                    {order.status === 'cancelled' && order.paymentInfo?.status !== 'refunded' && (
+                      <button 
+                        onClick={() => handleRefundRequest(order)}
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1 border border-blue-200 rounded hover:bg-blue-50"
+                      >
+                        Refund
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -779,6 +802,16 @@ const BuyerOrders = () => {
           setSelectedOrderForReview(null)
         }}
         order={selectedOrderForReview}
+      />
+
+      {/* Refund Modal */}
+      <RefundModal
+        isOpen={refundModalOpen}
+        onClose={() => {
+          setRefundModalOpen(false)
+          setSelectedOrderForRefund(null)
+        }}
+        order={selectedOrderForRefund}
       />
     </div>
   )
