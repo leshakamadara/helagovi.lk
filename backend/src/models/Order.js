@@ -277,7 +277,7 @@ orderSchema.virtual('canBeCancelled').get(function() {
 });
 
 // Generate order number
-orderSchema.pre('save', async function(next) {
+orderSchema.pre('save', function(next) {
   if (!this.orderNumber) {
     const date = new Date();
     const year = date.getFullYear();

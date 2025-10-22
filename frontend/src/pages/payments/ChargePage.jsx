@@ -152,13 +152,30 @@ const ChargePage = () => {
           // Prepare delivery address if available
           let deliveryAddress = {};
           if (orderDataFromState?.deliveryInfo) {
+            // Valid districts for Sri Lanka
+            const validDistricts = [
+              'Colombo', 'Gampaha', 'Kalutara', 'Kandy', 'Matale', 'Nuwara Eliya',
+              'Galle', 'Matara', 'Hambantota', 'Jaffna', 'Kilinochchi', 'Mannar',
+              'Vavuniya', 'Mullaitivu', 'Batticaloa', 'Ampara', 'Trincomalee',
+              'Kurunegala', 'Puttalam', 'Anuradhapura', 'Polonnaruwa', 'Badulla',
+              'Moneragala', 'Ratnapura', 'Kegalle'
+            ];
+            
+            const district = orderDataFromState.deliveryInfo.district;
+            const validDistrict = validDistricts.includes(district) ? district : 'Colombo';
+            
+            // Ensure postal code is exactly 5 digits
+            let postalCode = orderDataFromState.deliveryInfo.postalCode?.toString() || '';
+            postalCode = postalCode.replace(/\D/g, ''); // Remove non-digits
+            postalCode = postalCode.padStart(5, '0').slice(-5); // Ensure exactly 5 digits
+            
             deliveryAddress = {
               recipientName: `${orderDataFromState.deliveryInfo.firstName} ${orderDataFromState.deliveryInfo.lastName}`.trim(),
               phone: orderDataFromState.deliveryInfo.phone.replace(/\s+/g, ''),
               street: orderDataFromState.deliveryInfo.addressLine1 + (orderDataFromState.deliveryInfo.addressLine2 ? ', ' + orderDataFromState.deliveryInfo.addressLine2 : ''),
               city: orderDataFromState.deliveryInfo.city.trim(),
-              district: orderDataFromState.deliveryInfo.district,
-              postalCode: orderDataFromState.deliveryInfo.postalCode.toString().padStart(5, '0'),
+              district: validDistrict,
+              postalCode: postalCode,
               specialInstructions: orderDataFromState.deliveryInfo.deliveryInstructions || ''
             };
           } else if (order.deliveryInfo) {
@@ -244,7 +261,10 @@ const ChargePage = () => {
             status: orderErr.response?.status,
             fullError: orderErr
           });
-          const errorDetails = orderErr.response?.data?.error || orderErr.response?.data?.message || orderErr.message;
+          const errorDetails = orderErr.response?.data?.message || 
+                            (orderErr.response?.data?.details ? 
+                              orderErr.response?.data?.details.map(d => `${d.field}: ${d.message}`).join(', ') : 
+                              orderErr.message);
           setMessage(`⚠️ Payment successful (ID: ${data.data?.payment_id || orderId}), but order creation failed: ${errorDetails}. Please contact support.`);
         }
       } else {

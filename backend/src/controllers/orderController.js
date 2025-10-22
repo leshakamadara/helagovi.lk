@@ -108,8 +108,21 @@ export const createOrder = async (req, res) => {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     
+    // Generate sequential order number for the day (starting from 0001)
+    const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+    
+    // Count existing orders for today to get the next sequential number
+    const orderCountToday = await Order.countDocuments({
+      createdAt: { $gte: startOfDay, $lt: endOfDay }
+    });
+    
+    const sequentialNumber = orderCountToday + 1;
+    const orderNumber = `ORD-${year}${month}${day}-${sequentialNumber.toString().padStart(4, '0')}`;
+    
     // Create order object
     const orderData = {
+      orderNumber,
       buyer: buyerId,
       farmers: farmerIds,
       items: processedItems,
