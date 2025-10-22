@@ -1,42 +1,29 @@
-import nodemailer from 'nodemailer';
-import dotenv from 'dotenv';
+import { Resend } from 'resend';
 
 // Load environment variables
 dotenv.config();
 
-// Create transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || 'smtp-mail.outlook.com', // Default to Outlook
-  port: parseInt(process.env.EMAIL_PORT) || 587,
-  secure: false, // true for 465, false for other ports
-  requireTLS: true, // Force TLS
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  // Add connection timeout and debugging
-  connectionTimeout: 30000, // 30 seconds
-  greetingTimeout: 30000,
-  socketTimeout: 30000,
-  // Add debug logging
-  debug: true,
-  logger: true,
-});
+// Initialize Resend client
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Test email connection
 export const testEmailConnection = async () => {
   try {
-    console.log('Testing email connection...');
-    console.log('EMAIL_HOST:', process.env.EMAIL_HOST);
-    console.log('EMAIL_PORT:', process.env.EMAIL_PORT);
-    console.log('EMAIL_USER:', process.env.EMAIL_USER ? 'Set' : 'Not set');
-    console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? 'Set' : 'Not set');
+    console.log('Testing Resend connection...');
+    console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'Set' : 'Not set');
 
-    await transporter.verify();
-    console.log('Email connection successful!');
-    return { success: true, message: 'Email connection verified' };
+    // Test with a simple API call
+    const { data, error } = await resend.domains.list();
+
+    if (error) {
+      console.error('Resend connection failed:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('Resend connection successful!');
+    return { success: true, message: 'Resend connection verified' };
   } catch (error) {
-    console.error('Email connection failed:', error);
+    console.error('Resend connection failed:', error);
     return { success: false, error: error.message };
   }
 };
@@ -45,9 +32,9 @@ export const testEmailConnection = async () => {
 export const sendVerificationEmail = async (email, token, firstName) => {
   const verificationUrl = `${process.env.CLIENT_URL}/verify-email?token=${token}`;
 
-  const mailOptions = {
-    from: `"Helagovi.lk" <${process.env.EMAIL_USER}>`,
-    to: email,
+  const { data, error } = await resend.emails.send({
+    from: `Helagovi.lk <noreply@helagovi.lk>`,
+    to: [email],
     subject: 'Verify Your Email - Helagovi.lk',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff;">
@@ -128,18 +115,22 @@ export const sendVerificationEmail = async (email, token, firstName) => {
         </div>
       </div>
     `,
-  };
+  });
 
-  await transporter.sendMail(mailOptions);
+  if (error) {
+    throw new Error(`Failed to send verification email: ${error.message}`);
+  }
+
+  return data;
 };
 
 // Send password reset email
 export const sendPasswordResetEmail = async (email, token, firstName) => {
   const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
 
-  const mailOptions = {
-    from: `"Helagovi.lk" <${process.env.EMAIL_USER}>`,
-    to: email,
+  const { data, error } = await resend.emails.send({
+    from: `Helagovi.lk <noreply@helagovi.lk>`,
+    to: [email],
     subject: 'Reset Your Password - Helagovi.lk',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -161,18 +152,22 @@ export const sendPasswordResetEmail = async (email, token, firstName) => {
         <p>Best regards,<br>The Helagovi.lk Team</p>
       </div>
     `,
-  };
+  });
 
-  await transporter.sendMail(mailOptions);
+  if (error) {
+    throw new Error(`Failed to send password reset email: ${error.message}`);
+  }
+
+  return data;
 };
 
 // Send ticket confirmation email
 export const sendTicketConfirmationEmail = async (email, ticketData, userName) => {
   const ticketUrl = `${process.env.CLIENT_URL}/support`;
 
-  const mailOptions = {
-    from: `"Helagovi.lk Support" <${process.env.EMAIL_USER}>`,
-    to: email,
+  const { data, error } = await resend.emails.send({
+    from: `Helagovi.lk Support <support@helagovi.lk>`,
+    to: [email],
     subject: `Ticket Created - ${ticketData.title}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff;">
@@ -241,9 +236,13 @@ export const sendTicketConfirmationEmail = async (email, ticketData, userName) =
         </div>
       </div>
     `,
-  };
+  });
 
-  await transporter.sendMail(mailOptions);
+  if (error) {
+    throw new Error(`Failed to send ticket confirmation email: ${error.message}`);
+  }
+
+  return data;
 };
 
 // Send promotional email
@@ -258,9 +257,9 @@ export const sendPromotionalEmail = async (email, firstName, promotionData = {})
     ctaUrl = `https://www.helagovi.lk/products`
   } = promotionData;
 
-  const mailOptions = {
-    from: `"Helagovi.lk" <${process.env.EMAIL_USER}>`,
-    to: email,
+  const { data, error } = await resend.emails.send({
+    from: `Helagovi.lk <promotions@helagovi.lk>`,
+    to: [email],
     subject: title,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff;">
@@ -333,9 +332,13 @@ export const sendPromotionalEmail = async (email, firstName, promotionData = {})
         </div>
       </div>
     `,
-  };
+  });
 
-  await transporter.sendMail(mailOptions);
+  if (error) {
+    throw new Error(`Failed to send promotional email: ${error.message}`);
+  }
+
+  return data;
 };
 
 // Send "Join Us" email
@@ -353,9 +356,9 @@ export const sendJoinUsEmail = async (email, firstName, joinData = {}) => {
     ctaUrl = `https://www.helagovi.lk`
   } = joinData;
 
-  const mailOptions = {
-    from: `"Helagovi.lk" <${process.env.EMAIL_USER}>`,
-    to: email,
+  const { data, error } = await resend.emails.send({
+    from: `Helagovi.lk <welcome@helagovi.lk>`,
+    to: [email],
     subject: title,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff;">
@@ -431,16 +434,20 @@ export const sendJoinUsEmail = async (email, firstName, joinData = {}) => {
         </div>
       </div>
     `,
-  };
+  });
 
-  await transporter.sendMail(mailOptions);
+  if (error) {
+    throw new Error(`Failed to send join us email: ${error.message}`);
+  }
+
+  return data;
 };
 
 // Send custom email
 export const sendCustomEmail = async (email, subject, htmlContent, fromName = "Helagovi.lk") => {
-  const mailOptions = {
-    from: `"${fromName}" <${process.env.EMAIL_USER}>`,
-    to: email,
+  const { data, error } = await resend.emails.send({
+    from: `${fromName} <noreply@helagovi.lk>`,
+    to: [email],
     subject: subject,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff;">
@@ -473,7 +480,11 @@ export const sendCustomEmail = async (email, subject, htmlContent, fromName = "H
         </div>
       </div>
     `,
-  };
+  });
 
-  await transporter.sendMail(mailOptions);
+  if (error) {
+    throw new Error(`Failed to send custom email: ${error.message}`);
+  }
+
+  return data;
 };
