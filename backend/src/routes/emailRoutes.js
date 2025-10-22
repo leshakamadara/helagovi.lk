@@ -35,11 +35,11 @@ router.post('/test/verification', async (req, res) => {
       return res.status(400).json({ error: 'Email is required' });
     }
 
-    // Check if email environment variables are configured
-    if (!process.env.EMAIL_HOST || !process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    // Check if Resend API key is configured
+    if (!process.env.RESEND_API_KEY) {
       return res.status(500).json({
         error: 'Email service not configured',
-        details: 'Missing email environment variables (EMAIL_HOST, EMAIL_USER, EMAIL_PASS)'
+        details: 'Missing RESEND_API_KEY environment variable'
       });
     }
 
@@ -78,11 +78,11 @@ router.post('/test/promotional', async (req, res) => {
       return res.status(400).json({ error: 'Email is required' });
     }
 
-    // Check if email environment variables are configured
-    if (!process.env.EMAIL_HOST || !process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    // Check if Resend API key is configured
+    if (!process.env.RESEND_API_KEY) {
       return res.status(500).json({
         error: 'Email service not configured',
-        details: 'Missing email environment variables (EMAIL_HOST, EMAIL_USER, EMAIL_PASS)'
+        details: 'Missing RESEND_API_KEY environment variable'
       });
     }
 
@@ -129,11 +129,11 @@ router.post('/test/join-us', async (req, res) => {
       return res.status(400).json({ error: 'Email is required' });
     }
 
-    // Check if email environment variables are configured
-    if (!process.env.EMAIL_HOST || !process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    // Check if Resend API key is configured
+    if (!process.env.RESEND_API_KEY) {
       return res.status(500).json({
         error: 'Email service not configured',
-        details: 'Missing email environment variables (EMAIL_HOST, EMAIL_USER, EMAIL_PASS)'
+        details: 'Missing RESEND_API_KEY environment variable'
       });
     }
 
@@ -179,11 +179,11 @@ router.post('/test/custom', async (req, res) => {
       return res.status(400).json({ error: 'Subject and HTML content are required' });
     }
 
-    // Check if email environment variables are configured
-    if (!process.env.EMAIL_HOST || !process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    // Check if Resend API key is configured
+    if (!process.env.RESEND_API_KEY) {
       return res.status(500).json({
         error: 'Email service not configured',
-        details: 'Missing email environment variables (EMAIL_HOST, EMAIL_USER, EMAIL_PASS)'
+        details: 'Missing RESEND_API_KEY environment variable'
       });
     }
 
