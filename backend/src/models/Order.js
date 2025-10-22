@@ -147,9 +147,9 @@ const statusHistorySchema = new Schema({
 const orderSchema = new Schema({
   orderNumber: {
     type: String,
-    required: [true, 'Order number is required'],
     unique: true,
-    index: true
+    index: true,
+    default: null // Will be set by pre-save hook
   },
   buyer: {
     type: Schema.Types.ObjectId,
@@ -278,6 +278,7 @@ orderSchema.virtual('canBeCancelled').get(function() {
 
 // Generate order number
 orderSchema.pre('save', function(next) {
+  console.log('Pre-save hook running for order, current orderNumber:', this.orderNumber);
   if (!this.orderNumber) {
     const date = new Date();
     const year = date.getFullYear();
@@ -290,6 +291,9 @@ orderSchema.pre('save', function(next) {
     const sequentialPart = String(timestamp).slice(-6) + random; // Last 6 digits of timestamp + 3 random digits
     
     this.orderNumber = `ORD-${year}${month}${day}-${sequentialPart}`;
+    console.log('Generated orderNumber:', this.orderNumber);
+  } else {
+    console.log('Order number already set:', this.orderNumber);
   }
   
   // Calculate totals

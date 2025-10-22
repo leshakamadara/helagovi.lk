@@ -172,12 +172,17 @@ const ChargePage = () => {
             deliveryAddress = {
               recipientName: `${orderDataFromState.deliveryInfo.firstName} ${orderDataFromState.deliveryInfo.lastName}`.trim(),
               phone: orderDataFromState.deliveryInfo.phone.replace(/\s+/g, ''),
-              street: orderDataFromState.deliveryInfo.addressLine1 + (orderDataFromState.deliveryInfo.addressLine2 ? ', ' + orderDataFromState.deliveryInfo.addressLine2 : ''),
+              street: (orderDataFromState.deliveryInfo.addressLine1 + (orderDataFromState.deliveryInfo.addressLine2 ? ', ' + orderDataFromState.deliveryInfo.addressLine2 : '')).trim(),
               city: orderDataFromState.deliveryInfo.city.trim(),
               district: validDistrict,
               postalCode: postalCode,
               specialInstructions: orderDataFromState.deliveryInfo.deliveryInstructions || ''
             };
+            
+            // Ensure street address meets minimum length requirement
+            if (deliveryAddress.street.length < 5) {
+              deliveryAddress.street = deliveryAddress.street + ', ' + deliveryAddress.city;
+            }
           } else if (order.deliveryInfo) {
             // Fallback to order object
             deliveryAddress = {
