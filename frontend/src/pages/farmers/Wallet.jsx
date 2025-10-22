@@ -30,6 +30,7 @@ const FarmerWallet = () => {
     totalEarnings: 0,
     lastWithdrawal: null
   })
+  const [pendingOrdersRevenue, setPendingOrdersRevenue] = useState(0)
   const [withdrawals, setWithdrawals] = useState([])
   const [loading, setLoading] = useState(true)
   const [showBalance, setShowBalance] = useState(true)
@@ -50,6 +51,7 @@ const FarmerWallet = () => {
   useEffect(() => {
     fetchWalletData()
     fetchWithdrawals()
+    fetchPendingOrdersRevenue()
   }, [])
 
 
@@ -59,6 +61,32 @@ const fetchWalletData = async () => {
     setWalletData(data);
   } catch (error) {
     console.error('Error fetching wallet data:', error.response?.data || error.message);
+  }
+};
+
+const fetchPendingOrdersRevenue = async () => {
+  try {
+    const { data } = await api.get('/orders/my?limit=1000');
+    if (data.success && data.data.orders) {
+      // Filter orders that are not delivered
+      const pendingOrders = data.data.orders.filter(order => 
+        order.status !== 'delivered'
+      );
+      // Calculate total revenue from pending orders (not delivered or cancelled)
+      const totalPendingRevenue = pendingOrders.reduce((sum, order) => {
+        // Sum up the farmer's share from each order
+        const farmerItems = order.items.filter(item => 
+          item.productSnapshot.farmer.id === SESSION_USER_ID
+        );
+        const farmerRevenue = farmerItems.reduce((itemSum, item) => 
+          itemSum + item.subtotal, 0
+        );
+        return sum + farmerRevenue;
+      }, 0);
+      setPendingOrdersRevenue(totalPendingRevenue);
+    }
+  } catch (error) {
+    console.error('Error fetching pending orders revenue:', error.response?.data || error.message);
   }
 };
 
@@ -202,7 +230,7 @@ const handleWithdrawRequest = async () => {
       </div>
 
       {/* Balance Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -223,9 +251,6 @@ const handleWithdrawRequest = async () => {
                 </button>
               </div>
             </div>
-            <div className="p-3 bg-green-100 rounded-lg">
-              <Wallet className="h-8 w-8 text-green-600" />
-            </div>
           </div>
           <button
             onClick={() => setShowWithdrawModal(true)}
@@ -245,8 +270,8 @@ const handleWithdrawRequest = async () => {
                 {formatCurrency(walletData.pendingBalance)}
               </p>
             </div>
-            <div className="p-3 bg-yellow-100 rounded-lg">
-              <Clock className="h-8 w-8 text-yellow-600" />
+            <div className="p-2 bg-yellow-100 rounded-lg">
+              <Clock className="h-6 w-6 text-yellow-600" />
             </div>
           </div>
           <p className="text-xs text-gray-500 mt-2">
@@ -262,12 +287,29 @@ const handleWithdrawRequest = async () => {
                 {formatCurrency(walletData.totalEarnings)}
               </p>
             </div>
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <TrendingUp className="h-8 w-8 text-blue-600" />
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <TrendingUp className="h-6 w-6 text-blue-600" />
             </div>
           </div>
           <p className="text-xs text-gray-500 mt-2">
             Lifetime earnings from sales
+          </p>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Pending Orders Revenue</p>
+              <p className="text-2xl font-bold text-orange-600 mt-2">
+                {formatCurrency(pendingOrdersRevenue)}
+              </p>
+            </div>
+            <div className="p-2 bg-orange-100 rounded-lg">
+              <Clock className="h-6 w-6 text-orange-600" />
+            </div>
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            Revenue from pending orders
           </p>
         </div>
       </div>
