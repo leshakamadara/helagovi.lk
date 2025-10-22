@@ -6,6 +6,11 @@ import {
   sendPromotionalEmail,
   sendJoinUsEmail,
   sendCustomEmail,
+  sendOrderPlacedEmail,
+  sendOrderAcceptedEmail,
+  sendOrderCancelledEmail,
+  sendOrderCompletedEmail,
+  sendOrderDeliveredEmail,
   testEmailConnection
 } from '../utils/email.js';
 
@@ -233,6 +238,351 @@ router.post('/test/ticket', async (req, res) => {
     console.error('Error sending ticket confirmation email:', error);
     res.status(500).json({
       error: 'Failed to send ticket confirmation email',
+      details: error.message
+    });
+  }
+});
+
+// Send test order placed email
+router.post('/test/order-placed', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Check if Resend API key is configured
+    if (!process.env.RESEND_API_KEY) {
+      return res.status(500).json({
+        error: 'Email service not configured',
+        details: 'Missing RESEND_API_KEY environment variable'
+      });
+    }
+
+    const mockOrder = {
+      orderNumber: 'ORD-001',
+      status: 'pending',
+      createdAt: new Date(),
+      buyer: {
+        name: 'Test Customer',
+        email: email
+      },
+      items: [
+        {
+          productSnapshot: {
+            title: 'Fresh Tomatoes',
+            price: 150,
+            image: 'https://res.cloudinary.com/dckoipgrs/image/upload/v1759143086/sample_tomato.jpg',
+            farmer: {
+              name: 'John Farmer'
+            }
+          },
+          quantity: 2,
+          totalPrice: 300
+        },
+        {
+          productSnapshot: {
+            title: 'Organic Carrots',
+            price: 120,
+            image: 'https://res.cloudinary.com/dckoipgrs/image/upload/v1759143086/sample_carrot.jpg',
+            farmer: {
+              name: 'Jane Farmer'
+            }
+          },
+          quantity: 1,
+          totalPrice: 120
+        }
+      ],
+      subtotal: 420,
+      deliveryFee: 100,
+      total: 520,
+      deliveryAddress: {
+        street: '123 Main Street',
+        city: 'Colombo',
+        district: 'Colombo',
+        postalCode: '00100',
+        instructions: 'Please ring the doorbell'
+      }
+    };
+
+    await sendOrderPlacedEmail(mockOrder);
+
+    res.json({
+      success: true,
+      message: 'Order placed email sent successfully',
+      email: email
+    });
+  } catch (error) {
+    console.error('Error sending order placed email:', error);
+    res.status(500).json({
+      error: 'Failed to send order placed email',
+      details: error.message
+    });
+  }
+});
+
+// Send test order accepted email
+router.post('/test/order-accepted', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Check if Resend API key is configured
+    if (!process.env.RESEND_API_KEY) {
+      return res.status(500).json({
+        error: 'Email service not configured',
+        details: 'Missing RESEND_API_KEY environment variable'
+      });
+    }
+
+    const mockOrder = {
+      orderNumber: 'ORD-001',
+      status: 'confirmed',
+      createdAt: new Date(),
+      buyer: {
+        name: 'Test Customer',
+        email: email
+      },
+      items: [
+        {
+          productSnapshot: {
+            title: 'Fresh Tomatoes',
+            price: 150,
+            image: 'https://res.cloudinary.com/dckoipgrs/image/upload/v1759143086/sample_tomato.jpg',
+            farmer: {
+              name: 'John Farmer'
+            }
+          },
+          quantity: 2,
+          totalPrice: 300
+        }
+      ],
+      subtotal: 300,
+      deliveryFee: 100,
+      total: 400,
+      deliveryAddress: {
+        street: '123 Main Street',
+        city: 'Colombo',
+        district: 'Colombo',
+        postalCode: '00100'
+      }
+    };
+
+    await sendOrderAcceptedEmail(mockOrder);
+
+    res.json({
+      success: true,
+      message: 'Order accepted email sent successfully',
+      email: email
+    });
+  } catch (error) {
+    console.error('Error sending order accepted email:', error);
+    res.status(500).json({
+      error: 'Failed to send order accepted email',
+      details: error.message
+    });
+  }
+});
+
+// Send test order cancelled email
+router.post('/test/order-cancelled', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Check if Resend API key is configured
+    if (!process.env.RESEND_API_KEY) {
+      return res.status(500).json({
+        error: 'Email service not configured',
+        details: 'Missing RESEND_API_KEY environment variable'
+      });
+    }
+
+    const mockOrder = {
+      orderNumber: 'ORD-001',
+      status: 'cancelled',
+      createdAt: new Date(),
+      buyer: {
+        name: 'Test Customer',
+        email: email
+      },
+      items: [
+        {
+          productSnapshot: {
+            title: 'Fresh Tomatoes',
+            price: 150,
+            image: 'https://res.cloudinary.com/dckoipgrs/image/upload/v1759143086/sample_tomato.jpg',
+            farmer: {
+              name: 'John Farmer'
+            }
+          },
+          quantity: 2,
+          totalPrice: 300
+        }
+      ],
+      subtotal: 300,
+      deliveryFee: 100,
+      total: 400,
+      deliveryAddress: {
+        street: '123 Main Street',
+        city: 'Colombo',
+        district: 'Colombo',
+        postalCode: '00100'
+      }
+    };
+
+    await sendOrderCancelledEmail(mockOrder);
+
+    res.json({
+      success: true,
+      message: 'Order cancelled email sent successfully',
+      email: email
+    });
+  } catch (error) {
+    console.error('Error sending order cancelled email:', error);
+    res.status(500).json({
+      error: 'Failed to send order cancelled email',
+      details: error.message
+    });
+  }
+});
+
+// Send test order completed email
+router.post('/test/order-completed', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Check if Resend API key is configured
+    if (!process.env.RESEND_API_KEY) {
+      return res.status(500).json({
+        error: 'Email service not configured',
+        details: 'Missing RESEND_API_KEY environment variable'
+      });
+    }
+
+    const mockOrder = {
+      orderNumber: 'ORD-001',
+      status: 'shipped',
+      createdAt: new Date(),
+      buyer: {
+        name: 'Test Customer',
+        email: email
+      },
+      items: [
+        {
+          productSnapshot: {
+            title: 'Fresh Tomatoes',
+            price: 150,
+            image: 'https://res.cloudinary.com/dckoipgrs/image/upload/v1759143086/sample_tomato.jpg',
+            farmer: {
+              name: 'John Farmer'
+            }
+          },
+          quantity: 2,
+          totalPrice: 300
+        }
+      ],
+      subtotal: 300,
+      deliveryFee: 100,
+      total: 400,
+      deliveryAddress: {
+        street: '123 Main Street',
+        city: 'Colombo',
+        district: 'Colombo',
+        postalCode: '00100',
+        instructions: 'Leave at doorstep'
+      }
+    };
+
+    await sendOrderCompletedEmail(mockOrder);
+
+    res.json({
+      success: true,
+      message: 'Order completed email sent successfully',
+      email: email
+    });
+  } catch (error) {
+    console.error('Error sending order completed email:', error);
+    res.status(500).json({
+      error: 'Failed to send order completed email',
+      details: error.message
+    });
+  }
+});
+
+// Send test order delivered email
+router.post('/test/order-delivered', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Check if Resend API key is configured
+    if (!process.env.RESEND_API_KEY) {
+      return res.status(500).json({
+        error: 'Email service not configured',
+        details: 'Missing RESEND_API_KEY environment variable'
+      });
+    }
+
+    const mockOrder = {
+      _id: '507f1f77bcf86cd799439011',
+      orderNumber: 'ORD-001',
+      status: 'delivered',
+      createdAt: new Date(),
+      buyer: {
+        name: 'Test Customer',
+        email: email
+      },
+      items: [
+        {
+          productSnapshot: {
+            title: 'Fresh Tomatoes',
+            price: 150,
+            image: 'https://res.cloudinary.com/dckoipgrs/image/upload/v1759143086/sample_tomato.jpg',
+            farmer: {
+              name: 'John Farmer'
+            }
+          },
+          quantity: 2,
+          totalPrice: 300
+        }
+      ],
+      subtotal: 300,
+      deliveryFee: 100,
+      total: 400,
+      deliveryAddress: {
+        street: '123 Main Street',
+        city: 'Colombo',
+        district: 'Colombo',
+        postalCode: '00100'
+      }
+    };
+
+    await sendOrderDeliveredEmail(mockOrder);
+
+    res.json({
+      success: true,
+      message: 'Order delivered email sent successfully',
+      email: email
+    });
+  } catch (error) {
+    console.error('Error sending order delivered email:', error);
+    res.status(500).json({
+      error: 'Failed to send order delivered email',
       details: error.message
     });
   }
