@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import {
   Card,
@@ -43,9 +43,11 @@ import {
   Filter,
   Settings,
   Loader2,
+  ChevronDown,
 } from 'lucide-react';
 import api from '@/lib/axios';
 import socketService from '@/lib/socket';
+import notificationSound from '@/assets/notification.mp3';
 
 const UserSupportPage = () => {
   const [userTickets, setUserTickets] = useState([]);
@@ -69,6 +71,29 @@ const UserSupportPage = () => {
   const [creatingTicket, setCreatingTicket] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [error, setError] = useState(null);
+
+  // Scroll to bottom functionality
+  const messagesContainerRef = useRef(null);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+
+  // Function to play notification sound
+  const playNotificationSound = () => {
+    try {
+      const audio = new Audio(notificationSound);
+      audio.volume = 0.5; // Set volume to 50%
+      audio.play().catch(e => console.log('Audio play failed:', e));
+    } catch (error) {
+      console.log('Error playing notification sound:', error);
+    }
+  };
+
+  // Function to scroll to bottom
+  const scrollToBottom = () => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      setShowScrollButton(false);
+    }
+  };
 
   useEffect(() => {
     if (authToken) {
@@ -96,6 +121,9 @@ const UserSupportPage = () => {
         console.log('User page - Received real-time message:', messageData);
         console.log('User page - Current selectedTicket:', selectedTicket?._id);
         console.log('User page - Message ticketId:', messageData.ticketId);
+
+        // Play notification sound for new messages
+        playNotificationSound();
 
         // Update messages if we're viewing the relevant ticket
         if (selectedTicket && selectedTicket._id === messageData.ticketId) {
@@ -142,6 +170,9 @@ const UserSupportPage = () => {
       console.log('User page - Received real-time message:', messageData);
       console.log('User page - Current selectedTicket:', selectedTicket?._id);
       console.log('User page - Message ticketId:', messageData.ticketId);
+
+      // Play notification sound for new messages
+      playNotificationSound();
 
       // Update messages if we're viewing the relevant ticket
       if (selectedTicket && selectedTicket._id === messageData.ticketId) {
@@ -191,6 +222,41 @@ const UserSupportPage = () => {
         socketService.leaveTicketRoom(selectedTicket._id);
       }
     };
+  }, [selectedTicket]);
+
+  // Scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (messages.length > 0 && messagesContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+      const isNearBottom = scrollTop + clientHeight >= scrollHeight - 100;
+      
+      // Auto-scroll to bottom only if user is already near bottom
+      if (isNearBottom) {
+        scrollToBottom();
+      }
+    }
+  }, [messages]);
+
+  // Scroll detection for scroll-to-bottom button
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      if (!container) return;
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const hasScrollableContent = scrollHeight > clientHeight; // Only show button if content is actually scrollable
+      const isNearBottom = scrollTop + clientHeight >= scrollHeight - 50;
+      const shouldShowButton = hasScrollableContent && !isNearBottom;
+
+      setShowScrollButton(shouldShowButton);
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    // Check initial scroll position
+    handleScroll();
+
+    return () => container.removeEventListener('scroll', handleScroll);
   }, [selectedTicket]);
 
   const fetchCurrentUser = async () => {
@@ -925,7 +991,7 @@ const UserSupportPage = () => {
                                 {messages.length === 1 ? 'message' : 'messages'}
                               </span>
                             </div>
-                            <div className="flex-1 overflow-y-auto border rounded-lg bg-muted/30 min-h-0">
+                            <div className="relative flex-1 overflow-y-auto border rounded-lg bg-muted/30 min-h-0" ref={messagesContainerRef}>
                               {messages.length === 0 ? (
                                 <div className="flex items-center justify-center h-32">
                                   <div className="text-center">
@@ -978,6 +1044,16 @@ const UserSupportPage = () => {
                                     );
                                   })}
                                 </div>
+                              )}
+                              {/* Scroll to bottom button */}
+                              {showScrollButton && (
+                                <Button
+                                  onClick={scrollToBottom}
+                                  size="sm"
+                                  className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-primary hover:bg-primary/90 text-white shadow-lg rounded-full w-10 h-10 p-0 z-10"
+                                >
+                                  <ChevronDown className="h-4 w-4" />
+                                </Button>
                               )}
                             </div>
                           </div>

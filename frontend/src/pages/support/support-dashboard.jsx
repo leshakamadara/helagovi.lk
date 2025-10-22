@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { SiteHeader } from '@/components/site-header';
 import {
   Card,
@@ -46,10 +46,12 @@ import {
   BarChart3,
   Loader2,
   RefreshCw,
+  ChevronDown,
 } from 'lucide-react';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
 import socketService from '@/lib/socket';
+import notificationSound from '@/assets/notification.mp3';
 
 const SupportDashboard = () => {
   const [tickets, setTickets] = useState([]);
@@ -83,7 +85,28 @@ const SupportDashboard = () => {
   // Auth token
   const [authToken, setAuthToken] = useState(localStorage.getItem('token'));
 
-  // API functions
+  // Function to play notification sound
+  const playNotificationSound = () => {
+    try {
+      const audio = new Audio(notificationSound);
+      audio.volume = 0.5; // Set volume to 50%
+      audio.play().catch(e => console.log('Audio play failed:', e));
+    } catch (error) {
+      console.log('Error playing notification sound:', error);
+    }
+  };
+
+  // Function to scroll to bottom
+  const scrollToBottom = () => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      setShowScrollButton(false);
+    }
+  };
+
+  // Scroll to bottom functionality
+  const messagesContainerRef = useRef(null);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const fetchTickets = async () => {
     try {
       setTicketsLoading(true);
@@ -210,6 +233,9 @@ const SupportDashboard = () => {
         console.log('Admin dashboard - Current selectedTicket:', selectedTicket?._id);
         console.log('Admin dashboard - Message ticketId:', messageData.ticketId);
 
+        // Play notification sound for new messages
+        playNotificationSound();
+
         // Update messages if we're viewing the relevant ticket
         if (selectedTicket && selectedTicket._id === messageData.ticketId) {
           console.log('Admin dashboard - Adding message to UI');
@@ -263,6 +289,9 @@ const SupportDashboard = () => {
       console.log('Admin dashboard - Received real-time message:', messageData);
       console.log('Admin dashboard - Current selectedTicket:', selectedTicket?._id);
       console.log('Admin dashboard - Message ticketId:', messageData.ticketId);
+
+      // Play notification sound for new messages
+      playNotificationSound();
 
       // Update messages if we're viewing the relevant ticket
       if (selectedTicket && selectedTicket._id === messageData.ticketId) {
@@ -320,6 +349,29 @@ const SupportDashboard = () => {
         socketService.leaveTicketRoom(selectedTicket._id);
       }
     };
+  }, [selectedTicket]);
+
+  // Scroll detection for scroll-to-bottom button
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      if (!container) return;
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const hasScrollableContent = scrollHeight > clientHeight; // Only show button if content is actually scrollable
+      const isNearBottom = scrollTop + clientHeight >= scrollHeight - 50;
+      const shouldShowButton = hasScrollableContent && !isNearBottom;
+
+      console.log('Scroll check:', { scrollTop, scrollHeight, clientHeight, hasScrollableContent, isNearBottom, shouldShowButton, showScrollButton });
+      setShowScrollButton(shouldShowButton);
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    // Check initial scroll position
+    handleScroll();
+
+    return () => container.removeEventListener('scroll', handleScroll);
   }, [selectedTicket]);
 
   const getStatusColor = (status) => {
@@ -985,7 +1037,7 @@ const SupportDashboard = () => {
                                 {messages.length === 1 ? 'message' : 'messages'}
                               </span>
                             </div>
-                            <div className="flex-1 overflow-y-auto border rounded-lg bg-muted/30 min-h-0">
+                            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto border rounded-lg bg-muted/30 min-h-0 relative">
                               {messages.length === 0 ? (
                                 <div className="flex items-center justify-center h-32">
                                   <div className="text-center">
@@ -1035,6 +1087,16 @@ const SupportDashboard = () => {
                                     );
                                   })}
                                 </div>
+                              )}
+                              {/* Scroll to bottom button */}
+                              {showScrollButton && (
+                                <Button
+                                  onClick={scrollToBottom}
+                                  size="sm"
+                                  className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg rounded-full w-10 h-10 p-0 z-10"
+                                >
+                                  <ChevronDown className="h-4 w-4" />
+                                </Button>
                               )}
                             </div>
                           </div>
