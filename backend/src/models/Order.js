@@ -284,21 +284,12 @@ orderSchema.pre('save', async function(next) {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     
-    // Count orders for today to generate sequential number
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    // Use timestamp with milliseconds and random number for uniqueness
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const sequentialPart = String(timestamp).slice(-6) + random; // Last 6 digits of timestamp + 3 random digits
     
-    const todayOrderCount = await this.constructor.countDocuments({
-      createdAt: {
-        $gte: today,
-        $lt: tomorrow
-      }
-    });
-    
-    const sequentialNumber = String(todayOrderCount + 1).padStart(3, '0');
-    this.orderNumber = `ORD-${year}${month}${day}-${sequentialNumber}`;
+    this.orderNumber = `ORD-${year}${month}${day}-${sequentialPart}`;
   }
   
   // Calculate totals
