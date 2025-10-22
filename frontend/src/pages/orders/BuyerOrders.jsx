@@ -15,11 +15,14 @@ import {
   Calendar,
   User,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Download
 } from 'lucide-react'
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb'
 import { H1, H2, H3, P, Muted, Large } from '../../components/ui/typography'
 import ReviewModal from '../../components/ReviewModal'
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
 
 const BuyerOrders = () => {
   const { user } = useAuth()
@@ -46,6 +49,174 @@ const BuyerOrders = () => {
   const [reviewModalOpen, setReviewModalOpen] = useState(false)
   const [selectedOrderForReview, setSelectedOrderForReview] = useState(null)
   const [existingReviews, setExistingReviews] = useState({})
+
+  // PDF Generation Function
+  const generateOrderPDF = async (order) => {
+    const pdf = new jsPDF()
+    const pageWidth = pdf.internal.pageSize.getWidth()
+    const pageHeight = pdf.internal.pageSize.getHeight()
+    let yPosition = 20
+
+    // Add logo and header
+    try {
+      // Add logo
+      const logoImg = new Image()
+      logoImg.crossOrigin = 'anonymous'
+      logoImg.src = 'https://res.cloudinary.com/dckoipgrs/image/upload/v1759143086/Logo_uf3yae.png'
+      
+      await new Promise((resolve, reject) => {
+        logoImg.onload = resolve
+        logoImg.onerror = reject
+      })
+
+      // Add logo to PDF (positioned at top left)
+      pdf.addImage(logoImg, 'PNG', 20, yPosition, 30, 30)
+      
+      // Add main heading
+      pdf.setFontSize(24)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('Helagovi.lk', 60, yPosition + 15)
+      
+      // Add subtitle
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'normal')
+      pdf.text('Order Invoice', 60, yPosition + 25)
+      
+      yPosition += 50
+    } catch (error) {
+      console.warn('Could not load logo, continuing without it')
+      // Add heading without logo
+      pdf.setFontSize(24)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('Helagovi.lk', 20, yPosition)
+      
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'normal')
+      pdf.text('Order Invoice', 20, yPosition + 10)
+      
+      yPosition += 30
+    }
+
+    // Add order information
+    pdf.setFontSize(14)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('Order Details', 20, yPosition)
+    yPosition += 10
+
+    pdf.setFontSize(10)
+    pdf.setFont('helvetica', 'normal')
+    
+    // Order number and date
+    pdf.text(`Order Number: ${order.orderNumber}`, 20, yPosition)
+    yPosition += 8
+    pdf.text(`Order Date: ${formatDate(order.createdAt)}`, 20, yPosition)
+    yPosition += 8
+    pdf.text(`Status: ${order.status.charAt(0).toUpperCase() + order.status.slice(1)}`, 20, yPosition)
+    yPosition += 8
+    pdf.text(`Total Amount: ${formatCurrency(order.total)}`, 20, yPosition)
+    yPosition += 15
+
+    // Customer information
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('Customer Information', 20, yPosition)
+    yPosition += 10
+    
+    pdf.setFont('helvetica', 'normal')
+    if (order.deliveryAddress) {
+      pdf.text(`Name: ${order.deliveryAddress.name || 'N/A'}`, 20, yPosition)
+      yPosition += 8
+      pdf.text(`Address: ${order.deliveryAddress.street || ''}, ${order.deliveryAddress.city || ''}, ${order.deliveryAddress.district || ''}`, 20, yPosition)
+      yPosition += 8
+      pdf.text(`Phone: ${order.deliveryAddress.phone || 'N/A'}`, 20, yPosition)
+      yPosition += 15
+    }
+
+    // Order items
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('Order Items', 20, yPosition)
+    yPosition += 10
+
+    // Table headers
+    pdf.setFontSize(9)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('Item', 20, yPosition)
+    pdf.text('Qty', 120, yPosition)
+    pdf.text('Price', 140, yPosition)
+    pdf.text('Total', 165, yPosition)
+    yPosition += 5
+    
+    // Draw line
+    pdf.line(20, yPosition, pageWidth - 20, yPosition)
+    yPosition += 8
+
+    // Items
+    pdf.setFont('helvetica', 'normal')
+    order.items.forEach((item, index) => {
+      if (yPosition > pageHeight - 30) {
+        pdf.addPage()
+        yPosition = 20
+      }
+
+      const itemName = item.productSnapshot?.title || 'Unknown Product'
+      const quantity = item.quantity
+      const price = formatCurrency(item.priceAtTime)
+      const total = formatCurrency(item.subtotal)
+      
+      // Item name (truncate if too long)
+      const truncatedName = itemName.length > 25 ? itemName.substring(0, 22) + '...' : itemName
+      pdf.text(truncatedName, 20, yPosition)
+      pdf.text(quantity.toString(), 120, yPosition)
+      pdf.text(price, 140, yPosition)
+      pdf.text(total, 165, yPosition)
+      
+      yPosition += 8
+    })
+
+    // Total section
+    if (yPosition > pageHeight - 40) {
+      pdf.addPage()
+      yPosition = 20
+    }
+    
+    yPosition += 5
+    pdf.line(20, yPosition, pageWidth - 20, yPosition)
+    yPosition += 10
+    
+    pdf.setFont('helvetica', 'bold')
+    pdf.text(`Total: ${formatCurrency(order.total)}`, 140, yPosition)
+
+    // Additional information
+    if (order.expectedDeliveryDate || order.actualDeliveryDate || order.trackingNumber) {
+      yPosition += 20
+      
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('Additional Information', 20, yPosition)
+      yPosition += 10
+      
+      pdf.setFont('helvetica', 'normal')
+      if (order.expectedDeliveryDate) {
+        pdf.text(`Expected Delivery: ${formatDate(order.expectedDeliveryDate)}`, 20, yPosition)
+        yPosition += 8
+      }
+      if (order.actualDeliveryDate) {
+        pdf.text(`Actual Delivery: ${formatDate(order.actualDeliveryDate)}`, 20, yPosition)
+        yPosition += 8
+      }
+      if (order.trackingNumber) {
+        pdf.text(`Tracking Number: ${order.trackingNumber}`, 20, yPosition)
+      }
+    }
+
+    // Footer
+    const footerY = pageHeight - 20
+    pdf.setFontSize(8)
+    pdf.setFont('helvetica', 'normal')
+    pdf.text('Thank you for shopping with Helagovi.lk!', pageWidth / 2, footerY, { align: 'center' })
+    pdf.text('Generated on ' + new Date().toLocaleDateString(), pageWidth / 2, footerY + 5, { align: 'center' })
+
+    // Save the PDF
+    pdf.save(`Order-${order.orderNumber}.pdf`)
+  }
 
   useEffect(() => {
     fetchOrders()
@@ -463,11 +634,11 @@ const BuyerOrders = () => {
               <div className="px-4 sm:px-6 py-4 bg-gray-50 border-t border-gray-200">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                   <button 
-                    onClick={() => navigate(`/orders/${order._id}`)}
+                    onClick={() => generateOrderPDF(order)}
                     className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center justify-center sm:justify-start"
                   >
-                    <Eye className="h-4 w-4 mr-1" />
-                    View Details
+                    <Download className="h-4 w-4 mr-1" />
+                    Download PDF
                   </button>
                   
                   <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
