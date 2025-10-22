@@ -196,20 +196,45 @@ const ChargePage = () => {
           if (orderDataFromState?.items && orderDataFromState.items.length > 0) {
             items = orderDataFromState.items.map(item => ({
               productId: item.productId,
-              quantity: item.quantity
+              quantity: parseFloat(item.quantity) || 1
             }));
           } else if (order.summary?.items && order.summary.items.length > 0) {
             items = order.summary.items.map(item => ({
               productId: item.productId || item._id,
-              quantity: item.quantity || 1,
+              quantity: parseFloat(item.quantity) || 1,
             }));
           } else {
             throw new Error("No items found in order data");
           }
           
+          // Validate items have valid productIds and quantities
+          for (const item of items) {
+            if (!item.productId || !/^[a-fA-F0-9]{24}$/.test(item.productId)) {
+              throw new Error(`Invalid product ID: ${item.productId}`);
+            }
+            if (!item.quantity || item.quantity < 0.1) {
+              throw new Error(`Invalid quantity: ${item.quantity}`);
+            }
+          }
+          
           // Validate delivery address
-          if (!deliveryAddress.recipientName || !deliveryAddress.phone || !deliveryAddress.city) {
-            throw new Error("Missing required delivery address fields");
+          if (!deliveryAddress.recipientName || deliveryAddress.recipientName.trim().length < 2) {
+            throw new Error("Recipient name is required and must be at least 2 characters");
+          }
+          if (!deliveryAddress.phone || !/^\+?[1-9]\d{1,14}$/.test(deliveryAddress.phone.replace(/\s+/g, ''))) {
+            throw new Error("Valid phone number is required");
+          }
+          if (!deliveryAddress.street || deliveryAddress.street.trim().length < 5) {
+            throw new Error("Street address is required and must be at least 5 characters");
+          }
+          if (!deliveryAddress.city || deliveryAddress.city.trim().length < 2) {
+            throw new Error("City is required and must be at least 2 characters");
+          }
+          if (!deliveryAddress.district) {
+            deliveryAddress.district = 'Colombo'; // Default district
+          }
+          if (!deliveryAddress.postalCode || !/^\d{5}$/.test(deliveryAddress.postalCode)) {
+            deliveryAddress.postalCode = '00000'; // Default postal code
           }
           
           const orderPayload = {
@@ -221,8 +246,14 @@ const ChargePage = () => {
             notes: deliveryAddress.specialInstructions || ''
           };
           
-          console.log("Creating order with data:", orderPayload);
-          console.log("Items count:", items.length);
+          console.log("Final order payload being sent:", JSON.stringify(orderPayload, null, 2));
+          console.log("Items validation:", items.map(item => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            productIdValid: /^[a-fA-F0-9]{24}$/.test(item.productId),
+            quantityValid: item.quantity >= 0.1
+          })));
+          
           const orderRes = await api.post("/orders", orderPayload);
           const createdOrder = orderRes.data.data?.order || orderRes.data.order;
           console.log("Order created successfully:", createdOrder);
@@ -261,10 +292,24 @@ const ChargePage = () => {
             status: orderErr.response?.status,
             fullError: orderErr
           });
-          const errorDetails = orderErr.response?.data?.message || 
-                            (orderErr.response?.data?.details ? 
-                              orderErr.response?.data?.details.map(d => `${d.field}: ${d.message}`).join(', ') : 
-                              orderErr.message);
+          
+          let errorDetails = orderErr.message;
+          if (orderErr.response?.data) {
+            const errorData = orderErr.response.data;
+            if (errorData.message) {
+              errorDetails = errorData.message;
+            }
+            if (errorData.errors && Array.isArray(errorData.errors)) {
+              errorDetails += ": " + errorData.errors.map(err => 
+                typeof err === 'string' ? err : `${err.field || 'Unknown'}: ${err.message || 'Invalid'}`
+              ).join(', ');
+            } else if (errorData.details && Array.isArray(errorData.details)) {
+              errorDetails += ": " + errorData.details.map(detail => 
+                `${detail.field}: ${detail.message}`
+              ).join(', ');
+            }
+          }
+          
           setMessage(`⚠️ Payment successful (ID: ${data.data?.payment_id || orderId}), but order creation failed: ${errorDetails}. Please contact support.`);
         }
       } else {
