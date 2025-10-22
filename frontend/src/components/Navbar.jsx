@@ -103,7 +103,7 @@ const Navbar = () => {
 
   // Search functionality
   const searchProducts = async (query) => {
-    if (!query || query.length < 2) {
+    if (!query || query.length < 1) {
       setSearchResults([])
       setShowSuggestions(false)
       return
@@ -705,7 +705,7 @@ const Navbar = () => {
                       value={searchQuery}
                       onChange={handleSearchInputChange}
                       onKeyDown={handleKeyDown}
-                      onFocus={() => searchQuery.length >= 2 && setShowSuggestions(searchResults.length > 0)}
+                      onFocus={() => searchQuery.length >= 1 && setShowSuggestions(searchResults.length > 0)}
                       placeholder="Search for products..."
                       className="w-full px-6 py-2 text-base text-gray-700 focus:outline-none"
                       autoComplete="off"

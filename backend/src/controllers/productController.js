@@ -24,9 +24,15 @@ const buildSearchQuery = async (queryParams) => {
 
   let query = {};
 
-  // Text search
+  // Text search - Use autocomplete for short queries, full-text for longer ones
   if (search) {
-    query.$text = { $search: search };
+    if (search.length <= 3) {
+      // Autocomplete: Match products starting with the search term (case-insensitive)
+      query.title = { $regex: `^${search}`, $options: 'i' };
+    } else {
+      // Full-text search for longer queries
+      query.$text = { $search: search };
+    }
   }
 
   // Category filter - direct category match
@@ -251,7 +257,7 @@ export const getAllProducts = async (req, res) => {
     };
 
     // Add text score for text search results
-    if (req.query.search) {
+    if (req.query.search && req.query.search.length > 3) {
       projection.score = { $meta: 'textScore' };
     }
 
@@ -268,8 +274,8 @@ export const getAllProducts = async (req, res) => {
       { $match: query }
     ];
 
-    // Add text score calculation stage if searching
-    if (req.query.search) {
+    // Add text score calculation stage only if using text search (not regex)
+    if (req.query.search && req.query.search.length > 3) {
       pipeline.push({
         $addFields: {
           score: { $meta: 'textScore' }
