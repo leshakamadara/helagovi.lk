@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { SiteHeader } from '@/components/site-header';
 import {
   Card,
@@ -46,10 +46,12 @@ import {
   BarChart3,
   Loader2,
   RefreshCw,
+  ChevronDown,
 } from 'lucide-react';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
 import socketService from '@/lib/socket';
+import notificationSound from '@/assets/notification.mp3';
 
 const SupportDashboard = () => {
   const [tickets, setTickets] = useState([]);
@@ -83,7 +85,28 @@ const SupportDashboard = () => {
   // Auth token
   const [authToken, setAuthToken] = useState(localStorage.getItem('token'));
 
-  // API functions
+  // Function to play notification sound
+  const playNotificationSound = () => {
+    try {
+      const audio = new Audio(notificationSound);
+      audio.volume = 0.5; // Set volume to 50%
+      audio.play().catch(e => console.log('Audio play failed:', e));
+    } catch (error) {
+      console.log('Error playing notification sound:', error);
+    }
+  };
+
+  // Function to scroll to bottom
+  const scrollToBottom = () => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      setShowScrollButton(false);
+    }
+  };
+
+  // Scroll to bottom functionality
+  const messagesContainerRef = useRef(null);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const fetchTickets = async () => {
     try {
       setTicketsLoading(true);
@@ -153,6 +176,8 @@ const SupportDashboard = () => {
   };
 
   const sendMessage = async (ticketId, message) => {
+    console.log('Admin dashboard - sendMessage called with ticketId:', ticketId);
+    console.log('Admin dashboard - current selectedTicket:', selectedTicket?._id);
     try {
       setSendingMessage(true);
       const response = await api.post(
@@ -160,6 +185,9 @@ const SupportDashboard = () => {
         { message },
         { headers: { Authorization: `Bearer ${authToken}` } },
       );
+
+      // Send via socket for real-time updates
+      socketService.sendMessage(response.data.message);
 
       // Add message to local state
       setMessages((prev) => [...prev, response.data.message]);
@@ -196,17 +224,30 @@ const SupportDashboard = () => {
       // Connect to socket server
       socketService.connect(authToken);
 
+      // Join agent room for admin/support users
+      socketService.socket?.emit('joinRoom', { userRole: 'agent' });
+
       // Listen for incoming messages
       const handleReceiveMessage = (messageData) => {
-        console.log('Received real-time message:', messageData);
+        console.log('Admin dashboard - Received real-time message:', messageData);
+        console.log('Admin dashboard - Current selectedTicket:', selectedTicket?._id);
+        console.log('Admin dashboard - Message ticketId:', messageData.ticketId);
+
+        // Play notification sound for new messages
+        playNotificationSound();
 
         // Update messages if we're viewing the relevant ticket
         if (selectedTicket && selectedTicket._id === messageData.ticketId) {
+          console.log('Admin dashboard - Adding message to UI');
           setMessages((prev) => {
             // Check if message already exists to avoid duplicates
             const messageExists = prev.some(msg => msg._id === messageData._id);
-            if (messageExists) return prev;
+            if (messageExists) {
+              console.log('Admin dashboard - Message already exists, skipping');
+              return prev;
+            }
 
+            console.log('Admin dashboard - Adding new message to state');
             return [...prev, messageData];
           });
 
@@ -219,7 +260,8 @@ const SupportDashboard = () => {
             ),
           );
         } else {
-          // Update ticket message count even if not viewing the ticket
+          console.log('Admin dashboard - Not adding message - wrong ticket or no ticket selected');
+          // Still update the ticket message count even if not viewing the ticket
           setTickets((prev) =>
             prev.map((ticket) =>
               ticket._id === messageData.ticketId
@@ -239,6 +281,63 @@ const SupportDashboard = () => {
     }
   }, [authToken]);
 
+  // Update message handler when selectedTicket changes
+  useEffect(() => {
+    if (!socketService.socket) return;
+
+    const handleReceiveMessage = (messageData) => {
+      console.log('Admin dashboard - Received real-time message:', messageData);
+      console.log('Admin dashboard - Current selectedTicket:', selectedTicket?._id);
+      console.log('Admin dashboard - Message ticketId:', messageData.ticketId);
+
+      // Play notification sound for new messages
+      playNotificationSound();
+
+      // Update messages if we're viewing the relevant ticket
+      if (selectedTicket && selectedTicket._id === messageData.ticketId) {
+        console.log('Admin dashboard - Adding message to UI');
+        setMessages((prev) => {
+          // Check if message already exists to avoid duplicates
+          const messageExists = prev.some(msg => msg._id === messageData._id);
+          if (messageExists) {
+            console.log('Admin dashboard - Message already exists, skipping');
+            return prev;
+          }
+
+          console.log('Admin dashboard - Adding new message to state');
+          return [...prev, messageData];
+        });
+
+        // Update ticket message count in the tickets list
+        setTickets((prev) =>
+          prev.map((ticket) =>
+            ticket._id === messageData.ticketId
+              ? { ...ticket, messages: [...(ticket.messages || []), messageData] }
+              : ticket,
+          ),
+        );
+      } else {
+        console.log('Admin dashboard - Not adding message - wrong ticket or no ticket selected');
+        // Still update the ticket message count even if not viewing the ticket
+        setTickets((prev) =>
+          prev.map((ticket) =>
+            ticket._id === messageData.ticketId
+              ? { ...ticket, messages: [...(ticket.messages || []), messageData] }
+              : ticket,
+          ),
+        );
+      }
+    };
+
+    // Remove old handler and add new one
+    socketService.removeAllListeners();
+    socketService.onReceiveMessage(handleReceiveMessage);
+
+    return () => {
+      // Don't remove listeners here as the socket connection useEffect handles cleanup
+    };
+  }, [selectedTicket]);
+
   // Join/leave ticket rooms when selected ticket changes
   useEffect(() => {
     if (selectedTicket && socketService.isSocketConnected) {
@@ -250,6 +349,29 @@ const SupportDashboard = () => {
         socketService.leaveTicketRoom(selectedTicket._id);
       }
     };
+  }, [selectedTicket]);
+
+  // Scroll detection for scroll-to-bottom button
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      if (!container) return;
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const hasScrollableContent = scrollHeight > clientHeight; // Only show button if content is actually scrollable
+      const isNearBottom = scrollTop + clientHeight >= scrollHeight - 50;
+      const shouldShowButton = hasScrollableContent && !isNearBottom;
+
+      console.log('Scroll check:', { scrollTop, scrollHeight, clientHeight, hasScrollableContent, isNearBottom, shouldShowButton, showScrollButton });
+      setShowScrollButton(shouldShowButton);
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    // Check initial scroll position
+    handleScroll();
+
+    return () => container.removeEventListener('scroll', handleScroll);
   }, [selectedTicket]);
 
   const getStatusColor = (status) => {
@@ -413,7 +535,9 @@ const SupportDashboard = () => {
   };
 
   const handleTicketClick = async (ticket) => {
+    console.log('Admin dashboard - Ticket clicked:', ticket._id);
     setSelectedTicket(ticket);
+    console.log('Admin dashboard - selectedTicket set to:', ticket._id);
     await fetchTicketDetails(ticket._id);
   };
 
@@ -457,7 +581,7 @@ const SupportDashboard = () => {
                       <p className="text-sm font-medium text-gray-600">
                         Open Tickets
                       </p>
-                      <p className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums ext-gray-900">
+                      <p className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums text-gray-900">
                         {stats.open}
                       </p>
                     </div>
@@ -556,7 +680,7 @@ const SupportDashboard = () => {
                       </Select>
                     </div>
                   </CardHeader>
-                  <CardContent className="flex-1 overflow-y-auto p-0">
+                  <CardContent className="flex-1 overflow-y-auto p-0 min-h-0">
                     {ticketsLoading ? (
                       <div className="flex items-center justify-center h-64">
                         <div className="text-center">
@@ -899,11 +1023,11 @@ const SupportDashboard = () => {
                           </div>
                         </div>
                       </CardHeader>
-                      <CardContent className="flex-1 flex flex-col p-0">
-                        <div className="space-y-6 flex-1 flex flex-col p-6">
+                      <CardContent className="flex flex-col p-0 h-[calc(100vh-16rem)]">
+                        <div className="flex flex-col h-full p-6">
                           {/* Messages */}
-                          <div className="flex-1 flex flex-col">
-                            <div className="flex items-center justify-between mb-4">
+                          <div className="flex-1 flex flex-col min-h-0">
+                            <div className="flex items-center justify-between mb-4 flex-shrink-0">
                               <h4 className="font-semibold text-foreground flex items-center">
                                 <MessageCircle className="h-4 w-4 mr-2" />
                                 Conversation
@@ -913,7 +1037,7 @@ const SupportDashboard = () => {
                                 {messages.length === 1 ? 'message' : 'messages'}
                               </span>
                             </div>
-                            <div className="flex-1 overflow-y-auto border rounded-lg bg-muted/30">
+                            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto border rounded-lg bg-muted/30 min-h-0 relative">
                               {messages.length === 0 ? (
                                 <div className="flex items-center justify-center h-32">
                                   <div className="text-center">
@@ -964,13 +1088,23 @@ const SupportDashboard = () => {
                                   })}
                                 </div>
                               )}
+                              {/* Scroll to bottom button */}
+                              {showScrollButton && (
+                                <Button
+                                  onClick={scrollToBottom}
+                                  size="sm"
+                                  className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg rounded-full w-10 h-10 p-0 z-10"
+                                >
+                                  <ChevronDown className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </div>
 
                           {/* Message Input */}
                           {selectedTicket.status !== 'Closed' &&
                             selectedTicket.status !== 'Resolved' && (
-                              <div className="space-y-3 flex-shrink-0">
+                              <div className="flex-shrink-0 mt-4">
                                 <div className="border rounded-lg shadow-sm">
                                   <Textarea
                                     placeholder="Type your response to the customer..."
@@ -998,7 +1132,7 @@ const SupportDashboard = () => {
                                         </span>
                                       </div>
                                       <div className="text-xs text-muted-foreground">
-                                        Press Enter to send
+                                        
                                       </div>
                                     </div>
                                     <div className="flex items-center space-x-2">
@@ -1038,7 +1172,7 @@ const SupportDashboard = () => {
 
                           {(selectedTicket.status === 'Closed' ||
                             selectedTicket.status === 'Resolved') && (
-                            <div className="text-center py-8 bg-green-50 rounded-lg border border-green-200 flex-shrink-0">
+                            <div className="text-center py-8 bg-green-50 rounded-lg border border-green-200 flex-shrink-0 mt-4">
                               <CheckCircle className="h-12 w-12 mx-auto mb-3 text-green-600" />
                               <h3 className="font-semibold text-green-900 text-lg mb-1">
                                 Ticket {selectedTicket.status}

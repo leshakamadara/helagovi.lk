@@ -229,7 +229,8 @@ export const AuthProvider = ({ children }) => {
       deleteAccount,
       forgotPassword,
       resetPassword,
-      clearError
+      clearError,
+      getUserInfo
     }}>
       {children}
     </AuthContext.Provider>

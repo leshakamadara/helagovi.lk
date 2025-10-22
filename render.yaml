@@ -41,5 +41,5 @@ services:
       - key: VITE_API_URL
         value: https://api.helagovi.lk/api
       - key: VITE_SOCKET_URL
-        value: wss://api.helagovi.lk
+        value: https://api.helagovi.lk
 

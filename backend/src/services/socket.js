@@ -37,48 +37,36 @@ const initializeSocket = (server) => {
       }
     });
 
-    // Send message
+    // Send message (for real-time broadcasting only - message should already be saved via API)
     socket.on(
       'sendMessage',
-      async ({ senderId, receiverId, ticketId, message }) => {
+      async ({ messageData }) => {
         try {
-          // Save message in DB
-          const newMessage = new Message({
-            senderId,
-            receiverId,
-            ticketId,
-            message,
-          });
+          // Message is already saved via HTTP API, just broadcast it
+          const { senderId, receiverId, ticketId, message, _id, isRead, timestamp } = messageData;
 
-          await newMessage.save();
-          await newMessage.populate(['senderId', 'receiverId', 'ticketId']);
-
-          const messageData = {
-            _id: newMessage._id,
-            senderId: newMessage.senderId,
-            receiverId: newMessage.receiverId,
-            ticketId: newMessage.ticketId,
-            message: newMessage.message,
-            isRead: newMessage.isRead,
-            timestamp: newMessage.createdAt,
-          };
+          console.log('Backend received messageData:', messageData);
+          console.log('Broadcasting to ticketId:', ticketId);
 
           // Emit message to correct room/user
           if (ticketId) {
             io.to(`ticket_${ticketId}`).emit('receiveMessage', messageData);
+            console.log(`✅ Broadcasted message to ticket_${ticketId}:`, messageData);
           } else if (receiverId) {
             io.to(`user_${receiverId}`).emit('receiveMessage', messageData);
+            console.log(`Broadcasted message to user_${receiverId}:`, messageData);
           } else {
             io.to(agentRoom).emit('receiveMessage', messageData);
+            console.log(`Broadcasted message to agent room:`, messageData);
           }
 
           socket.emit('messageSent', {
             success: true,
-            messageId: newMessage._id,
+            messageId: _id,
           });
         } catch (error) {
-          console.error('Error sending message:', error);
-          socket.emit('error', { message: 'Failed to send message' });
+          console.error('Error broadcasting message:', error);
+          socket.emit('error', { message: 'Failed to broadcast message' });
         }
       },
     );

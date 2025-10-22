@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import {
   Card,
@@ -43,9 +43,11 @@ import {
   Filter,
   Settings,
   Loader2,
+  ChevronDown,
 } from 'lucide-react';
 import api from '@/lib/axios';
 import socketService from '@/lib/socket';
+import notificationSound from '@/assets/notification.mp3';
 
 const UserSupportPage = () => {
   const [userTickets, setUserTickets] = useState([]);
@@ -70,6 +72,29 @@ const UserSupportPage = () => {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [error, setError] = useState(null);
 
+  // Scroll to bottom functionality
+  const messagesContainerRef = useRef(null);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+
+  // Function to play notification sound
+  const playNotificationSound = () => {
+    try {
+      const audio = new Audio(notificationSound);
+      audio.volume = 0.5; // Set volume to 50%
+      audio.play().catch(e => console.log('Audio play failed:', e));
+    } catch (error) {
+      console.log('Error playing notification sound:', error);
+    }
+  };
+
+  // Function to scroll to bottom
+  const scrollToBottom = () => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      setShowScrollButton(false);
+    }
+  };
+
   useEffect(() => {
     if (authToken) {
       fetchUserTickets();
@@ -93,17 +118,29 @@ const UserSupportPage = () => {
 
       // Listen for incoming messages
       const handleReceiveMessage = (messageData) => {
-        console.log('Received real-time message:', messageData);
+        console.log('User page - Received real-time message:', messageData);
+        console.log('User page - Current selectedTicket:', selectedTicket?._id);
+        console.log('User page - Message ticketId:', messageData.ticketId);
+
+        // Play notification sound for new messages
+        playNotificationSound();
 
         // Update messages if we're viewing the relevant ticket
         if (selectedTicket && selectedTicket._id === messageData.ticketId) {
+          console.log('User page - Adding message to UI');
           setMessages((prev) => {
             // Check if message already exists to avoid duplicates
             const messageExists = prev.some(msg => msg._id === messageData._id);
-            if (messageExists) return prev;
+            if (messageExists) {
+              console.log('User page - Message already exists, skipping');
+              return prev;
+            }
 
+            console.log('User page - Adding new message to state');
             return [...prev, messageData];
           });
+        } else {
+          console.log('User page - Not adding message - wrong ticket or no ticket selected');
         }
 
         // Update ticket message count in the tickets list
@@ -123,7 +160,56 @@ const UserSupportPage = () => {
         socketService.disconnect();
       };
     }
-  }, [authToken, currentUser]);
+  }, [authToken, currentUser]); // Removed selectedTicket from dependencies
+
+  // Update message handler when selectedTicket changes
+  useEffect(() => {
+    if (!socketService.socket) return;
+
+    const handleReceiveMessage = (messageData) => {
+      console.log('User page - Received real-time message:', messageData);
+      console.log('User page - Current selectedTicket:', selectedTicket?._id);
+      console.log('User page - Message ticketId:', messageData.ticketId);
+
+      // Play notification sound for new messages
+      playNotificationSound();
+
+      // Update messages if we're viewing the relevant ticket
+      if (selectedTicket && selectedTicket._id === messageData.ticketId) {
+        console.log('User page - Adding message to UI');
+        setMessages((prev) => {
+          // Check if message already exists to avoid duplicates
+          const messageExists = prev.some(msg => msg._id === messageData._id);
+          if (messageExists) {
+            console.log('User page - Message already exists, skipping');
+            return prev;
+          }
+
+          console.log('User page - Adding new message to state');
+          return [...prev, messageData];
+        });
+      } else {
+        console.log('User page - Not adding message - wrong ticket or no ticket selected');
+      }
+
+      // Update ticket message count in the tickets list
+      setUserTickets((prev) =>
+        prev.map((ticket) =>
+          ticket._id === messageData.ticketId
+            ? { ...ticket, messages: [...(ticket.messages || []), messageData] }
+            : ticket,
+        ),
+      );
+    };
+
+    // Remove old handler and add new one
+    socketService.removeAllListeners();
+    socketService.onReceiveMessage(handleReceiveMessage);
+
+    return () => {
+      // Don't remove listeners here as the socket connection useEffect handles cleanup
+    };
+  }, [selectedTicket]);
 
   // Join/leave ticket rooms when selected ticket changes
   useEffect(() => {
@@ -136,6 +222,41 @@ const UserSupportPage = () => {
         socketService.leaveTicketRoom(selectedTicket._id);
       }
     };
+  }, [selectedTicket]);
+
+  // Scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (messages.length > 0 && messagesContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+      const isNearBottom = scrollTop + clientHeight >= scrollHeight - 100;
+      
+      // Auto-scroll to bottom only if user is already near bottom
+      if (isNearBottom) {
+        scrollToBottom();
+      }
+    }
+  }, [messages]);
+
+  // Scroll detection for scroll-to-bottom button
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      if (!container) return;
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const hasScrollableContent = scrollHeight > clientHeight; // Only show button if content is actually scrollable
+      const isNearBottom = scrollTop + clientHeight >= scrollHeight - 50;
+      const shouldShowButton = hasScrollableContent && !isNearBottom;
+
+      setShowScrollButton(shouldShowButton);
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    // Check initial scroll position
+    handleScroll();
+
+    return () => container.removeEventListener('scroll', handleScroll);
   }, [selectedTicket]);
 
   const fetchCurrentUser = async () => {
@@ -329,13 +450,15 @@ const UserSupportPage = () => {
   };
 
   const handleSendMessage = async (ticketId) => {
+    console.log('User page - handleSendMessage called with ticketId:', ticketId);
+    console.log('User page - current selectedTicket:', selectedTicket?._id);
     if (!newMessage.trim()) return;
 
     try {
       setSendingMessage(true);
       setError(null);
 
-      await api.post(
+      const response = await api.post(
         `/tickets/${ticketId}/messages`,
         {
           message: newMessage,
@@ -344,6 +467,9 @@ const UserSupportPage = () => {
           headers: { Authorization: `Bearer ${authToken}` },
         },
       );
+
+      // Send via socket for real-time updates
+      socketService.sendMessage(response.data.message);
 
       setNewMessage('');
 
@@ -375,7 +501,9 @@ const UserSupportPage = () => {
   };
 
   const handleTicketClick = async (ticket) => {
+    console.log('User page - Ticket clicked:', ticket._id);
     setSelectedTicket(ticket);
+    console.log('User page - selectedTicket set to:', ticket._id);
     await fetchTicketMessages(ticket._id);
   };
 
@@ -552,7 +680,7 @@ const UserSupportPage = () => {
                       </Select>
                     </div>
                   </CardHeader>
-                  <CardContent className="flex-1 overflow-y-auto p-0">
+                  <CardContent className="flex-1 overflow-y-auto p-0 min-h-0">
                     {loading ? (
                       <div className="flex items-center justify-center h-64">
                         <div className="text-center">
@@ -849,11 +977,11 @@ const UserSupportPage = () => {
                           </div>
                         </div>
                       </CardHeader>
-                      <CardContent className="flex-1 flex flex-col p-0">
-                        <div className="space-y-6 flex-1 flex flex-col p-6">
+                      <CardContent className="flex flex-col p-0 h-[calc(100vh-16rem)]">
+                        <div className="flex flex-col h-full p-6">
                           {/* Messages */}
-                          <div className="flex-1 flex flex-col">
-                            <div className="flex items-center justify-between mb-4">
+                          <div className="flex-1 flex flex-col min-h-0">
+                            <div className="flex items-center justify-between mb-4 flex-shrink-0">
                               <h4 className="font-semibold text-foreground flex items-center">
                                 <MessageCircle className="h-4 w-4 mr-2" />
                                 Conversation
@@ -863,7 +991,7 @@ const UserSupportPage = () => {
                                 {messages.length === 1 ? 'message' : 'messages'}
                               </span>
                             </div>
-                            <div className="flex-1 overflow-y-auto border rounded-lg bg-muted/30">
+                            <div className="relative flex-1 overflow-y-auto border rounded-lg bg-muted/30 min-h-0" ref={messagesContainerRef}>
                               {messages.length === 0 ? (
                                 <div className="flex items-center justify-center h-32">
                                   <div className="text-center">
@@ -878,6 +1006,7 @@ const UserSupportPage = () => {
                                   {messages.map((message, index) => {
                                     const isUser =
                                       message.senderId._id === currentUser?.id;
+                                    const isAgent = message.senderId?.role === 'admin';
                                     return (
                                       <div
                                         key={message._id}
@@ -894,7 +1023,9 @@ const UserSupportPage = () => {
                                             <span className="text-xs font-medium opacity-90">
                                               {isUser
                                                 ? 'You'
-                                                : message.senderId.name}
+                                                : isAgent
+                                                  ? 'Support Agent'
+                                                  : message.senderId.name}
                                             </span>
                                             <span className="text-xs opacity-70">
                                               {new Date(
@@ -914,13 +1045,23 @@ const UserSupportPage = () => {
                                   })}
                                 </div>
                               )}
+                              {/* Scroll to bottom button */}
+                              {showScrollButton && (
+                                <Button
+                                  onClick={scrollToBottom}
+                                  size="sm"
+                                  className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-primary hover:bg-primary/90 text-white shadow-lg rounded-full w-10 h-10 p-0 z-10"
+                                >
+                                  <ChevronDown className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </div>
 
                           {/* Message Input */}
                           {selectedTicket.status !== 'Closed' &&
                             selectedTicket.status !== 'Resolved' && (
-                              <div className="space-y-3 flex-shrink-0">
+                              <div className="flex-shrink-0 mt-4">
                                 <div className="border rounded-lg shadow-sm">
                                   <Textarea
                                     placeholder="Type your response to the customer..."
@@ -983,7 +1124,7 @@ const UserSupportPage = () => {
 
                           {(selectedTicket.status === 'Closed' ||
                             selectedTicket.status === 'Resolved') && (
-                            <div className="text-center py-8 bg-green-50 rounded-lg border border-green-200 flex-shrink-0">
+                            <div className="text-center py-8 bg-green-50 rounded-lg border border-green-200 flex-shrink-0 mt-4">
                               <CheckCircle className="h-12 w-12 mx-auto mb-3 text-green-600" />
                               <h3 className="font-semibold text-green-900 text-lg mb-1">
                                 Ticket {selectedTicket.status}

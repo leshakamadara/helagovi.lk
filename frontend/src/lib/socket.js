@@ -9,6 +9,7 @@ class SocketService {
 
   connect(token) {
     if (this.socket?.connected) {
+      console.log('Socket already connected');
       return this.socket;
     }
 
@@ -16,6 +17,8 @@ class SocketService {
     const socketUrl = process.env.NODE_ENV === 'production'
       ? (import.meta.env?.VITE_SOCKET_URL || window.location.origin)
       : 'http://localhost:5001';
+
+    console.log('Connecting to socket server:', socketUrl);
 
     this.socket = io(socketUrl, {
       auth: {
@@ -25,18 +28,22 @@ class SocketService {
     });
 
     this.socket.on('connect', () => {
-      console.log('Connected to socket server');
+      console.log('✅ Connected to socket server, socket ID:', this.socket.id);
       this.isConnected = true;
     });
 
-    this.socket.on('disconnect', () => {
-      console.log('Disconnected from socket server');
+    this.socket.on('disconnect', (reason) => {
+      console.log('❌ Disconnected from socket server:', reason);
       this.isConnected = false;
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('Socket connection error:', error);
+      console.error('❌ Socket connection error:', error);
       this.isConnected = false;
+    });
+
+    this.socket.on('joinedRoom', (data) => {
+      console.log('✅ Joined room:', data);
     });
 
     return this.socket;
@@ -53,14 +60,20 @@ class SocketService {
   // Join a user room for personal messages
   joinUserRoom(userId) {
     if (this.socket && this.isConnected) {
-      this.socket.emit('joinUserRoom', userId);
+      console.log('🔗 Joining user room for userId:', userId);
+      this.socket.emit('joinRoom', { userId, userRole: 'user' });
+    } else {
+      console.warn('⚠️ Cannot join user room: socket not connected');
     }
   }
 
   // Join a ticket room for ticket-specific messages
   joinTicketRoom(ticketId) {
     if (this.socket && this.isConnected) {
-      this.socket.emit('joinTicketRoom', ticketId);
+      console.log('🔗 Joining ticket room for ticketId:', ticketId);
+      this.socket.emit('joinRoom', { ticketId });
+    } else {
+      console.warn('⚠️ Cannot join ticket room: socket not connected');
     }
   }
 
@@ -106,6 +119,16 @@ class SocketService {
   sendStopTyping(ticketId, userId) {
     if (this.socket && this.isConnected) {
       this.socket.emit('stopTyping', { ticketId, userId });
+    }
+  }
+
+  // Send message via socket
+  sendMessage(messageData) {
+    if (this.socket && this.isConnected) {
+      console.log('📤 Sending message via socket:', messageData);
+      this.socket.emit('sendMessage', { messageData });
+    } else {
+      console.warn('⚠️ Cannot send message: socket not connected');
     }
   }
 
