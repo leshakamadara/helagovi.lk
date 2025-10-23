@@ -43,12 +43,20 @@ const RefundModal = ({ isOpen, onClose, order }) => {
 
       // Call the refund API
       const response = await api.post('/payments/process-refund', {
-        order_id: order.orderNumber, // Use orderNumber as it was used for payment
+        order_id: order.paymentInfo?.orderId || order.orderNumber, // Use PayHere orderId if available, otherwise orderNumber
         description: reason.trim()
       });
 
-      if (response.data.message === "Refund processed successfully") {
+      // Handle successful refund (200) or manual refund case (404 with "No payment found")
+      if (response.status === 200 && response.data.message === "Refund processed successfully") {
         toast.success('Refund request submitted successfully! Our team will process your refund within 3-5 business days.');
+        onClose();
+        setReason('');
+      } else if (response.status === 404 && response.data.error === "No payment found for order_id") {
+        // This means the order wasn't paid through PayHere (e.g., cash on delivery)
+        // Treat it as a successful refund request that will be handled manually
+        console.log('Payment not found in PayHere - treating as manual refund request');
+        toast.success('Refund request submitted successfully! Our team will review and process your refund within 3-5 business days.');
         onClose();
         setReason('');
       } else {
@@ -56,20 +64,10 @@ const RefundModal = ({ isOpen, onClose, order }) => {
       }
     } catch (error) {
       console.error('Refund submission error:', error);
-      const errorMessage = error.response?.data?.error || 'Failed to submit refund request. Please try again.';
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to submit refund request. Please try again.';
       
-      // Handle different error cases
-      if (errorMessage.includes('No payment found') || error.response?.status === 404) {
-        // This means the order wasn't paid through PayHere (e.g., cash on delivery)
-        // Treat it as a successful refund request that will be handled manually
-        console.log('Payment not found in PayHere - treating as manual refund request');
-        toast.success('Refund request submitted successfully! Our team will review and process your refund within 3-5 business days.');
-        onClose();
-        setReason('');
-        return; // Exit early to avoid showing error toast
-      } else {
-        toast.error(errorMessage);
-      }
+      // For any other unexpected errors, show the error message
+      toast.error(errorMessage);
     } finally {
       setSubmitting(false);
     }

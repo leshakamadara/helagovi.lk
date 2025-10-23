@@ -159,6 +159,7 @@ const PaymentPage = () => {
             paymentMethod: 'credit_card', // Map PayHere to credit_card
             paymentStatus: 'paid',
             transactionId: orderId,
+            orderId: orderId, // Store PayHere order_id for refunds
             notes: orderData.deliveryInfo.deliveryInstructions || ''
           };
 

@@ -248,6 +248,7 @@ const ChargePage = () => {
             paymentMethod: 'saved_card',
             paymentStatus: 'paid',
             transactionId: data.data?.payment_id || orderId,
+            orderId: orderId, // Store PayHere order_id for refunds
             notes: deliveryAddress.specialInstructions || ''
           };
           

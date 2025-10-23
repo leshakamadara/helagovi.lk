@@ -24,6 +24,7 @@ import ReviewModal from '../../components/ReviewModal'
 import RefundModal from '../../components/RefundModal'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
+import { toast } from 'sonner'
 
 const BuyerOrders = () => {
   const { user } = useAuth()
@@ -52,6 +53,7 @@ const BuyerOrders = () => {
   const [existingReviews, setExistingReviews] = useState({})
   const [refundModalOpen, setRefundModalOpen] = useState(false)
   const [selectedOrderForRefund, setSelectedOrderForRefund] = useState(null)
+  const [refundToastShown, setRefundToastShown] = useState(false)
 
   // PDF Generation Function
   const generateOrderPDF = async (order) => {
@@ -305,6 +307,19 @@ const BuyerOrders = () => {
         
         // Check for existing reviews for delivered orders
         await checkExistingReviews(response.data.orders)
+        
+        // Show toast for refunded orders (only once per page load)
+        if (!refresh && !refundToastShown) {
+          const refundedOrders = response.data.orders.filter(order => 
+            order.paymentInfo?.status === 'refunded'
+          )
+          if (refundedOrders.length > 0) {
+            toast.info('Payment already requested to refund', {
+              description: `You have ${refundedOrders.length} order${refundedOrders.length > 1 ? 's' : ''} with refund requests in progress.`
+            })
+            setRefundToastShown(true)
+          }
+        }
       } else {
         setError(response.message || 'Failed to fetch orders')
       }

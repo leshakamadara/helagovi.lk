@@ -109,6 +109,10 @@ const paymentInfoSchema = new Schema({
     type: String,
     sparse: true // Allow multiple null values
   },
+  orderId: {
+    type: String,
+    sparse: true // PayHere order_id used for payment/refund
+  },
   paidAt: {
     type: Date
   },
