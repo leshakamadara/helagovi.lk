@@ -26,7 +26,7 @@ const ChargePage = () => {
     summary: { items: [{ name: "Unknown", price: 0 }], tax: 0, total: 0 },
   };
 
-  // ✅ Use actual logged-in user ID
+  //  Use actual logged-in user ID
   const userId = user?._id || user?.id;
   const orderId = order.orderNumber || `ORD-${Date.now()}`;
   const items = order.summary.items.map((i) => i.name).join(", ");
@@ -53,7 +53,7 @@ const ChargePage = () => {
   const fetchSavedCards = async () => {
     if (!userId) {
       console.error("No userId available");
-      setMessage("❌ User not logged in");
+      setMessage(" User not logged in");
       setIsLoadingCards(false);
       return;
     }
@@ -82,7 +82,7 @@ const ChargePage = () => {
       }
     } catch (err) {
       console.error("Error fetching saved cards:", err);
-      setMessage("❌ Error loading saved cards");
+      setMessage(" Error loading saved cards");
     } finally {
       setIsLoadingCards(false);
     }
@@ -91,7 +91,7 @@ const ChargePage = () => {
   const handleCharge = async () => {
     // Validation checks
     if (!userId) {
-      setMessage("❌ User not logged in");
+      setMessage("User not logged in");
       return;
     }
     
@@ -101,7 +101,7 @@ const ChargePage = () => {
     }
     
     if (!amount || amount <= 0) {
-      setMessage("❌ Invalid order amount");
+      setMessage(" Invalid order amount");
       return;
     }
     
@@ -137,7 +137,7 @@ const ChargePage = () => {
 
       
       if (data.success || res.status === 200) {
-        setMessage("✅ Payment Successful - Creating Order...");
+        setMessage("Payment Successful - Creating Order...");
         setResult(data);
         
         // Step 2: Create order in database after successful payment
