@@ -21,8 +21,10 @@ import {
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb'
 import { H1, H2, H3, P, Muted, Large } from '../../components/ui/typography'
 import ReviewModal from '../../components/ReviewModal'
+import RefundModal from '../../components/RefundModal'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
+import { toast } from 'sonner'
 
 const BuyerOrders = () => {
   const { user } = useAuth()
@@ -49,6 +51,9 @@ const BuyerOrders = () => {
   const [reviewModalOpen, setReviewModalOpen] = useState(false)
   const [selectedOrderForReview, setSelectedOrderForReview] = useState(null)
   const [existingReviews, setExistingReviews] = useState({})
+  const [refundModalOpen, setRefundModalOpen] = useState(false)
+  const [selectedOrderForRefund, setSelectedOrderForRefund] = useState(null)
+  const [refundToastShown, setRefundToastShown] = useState(false)
 
   // PDF Generation Function
   const generateOrderPDF = async (order) => {
@@ -302,6 +307,19 @@ const BuyerOrders = () => {
         
         // Check for existing reviews for delivered orders
         await checkExistingReviews(response.data.orders)
+        
+        // Show toast for refunded orders (only once per page load)
+        if (!refresh && !refundToastShown) {
+          const refundedOrders = response.data.orders.filter(order => 
+            order.paymentInfo?.status === 'refunded'
+          )
+          if (refundedOrders.length > 0) {
+            toast.info('Payment already requested to refund', {
+              description: `You have ${refundedOrders.length} order${refundedOrders.length > 1 ? 's' : ''} with refund requests in progress.`
+            })
+            setRefundToastShown(true)
+          }
+        }
       } else {
         setError(response.message || 'Failed to fetch orders')
       }
@@ -343,6 +361,11 @@ const BuyerOrders = () => {
   const handleWriteReview = (order) => {
     setSelectedOrderForReview(order)
     setReviewModalOpen(true)
+  }
+
+  const handleRefundRequest = (order) => {
+    setSelectedOrderForRefund(order)
+    setRefundModalOpen(true)
   }
 
   const checkExistingReviews = async (orders) => {
@@ -668,6 +691,21 @@ const BuyerOrders = () => {
                         Track Order
                       </button>
                     )}
+                    
+                    {order.status === 'cancelled' && order.paymentInfo?.status === 'refunded' && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                        Refunded
+                      </span>
+                    )}
+                    
+                    {order.status === 'cancelled' && order.paymentInfo?.status !== 'refunded' && (
+                      <button 
+                        onClick={() => handleRefundRequest(order)}
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1 border border-blue-200 rounded hover:bg-blue-50"
+                      >
+                        Refund
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -779,6 +817,16 @@ const BuyerOrders = () => {
           setSelectedOrderForReview(null)
         }}
         order={selectedOrderForReview}
+      />
+
+      {/* Refund Modal */}
+      <RefundModal
+        isOpen={refundModalOpen}
+        onClose={() => {
+          setRefundModalOpen(false)
+          setSelectedOrderForRefund(null)
+        }}
+        order={selectedOrderForRefund}
       />
     </div>
   )

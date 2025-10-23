@@ -1,6 +1,6 @@
 import express from "express";
 import { createTransaction, deleteTransaction, getAllTransaction, updateTransaction, getUserTransactions } from "../controllers/paymentController.js";
-import {preapprove,notify,charge,createPayment} from "../controllers/PaymentGatewayController.js"
+import {preapprove,notify,charge,createPayment,processRefund} from "../controllers/PaymentGatewayController.js"
 import {updateCardData,deleteCardData,getCardData} from "../controllers/PaymentCardController.js"
 import { getWallet, getWithdrawals, createWithdrawal, creditFarmerWallet } from '../controllers/walletController.js'
 
@@ -30,5 +30,6 @@ router.post("/preapprove", preapprove)
 router.post("/notify",notify)
 router.post("/charge",charge)
 router.post("/pay",createPayment)
+router.post("/process-refund", processRefund)
 
 export default router;

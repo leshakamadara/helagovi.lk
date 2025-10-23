@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useAuth } from '../../context/AuthContext'
-import { User, Mail, Phone, Camera, Trash2, Save, Shield, CheckCircle, AlertCircle } from 'lucide-react'
+import { User, Mail, Phone, Camera, Trash2, Save, Shield, CheckCircle, AlertCircle, Download } from 'lucide-react'
 import { api } from '../../lib/axios'
 import toast from 'react-hot-toast'
 import { Button } from '../../components/ui/button'
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../../components/ui/breadcrumb'
 import { Avatar, AvatarImage, AvatarFallback } from '../../components/ui/avatar'
 import { H1, H2, H3, P, Muted, Large } from '../../components/ui/typography'
+import jsPDF from 'jspdf'
 
 const Profile = () => {
   const [editMode, setEditMode] = useState(false)
@@ -76,6 +77,90 @@ const Profile = () => {
       toast.error(error.response?.data?.message || 'Failed to send verification email');
     } finally {
       setResendingVerification(false);
+    }
+  }
+
+  const generateUserInfoPDF = async () => {
+    try {
+      const pdf = new jsPDF();
+      
+      // Add logo
+      const logoUrl = 'https://res.cloudinary.com/dckoipgrs/image/upload/v1759143086/Logo_uf3yae.png';
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = logoUrl;
+      });
+      
+  // Add logo to PDF (centered at top)
+  const logoWidth = 40;
+  const logoHeight = 40;
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const logoX = (pageWidth - logoWidth) / 2;
+  const logoY = 20; // top margin for logo
+  pdf.addImage(img, 'PNG', logoX, logoY, logoWidth, logoHeight);
+      
+  // Small bottom margin after logo
+  const contentTop = logoY + logoHeight + 8; // 8px gap after logo
+
+  // Add heading
+  pdf.setFontSize(24);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('helagovi.lk', pageWidth / 2, contentTop, { align: 'center' });
+      
+  // Add subtitle
+  pdf.setFontSize(16);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('User Information Report', pageWidth / 2, contentTop + 15, { align: 'center' });
+      
+  // Add generation date
+  pdf.setFontSize(10);
+  pdf.text(`Generated on: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, 20, contentTop + 30);
+      
+      // Add user information
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('User Details:', 20, 110);
+      
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'normal');
+      let yPosition = 130;
+      
+      const userInfo = [
+        { label: 'Full Name:', value: `${user.firstName} ${user.lastName}` },
+        { label: 'Email:', value: user.email },
+        { label: 'Phone:', value: user.phone || 'Not provided' },
+        { label: 'Role:', value: user.role.charAt(0).toUpperCase() + user.role.slice(1) },
+        { label: 'Account Status:', value: user.isVerified ? 'Verified' : 'Not Verified' },
+        { label: 'Member Since:', value: new Date(user.createdAt).toLocaleDateString() }
+      ];
+      
+      userInfo.forEach(info => {
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(info.label, 20, yPosition);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(info.value, 80, yPosition);
+        yPosition += 15;
+      });
+      
+      // Add footer
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'italic');
+      pdf.text('This document contains your personal information from helagovi.lk', 20, pageHeight - 20);
+      pdf.text('Generated automatically for account management purposes', 20, pageHeight - 15);
+      
+      // Save the PDF
+      const fileName = `helagovi-user-info-${user.firstName}-${user.lastName}-${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(fileName);
+      
+      toast.success('User information PDF generated successfully!');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF. Please try again.');
     }
   }
 
@@ -280,7 +365,8 @@ const Profile = () => {
                   <Button
                     onClick={handleResendVerification}
                     disabled={resendingVerification}
-                    variant="secondary"
+                    variant="outline"
+                    className="w-full sm:w-auto"
                   >
                     <Mail className="h-4 w-4 mr-2" />
                     {resendingVerification ? 'Sending...' : 'Resend Verification Email'}
@@ -292,18 +378,29 @@ const Profile = () => {
             {/* Existing Account Actions */}
             <div className="space-y-4">
               <Button
-                onClick={handleDeactivate}
-                variant="secondary"
+                onClick={generateUserInfoPDF}
+                variant="outline"
+                className="w-full sm:w-auto"
               >
-                Deactivate Account
+                <Download className="h-4 w-4 mr-2" />
+                Download User Info PDF
               </Button>
-              <Button
-                onClick={handleDelete}
-                variant="destructive"
-                className="ml-4"
-              >
-                Delete Account
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button
+                  onClick={handleDeactivate}
+                  variant="outline"
+                  className="w-full sm:flex-1"
+                >
+                  Deactivate Account
+                </Button>
+                <Button
+                  onClick={handleDelete}
+                  variant="destructive"
+                  className="w-full sm:flex-1"
+                >
+                  Delete Account
+                </Button>
+              </div>
             </div>
           </div>
         </div>

@@ -14,7 +14,7 @@ export const createOrder = async (req, res) => {
   session.startTransaction();
 
   try {
-    const { items, deliveryAddress, paymentMethod, paymentStatus, transactionId, notes } = req.body;
+    const { items, deliveryAddress, paymentMethod, paymentStatus, transactionId, orderId, notes } = req.body;
     const buyerId = req.user.id;
 
     // Validate required fields
@@ -115,6 +115,7 @@ export const createOrder = async (req, res) => {
         method: paymentMethod || 'cash_on_delivery',
         status: paymentStatus || 'pending',
         transactionId: transactionId || undefined,
+        orderId: orderId || undefined,
         amount: total,
         paidAt: paymentStatus === 'paid' ? new Date() : undefined
       },
