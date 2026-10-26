@@ -51,6 +51,7 @@ const corsOptions = {
       "https://api.helagovi.lk", // Production API domain
       "https://www.helagovi.lk", // Production frontend domain
       "https://helagovi.lk", // Production frontend domain (without www)
+      "https://helagovi.invi.lk", // Production frontend custom domain
       "https://helagovi-lk-frontend.onrender.com", // Render frontend service
       "https://helagovi.invi.lk", // New frontend domain
     ];

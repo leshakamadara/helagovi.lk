@@ -4,7 +4,15 @@ import Message from '../models/Message.js';
 const initializeSocket = (server) => {
   const io = new Server(server, {
     cors: {
-      origin: process.env.CLIENT_URL || 'http://localhost:3000',
+      origin: [
+        process.env.CLIENT_URL,
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'https://www.helagovi.lk',
+        'https://helagovi.lk',
+        'https://helagovi.invi.lk',
+        'https://helagovi-lk-frontend.onrender.com',
+      ].filter(Boolean),
       methods: ['GET', 'POST'],
     },
   });
