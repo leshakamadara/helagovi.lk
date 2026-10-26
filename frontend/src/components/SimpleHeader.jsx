@@ -10,7 +10,7 @@ const SimpleHeader = () => {
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center">
               <img
-                src="https://framerusercontent.com/images/tQEEeKRa0oOBXHoksVNKvgBJZc.png"
+                src="/assets/helagovi-logo.png"
                 alt="Helagovi.lk Logo"
                 className="h-8 w-8 object-contain"
               />

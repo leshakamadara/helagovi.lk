@@ -85,7 +85,7 @@ const Profile = () => {
       const pdf = new jsPDF();
       
       // Add logo
-      const logoUrl = 'https://res.cloudinary.com/dckoipgrs/image/upload/v1759143086/Logo_uf3yae.png';
+      const logoUrl = '/assets/helagovi-logo.png';
       const img = new Image();
       img.crossOrigin = 'anonymous';
       

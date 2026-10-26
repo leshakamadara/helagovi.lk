@@ -168,7 +168,7 @@ export function AppSidebar({ ...props }) {
             >
               <Link to="/admin-dashboard">
                 <img
-                  src="https://res.cloudinary.com/dckoipgrs/image/upload/v1759143086/Logo_uf3yae.png"
+                  src="/assets/helagovi-logo.png"
                   alt="Helagovi.lk Logo"
                   className="h-10 w-10 object-contain"
                 />
