@@ -52,6 +52,7 @@ const corsOptions = {
       "https://www.helagovi.lk", // Production frontend domain
       "https://helagovi.lk", // Production frontend domain (without www)
       "https://helagovi-lk-frontend.onrender.com", // Render frontend service
+      "https://helagovi.invi.lk", // New frontend domain
     ];
 
     // Allow all subdomains of helagovi.lk

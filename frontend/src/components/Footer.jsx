@@ -16,11 +16,6 @@ export default function Footer() {
             Helagovi.lk
           </h2>
 
-          {/* Project Info */}
-          <p className="text-sm font-bold text-gray-500">
-            Batch 8 Group 190 IT Project {new Date().getFullYear()}
-          </p>
-
           {/* Links as Bold Subheadings */}
           <div className="flex flex-col space-y-2 pt-4">
             <a href="/privacy" className="font-medium text-gray-700 hover:text-green-600">Privacy Policy</a>
@@ -40,7 +35,7 @@ export default function Footer() {
             className="h-8 w-8 object-contain"
           />
           <p className="text-base">
-            <span className="font-semibold">Helagovi.lk</span> | <span className="font-bold text-gray-500">Batch 8 Group 190 IT Project {new Date().getFullYear()}</span>
+            <span className="font-semibold">Helagovi.lk</span>
           </p>
         </div>
 
