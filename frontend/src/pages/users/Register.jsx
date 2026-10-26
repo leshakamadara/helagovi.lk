@@ -256,7 +256,7 @@ export default function RegisterPage() {
           </div>
           <div className="flex-shrink-0 mt-2">
             <img
-              src="https://res.cloudinary.com/dckoipgrs/image/upload/v1759143086/Logo_uf3yae.png"
+              src="/assets/helagovi-logo.png"
               alt="Helagovi.lk Logo"
               className="w-80 h-80 object-contain"
             />
@@ -267,7 +267,7 @@ export default function RegisterPage() {
         <div className="flex justify-center gap-2 md:justify-start">
           <a href="/" className="flex items-center">
             <img
-              src="https://framerusercontent.com/images/tQEEeKRa0oOBXHoksVNKvgBJZc.png"
+              src="/assets/helagovi-logo.png"
               alt="Helagovi.lk Logo"
               className="h-8 w-8 object-contain"
             />

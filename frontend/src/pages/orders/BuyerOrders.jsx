@@ -67,7 +67,7 @@ const BuyerOrders = () => {
       // Add logo
       const logoImg = new Image()
       logoImg.crossOrigin = 'anonymous'
-      logoImg.src = 'https://res.cloudinary.com/dckoipgrs/image/upload/v1759143086/Logo_uf3yae.png'
+      logoImg.src = '/assets/helagovi-logo.png'
       
       await new Promise((resolve, reject) => {
         logoImg.onload = resolve

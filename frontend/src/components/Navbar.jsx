@@ -312,7 +312,7 @@ const Navbar = () => {
             <div className="flex items-center">
               <Link to="/" className="flex-shrink-0 flex items-center">
                 <img 
-                  src="https://framerusercontent.com/images/tQEEeKRa0oOBXHoksVNKvgBJZc.png" 
+                  src="/assets/helagovi-logo.png" 
                   alt="Helagovi.lk Logo" 
                   className="h-8 w-8 object-contain"
                 />
@@ -528,7 +528,7 @@ const Navbar = () => {
                   <SheetHeader>
                     <SheetTitle className="flex items-center gap-2">
                       <img 
-                        src="https://framerusercontent.com/images/tQEEeKRa0oOBXHoksVNKvgBJZc.png" 
+                        src="/assets/helagovi-logo.png" 
                         alt="Helagovi.lk Logo" 
                         className="h-6 w-6 object-contain"
                       />

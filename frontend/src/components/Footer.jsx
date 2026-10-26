@@ -6,7 +6,7 @@ export default function Footer() {
         <div className="flex flex-col items-center space-y-1 text-center">
           {/* Logo */}
           <img
-            src="https://res.cloudinary.com/dckoipgrs/image/upload/v1759143086/Logo_uf3yae.png"
+            src="/assets/helagovi-logo.png"
             alt="Helagovi.lk Logo"
             className="h-12 w-12 object-contain"
           />
@@ -35,7 +35,7 @@ export default function Footer() {
         {/* Left - Branding with Logo */}
         <div className="flex items-center gap-3">
           <img
-            src="https://res.cloudinary.com/dckoipgrs/image/upload/v1759143086/Logo_uf3yae.png"
+            src="/assets/helagovi-logo.png"
             alt="Helagovi.lk Logo"
             className="h-8 w-8 object-contain"
           />

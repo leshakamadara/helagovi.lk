@@ -341,7 +341,7 @@ const ProductDetails = () => {
           });
         };
         
-        const logoImg = await loadImage('https://res.cloudinary.com/dckoipgrs/image/upload/v1759143086/Logo_uf3yae.png');
+        const logoImg = await loadImage('/assets/helagovi-logo.png');
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         canvas.width = logoImg.width;
